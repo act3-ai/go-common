@@ -9,22 +9,22 @@ import (
 	"git.act3-ace.com/ace/go-common/pkg/version"
 )
 
-// VersionOptions is the options for the version
-type VersionOptions struct {
+// versionOptions is the options for the version
+type versionOptions struct {
 	version.Info
 	Short bool
 }
 
-// NewVersionOptions create a new version options
+// newVersionOptions create a new version options
 // info is the version to output
-func NewVersionOptions(info version.Info) *VersionOptions {
-	return &VersionOptions{
+func newVersionOptions(info version.Info) *versionOptions {
+	return &versionOptions{
 		Info: info,
 	}
 }
 
 // Run is the action method
-func (action *VersionOptions) Run(out io.Writer) error {
+func (action *versionOptions) Run(out io.Writer) error {
 	if action.Short {
 		_, err := fmt.Fprintln(out, action.Version)
 		return err
@@ -35,7 +35,7 @@ func (action *VersionOptions) Run(out io.Writer) error {
 
 // NewVersionCmd creates a new "version" subcommand
 func NewVersionCmd(info version.Info) *cobra.Command {
-	action := NewVersionOptions(info)
+	action := newVersionOptions(info)
 
 	cmd := &cobra.Command{
 		Use:   "version",

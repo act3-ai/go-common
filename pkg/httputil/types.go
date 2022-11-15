@@ -10,9 +10,6 @@ const (
 	// HeaderUsername is the header set by the auth system (reverse proxy) to denote the username
 	HeaderUsername = "X-Auth-Username"
 
-	// HeaderContentDigest is a header used to denote the body's digest
-	HeaderContentDigest = "X-Content-Digest"
-
 	// HeaderInstance is a header used for identify this unique request/response (primitive tracing)
 	HeaderInstance = "X-Instance"
 
