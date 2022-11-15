@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"git.act3-ace.com/ace/go-common/pkg/actions"
 	"git.act3-ace.com/ace/go-common/pkg/version"
 )
 
@@ -36,7 +35,7 @@ func (action *VersionOptions) Run(out io.Writer) error {
 
 // NewVersionCmd creates a new "version" subcommand
 func NewVersionCmd(info version.Info) *cobra.Command {
-	action := actions.NewVersion(info)
+	action := NewVersionOptions(info)
 
 	cmd := &cobra.Command{
 		Use:   "version",
