@@ -119,21 +119,12 @@ linters-settings:
       - ".WithMessage("
       - ".WithMessagef("
       - ".WithStack("
-      # Don't check "file info" errors
-      - ".Info("
-      - ".Stat("
-      - ".Lstat("
-      - ".Close()" # another linter handles close err
-      - ".WalkDir("
-      # edge case for using telemetry interfaces directoy
-      - "git.act3-ace.com/ace/data/telemetry/"
       # expected to work
       - .ExecuteContext( # cobra command
       - (*golang.org/x/sync/errgroup.Group).Wait()
     ignoreSigRegexps:
       # ignore printing (to stdout)
-      - "fmt\\..?(P|p)rint.*\\(" 
-      - "\\(git.act3-ace.com/ace/data/tool/pkg/.*"
+      - "fmt\\..?(P|p)rint.*\\("
     ignorePackageGlobs:
       - encoding/*
       - git.act3-ace.com/* # Only catches things when they are imported

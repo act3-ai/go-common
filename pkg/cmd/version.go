@@ -15,14 +15,6 @@ type versionOptions struct {
 	Short bool
 }
 
-// newVersionOptions create a new version options
-// info is the version to output
-func newVersionOptions(info version.Info) *versionOptions {
-	return &versionOptions{
-		Info: info,
-	}
-}
-
 // Run is the action method
 func (action *versionOptions) Run(out io.Writer) error {
 	if action.Short {
@@ -35,18 +27,20 @@ func (action *versionOptions) Run(out io.Writer) error {
 
 // NewVersionCmd creates a new "version" subcommand
 func NewVersionCmd(info version.Info) *cobra.Command {
-	action := newVersionOptions(info)
+	options := &versionOptions{
+		Info: info,
+	}
 
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the version",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return action.Run(cmd.OutOrStdout())
+			return options.Run(cmd.OutOrStdout())
 		},
 	}
 
-	cmd.Flags().BoolVar(&action.Short, "short", false, "print just the version (not extra information)")
+	cmd.Flags().BoolVarP(&options.Short, "short", "s", false, "print just the version (not extra information)")
 
 	return cmd
 }

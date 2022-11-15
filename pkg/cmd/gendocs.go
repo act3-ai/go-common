@@ -15,7 +15,7 @@ func NewGendocsCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			docsPath := args[0]
 
-			return doc.GenMarkdownTree(cmd.Root(), docsPath)
+			return doc.GenMarkdownTree(cmd.Root(), docsPath) //nolint:wrapcheck
 		},
 	}
 	return gendocsCmd

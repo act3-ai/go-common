@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -29,7 +30,7 @@ func Load(log logr.Logger, scheme *runtime.Scheme, conf runtime.Object, configFi
 		// Regardless of if the bytes are of any external version,
 		// it will be read successfully and converted into the internal version
 		if err := runtime.DecodeInto(codecs.UniversalDecoder(), content, conf); err != nil {
-			return err
+			return fmt.Errorf("loading configuration: %w", err)
 		}
 
 		log.Info("Using config file", "path", filename)
