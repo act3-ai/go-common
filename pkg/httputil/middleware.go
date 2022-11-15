@@ -1,12 +1,8 @@
 package httputil
 
 import (
-	"bytes"
 	"context"
-	"crypto/ed25519"
-	"encoding/base64"
 	"errors"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -110,46 +106,6 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 }
 
 var _ middlewareFunc = PrometheusMiddleware
-
-// SignatureVerifyMiddleware records timing metrics
-func SignatureVerifyMiddleware(next http.Handler) http.Handler {
-	return RootHandler(func(w http.ResponseWriter, r *http.Request) error {
-		bodyBytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			return NewHTTPError(err, http.StatusInternalServerError, "Unable to read body")
-		}
-		// must close
-		if err := r.Body.Close(); err != nil {
-			return err
-		}
-		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-		// Grab the signature
-		signatureBase64 := r.Header.Get("x-signature")
-		signature, err := base64.StdEncoding.DecodeString(signatureBase64)
-		if err != nil {
-			return NewHTTPError(err, http.StatusInternalServerError, "Incorrectly formatted x-signature header")
-		}
-
-		// Grab the public key
-		pubkeyBase64 := r.Header.Get("x-publickey")
-		pubkey, err := base64.StdEncoding.DecodeString(pubkeyBase64)
-		if err != nil {
-			return NewHTTPError(err, http.StatusInternalServerError, "Incorrectly formatted x-publickey header")
-		}
-
-		// Do the actual verification
-		if !ed25519.Verify(pubkey, bodyBytes, signature) {
-			return NewHTTPError(nil, http.StatusBadRequest, "Unable to verify signature")
-		}
-
-		// call the next handler because everything checked out
-		next.ServeHTTP(w, r)
-		return nil
-	})
-}
-
-var _ middlewareFunc = SignatureVerifyMiddleware
 
 // Recoverer is a middleware that recovers from panics, logs the panic (and a
 // backtrace), and returns a HTTP 500 (Internal Server Error) status if

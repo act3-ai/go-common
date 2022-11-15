@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	// MediaTypeProblem is the content type for errors producted by the server
+	// MediaTypeProblem is the content type for errors produced by the server
 	MediaTypeProblem = "application/problem+json; charset=utf-8"
 )
 
