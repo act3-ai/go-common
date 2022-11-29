@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // EnvOr grabs the env variable or the default
@@ -66,4 +67,20 @@ func EnvArrayOr(name string, def []string, sep string) []string {
 // EnvPathOr grabs the env variable as an array splitting on the default (OS specific) path list separator
 func EnvPathOr(name string, def []string) []string {
 	return EnvArrayOr(name, def, string(filepath.ListSeparator))
+}
+
+// EnvDurationOr grabs the env variable as a Duration or the default
+func EnvDurationOr(name string, def time.Duration) time.Duration {
+	if name == "" {
+		return def
+	}
+	envVal, ok := os.LookupEnv(name)
+	if !ok {
+		return def
+	}
+	ret, err := time.ParseDuration(envVal)
+	if err != nil {
+		return def
+	}
+	return ret
 }
