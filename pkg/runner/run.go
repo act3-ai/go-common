@@ -36,10 +36,10 @@ func Run(cmd *cobra.Command, verbosityEnvName string) error {
 		conf.Level.SetLevel(-zapcore.Level(verbosity))
 	})
 
-	cmd.PersistentFlags().Int8VarP(&verbosity, "verbosity", "v", int8(config.EnvIntOr(verbosityEnvName, -1)),
-		`Verbosity level (setable with env `+verbosityEnvName+")")
+	cmd.PersistentFlags().Int8VarP(&verbosity, "verbosity", "v", int8(config.EnvIntOr(verbosityEnvName, 0)),
+		"Logging verbosity level (also setable with environment variable "+verbosityEnvName+")")
 	x := cmd.PersistentFlags().Lookup("verbosity")
-	x.NoOptDefVal = "0"
+	x.NoOptDefVal = "1"
 
 	ctx := logr.NewContext(context.Background(), logger)
 	return cmd.ExecuteContext(ctx)
