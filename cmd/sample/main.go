@@ -1,3 +1,4 @@
+// Package main is a sample CLI tool to demonstrate how these libraries are properly composed.
 package main
 
 import (

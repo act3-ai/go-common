@@ -1,3 +1,4 @@
+// Package runner provides common bootstrapping functionality for CLI tools
 package runner
 
 import (

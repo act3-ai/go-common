@@ -107,7 +107,7 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 
 var _ middlewareFunc = PrometheusMiddleware
 
-// Recoverer is a middleware that recovers from panics, logs the panic (and a
+// RecovererMiddleware is a middleware that recovers from panics, logs the panic (and a
 // backtrace), and returns a HTTP 500 (Internal Server Error) status if
 // possible. Recoverer prints a request ID if one is provided.
 //

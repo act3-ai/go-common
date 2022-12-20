@@ -1,3 +1,4 @@
+// Package redact performs data redaction to prevent credential leakage in logs or the console.
 package redact
 
 import "net/url"

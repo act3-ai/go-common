@@ -1,3 +1,4 @@
+// Package version is a helper for extracting versions from the binary
 package version
 
 import (
@@ -19,7 +20,7 @@ type Info struct {
 	Built string
 }
 
-// GetWithOverride returns the version info
+// Get returns the version info
 func Get() Info {
 	return parse()
 }

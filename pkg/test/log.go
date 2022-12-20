@@ -1,3 +1,4 @@
+// Package test provides test helper functions
 package test
 
 import (

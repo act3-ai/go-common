@@ -134,10 +134,11 @@ linters-settings:
 
 issues:
   # uncomment to enable more linting
-  # exclude-use-default: false
+  exclude-use-default: false
 
   include:
     - EXC0005
     - EXC0012
     - EXC0009
     - EXC0002
+    - ST1000

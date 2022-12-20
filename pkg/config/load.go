@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/adrg/xdg"
 	"github.com/go-logr/logr"
@@ -44,10 +45,16 @@ func Load(log logr.Logger, scheme *runtime.Scheme, conf runtime.Object, configFi
 }
 
 // DefaultConfigSearchPath returns the list of locations to look for configuration files
-func DefaultConfigSearchPath(project, configFileName string) []string {
+func DefaultConfigSearchPath(parts ...string) []string {
 	return []string{
-		configFileName,
-		filepath.Join(xdg.ConfigHome, "ace", project, configFileName),
-		filepath.Join("/", "etc", "ace", project, configFileName),
+		strings.Join(parts, "-"),
+		filepath.Join(xdg.ConfigHome, filepath.Join(parts...)),
+		filepath.Join("/", "etc", filepath.Join(parts...)),
 	}
+	// TODO we should consider searching $XDG_CONFIG_DIRS as well
+}
+
+// DefaultConfigPath is the path we would save the configuration to if needed.  In a sense it is the preferred configuration path.
+func DefaultConfigPath(parts ...string) string {
+	return filepath.Join(xdg.ConfigHome, filepath.Join(parts...))
 }
