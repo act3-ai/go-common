@@ -1,4 +1,4 @@
 include:
   - project: devsecops/cicd/pipeline
-    ref: v8.2.0
+    ref: v9.0.0
     file: main.yml
