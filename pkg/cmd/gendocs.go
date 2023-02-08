@@ -23,6 +23,7 @@ func NewGendocsCmd() *cobra.Command {
 			} else if format == "man" {
 				return doc.GenManTree(cmd.Root(), nil, docsPath) //nolint:wrapcheck
 			}
+
 			return fmt.Errorf("incorrect value for format")
 		},
 	}
