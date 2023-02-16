@@ -9,12 +9,6 @@ import (
 	"github.com/spf13/cobra/doc"
 )
 
-// GendocsOptions stores options for the gendocs command
-type GendocsOptions struct {
-	Format             string // Documentation format, either "md" or "man"
-	AdditionalManpages map[string][]byte
-}
-
 // NewGendocsCmd is a command to generate the internal CLI documentation in markdown
 // additionalManpages is a map of non-generatable man pages to be included (ex. Quick Start Guides, User Guides)
 func NewGendocsCmd(additionalManpages map[string][]byte) *cobra.Command {
