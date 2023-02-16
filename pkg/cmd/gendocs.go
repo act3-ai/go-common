@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -11,7 +13,7 @@ import (
 
 // NewGendocsCmd is a command to generate the internal CLI documentation in markdown
 // additionalManpages is a map of non-generatable man pages to be included (ex. Quick Start Guides, User Guides)
-func NewGendocsCmd(additionalManpages map[string][]byte) *cobra.Command {
+func NewGendocsCmd(additionalManpages embed.FS) *cobra.Command {
 	var format string
 	var gendocsCmd = &cobra.Command{
 		Use:    "gendocs <docs location>",
@@ -29,11 +31,22 @@ func NewGendocsCmd(additionalManpages map[string][]byte) *cobra.Command {
 					return err //nolint:wrapcheck
 				}
 
-				for name, content := range additionalManpages {
-					if err := os.WriteFile(filepath.Join(docsPath, name), content, 0666); err != nil {
+				return fs.WalkDir(additionalManpages, ".", func(path string, d fs.DirEntry, err error) error { //nolint:wrapcheck
+					if err != nil {
+						return err
+					}
+
+					if d.IsDir() {
+						return os.MkdirAll(filepath.Join(docsPath, path), 0777) //nolint:wrapcheck
+					}
+
+					content, err := additionalManpages.ReadFile(path)
+					if err != nil {
 						return err //nolint:wrapcheck
 					}
-				}
+
+					return os.WriteFile(filepath.Join(docsPath, path), content, 0644) //nolint:wrapcheck
+				})
 			}
 
 			return fmt.Errorf("incorrect value for format")
