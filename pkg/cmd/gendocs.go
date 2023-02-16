@@ -13,7 +13,7 @@ import (
 
 // NewGendocsCmd is a command to generate the internal CLI documentation in markdown
 // additionalManpages is a map of non-generatable man pages to be included (ex. Quick Start Guides, User Guides)
-func NewGendocsCmd(additionalManpages embed.FS) *cobra.Command {
+func NewGendocsCmd(additionalManpages *embed.FS) *cobra.Command {
 	var format string
 	var gendocsCmd = &cobra.Command{
 		Use:    "gendocs <docs location>",
