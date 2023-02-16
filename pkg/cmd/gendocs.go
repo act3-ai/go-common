@@ -2,13 +2,16 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )
 
 // NewGendocsCmd is a command to generate the internal CLI documentation in markdown
-func NewGendocsCmd() *cobra.Command {
+// additionalManpages is a map of non-generatable man pages to be included (ex. Quick Start Guides, User Guides)
+func NewGendocsCmd(additionalManpages map[string][]byte) *cobra.Command {
 	var format string
 	var gendocsCmd = &cobra.Command{
 		Use:    "gendocs <docs location>",
@@ -21,7 +24,16 @@ func NewGendocsCmd() *cobra.Command {
 			if format == "md" {
 				return doc.GenMarkdownTree(cmd.Root(), docsPath) //nolint:wrapcheck
 			} else if format == "man" {
-				return doc.GenManTree(cmd.Root(), nil, docsPath) //nolint:wrapcheck
+				err := doc.GenManTree(cmd.Root(), nil, docsPath)
+				if err != nil {
+					return err //nolint:wrapcheck
+				}
+
+				for name, content := range additionalManpages {
+					if err := os.WriteFile(filepath.Join(docsPath, name), content, 0666); err != nil {
+						return err //nolint:wrapcheck
+					}
+				}
 			}
 
 			return fmt.Errorf("incorrect value for format")

@@ -30,7 +30,7 @@ func main() {
 
 	root.AddCommand(
 		commands.NewVersionCmd(info),
-		commands.NewGendocsCmd(),
+		commands.NewGendocsCmd(nil),
 	)
 
 	if err := runner.Run(root, "ACE_TELEMETRY_VERBOSITY"); err != nil {
