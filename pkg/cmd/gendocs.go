@@ -13,7 +13,7 @@ import (
 
 // NewGendocsCmd is a command to generate the internal CLI documentation in markdown
 // additionalManpages is a map of non-generatable man pages to be included (ex. Quick Start Guides, User Guides)
-func NewGendocsCmd(additionalManpages *fs.FS) *cobra.Command {
+func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 	var format string
 	var gendocsCmd = &cobra.Command{
 		Use:    "gendocs <docs location>",
@@ -31,7 +31,7 @@ func NewGendocsCmd(additionalManpages *fs.FS) *cobra.Command {
 					return err //nolint:wrapcheck
 				}
 
-				return fs.WalkDir(*additionalManpages, ".", func(path string, d fs.DirEntry, err error) error { //nolint:wrapcheck
+				return fs.WalkDir(additionalManpages, ".", func(path string, d fs.DirEntry, err error) error { //nolint:wrapcheck
 					if err != nil {
 						return err
 					}
@@ -40,17 +40,18 @@ func NewGendocsCmd(additionalManpages *fs.FS) *cobra.Command {
 						return os.MkdirAll(filepath.Join(docsPath, path), 0777) //nolint:wrapcheck
 					}
 
-					f, err := (*additionalManpages).Open(path)
+					src, err := additionalManpages.Open(path)
 					if err != nil {
 						return err //nolint:wrapcheck
 					}
 
-					content, err := io.ReadAll(f)
+					dst, err := os.Create(filepath.Join(docsPath, path))
 					if err != nil {
 						return err //nolint:wrapcheck
 					}
 
-					return os.WriteFile(filepath.Join(docsPath, path), content, 0644) //nolint:wrapcheck
+					_, err = io.Copy(dst, src)
+					return err //nolint:wrapcheck
 				})
 			}
 
