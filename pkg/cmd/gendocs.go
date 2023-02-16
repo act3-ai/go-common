@@ -37,7 +37,7 @@ func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 					}
 
 					if d.IsDir() {
-						return os.MkdirAll(filepath.Join(docsPath, path), 0777) //nolint:wrapcheck
+						return nil
 					}
 
 					src, err := additionalManpages.Open(path)
@@ -45,7 +45,9 @@ func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 						return err //nolint:wrapcheck
 					}
 
-					dst, err := os.Create(filepath.Join(docsPath, path))
+					// Flatten to just filename and add it to the destination folder
+					destPath := filepath.Join(docsPath, filepath.Base(path))
+					dst, err := os.Create(destPath)
 					if err != nil {
 						return err //nolint:wrapcheck
 					}
