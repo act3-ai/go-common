@@ -42,18 +42,18 @@ func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 
 					src, err := additionalManpages.Open(path)
 					if err != nil {
-						return err //nolint:wrapcheck
+						return fmt.Errorf("could not open manpage %q: %w", path, err)
 					}
 
 					// Flatten to just filename and add it to the destination folder
 					destPath := filepath.Join(docsPath, filepath.Base(path))
 					dst, err := os.Create(destPath)
 					if err != nil {
-						return err //nolint:wrapcheck
+						return fmt.Errorf("could not create file %q: %w", destPath, err)
 					}
 
 					_, err = io.Copy(dst, src)
-					return err //nolint:wrapcheck
+					return fmt.Errorf("could not copy content to %q: %w", dst.Name(), err)
 				})
 			}
 
