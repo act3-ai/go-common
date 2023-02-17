@@ -47,7 +47,9 @@ func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 
 					// Flatten to just filename and add it to the destination folder
 					destPath := filepath.Join(docsPath, filepath.Base(path))
-					dst, err := os.Create(destPath)
+
+					// Use os.OpenFile to fail if file exists
+					dst, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY, 0666)
 					if err != nil {
 						return fmt.Errorf("could not create file %q: %w", destPath, err)
 					}
