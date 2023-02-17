@@ -31,6 +31,9 @@ func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 					return err //nolint:wrapcheck
 				}
 
+				// Map filename to src path
+				srcMap := map[string]string{}
+
 				return fs.WalkDir(additionalManpages, ".", func(path string, d fs.DirEntry, err error) error { //nolint:wrapcheck
 					if err != nil {
 						return err
@@ -45,11 +48,18 @@ func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 						return fmt.Errorf("could not open manpage %q: %w", path, err)
 					}
 
-					// Flatten to just filename and add it to the destination folder
-					destPath := filepath.Join(docsPath, filepath.Base(path))
+					// Flatten to just filename
+					filename := filepath.Base(path)
 
-					// Use os.OpenFile to fail if file exists
-					dst, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY, 0666)
+					// Check if filename has already been found in the fs.FS so files are not overwritten
+					if srcPath, ok := srcMap[filename]; ok {
+						return fmt.Errorf("duplicate filename %q from %q and %q", filename, path, srcPath)
+					}
+
+					srcMap[filename] = path
+
+					destPath := filepath.Join(docsPath, filename)
+					dst, err := os.Create(destPath)
 					if err != nil {
 						return fmt.Errorf("could not create file %q: %w", destPath, err)
 					}
