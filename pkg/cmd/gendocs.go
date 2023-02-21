@@ -64,8 +64,11 @@ func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 						return fmt.Errorf("could not create file %q: %w", destPath, err)
 					}
 
-					_, err = io.Copy(dst, src)
-					return fmt.Errorf("could not copy content to %q: %w", dst.Name(), err)
+					if _, err = io.Copy(dst, src); err != nil {
+						return fmt.Errorf("could not copy content to %q: %w", dst.Name(), err)
+					}
+
+					return nil
 				})
 			}
 
