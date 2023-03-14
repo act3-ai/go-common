@@ -23,10 +23,12 @@ func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			docsPath := args[0]
 
+			root := cmd.Root()
+			root.DisableAutoGenTag = true
 			if format == "md" {
-				return doc.GenMarkdownTree(cmd.Root(), docsPath) //nolint:wrapcheck
+				return doc.GenMarkdownTree(root, docsPath) //nolint:wrapcheck
 			} else if format == "man" {
-				err := doc.GenManTree(cmd.Root(), nil, docsPath)
+				err := doc.GenManTree(root, nil, docsPath)
 				if err != nil {
 					return err //nolint:wrapcheck
 				}
