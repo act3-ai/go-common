@@ -31,6 +31,10 @@ func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
 					return err //nolint:wrapcheck
 				}
 
+				if additionalManpages == nil {
+					return nil
+				}
+
 				// Map filename to src path
 				srcMap := map[string]string{}
 
