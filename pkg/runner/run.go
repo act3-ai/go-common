@@ -34,7 +34,7 @@ func Run(cmd *cobra.Command, verbosityEnvName string) error {
 
 	cobra.OnInitialize(func() {
 		// negative sign is necessary since zap has more important levels as higher values
-		conf.Level.SetLevel(-zapcore.Level(verbosity))
+		conf.Level.SetLevel(-zapcore.Level(verbosity - 1))
 	})
 
 	cmd.PersistentFlags().Int8VarP(&verbosity, "verbosity", "v", int8(config.EnvIntOr(verbosityEnvName, 0)),
