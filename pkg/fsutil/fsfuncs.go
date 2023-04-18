@@ -1,0 +1,99 @@
+package fsutil
+
+import (
+	"fmt"
+	"io/fs"
+	"os"
+	"sort"
+	"time"
+
+	"github.com/djherbis/atime"
+)
+
+// DirSize returns the size of a directory.
+func DirSize(fsys fs.FS) (int64, error) {
+	var size int64
+
+	// Check if the directory exists
+	if _, err := fs.Stat(fsys, "."); err != nil {
+		return 0, fmt.Errorf("error accessing directory: %w", err)
+	}
+
+	return size, fs.WalkDir(fsys, ".", func(path string, d os.DirEntry, err error) error { //nolint:wrapcheck
+		if err != nil {
+			return err
+		}
+		info, err := d.Info()
+		if err != nil {
+			return fmt.Errorf("error getting file info: %w", err)
+		}
+		if !d.IsDir() {
+			// file
+			size += info.Size()
+		}
+		return nil
+	})
+}
+
+// ReadDirSortedByAccessTime returns a sorted list of directory entries sorted by access time.
+func ReadDirSortedByAccessTime(fsys fs.FS, name string) ([]fs.FileInfo, error) {
+	entries, err := fs.ReadDir(fsys, name)
+	if err != nil {
+		return nil, fmt.Errorf("error reading dir: %w", err)
+	}
+	infos := make([]fs.FileInfo, 0, len(entries))
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			return nil, fmt.Errorf("error getting file info: %w", err)
+		}
+		infos = append(infos, info)
+	}
+
+	sort.Slice(infos, func(i, j int) bool {
+		return atime.Get(infos[i]).Before(atime.Get(infos[j]))
+	})
+	return infos, nil
+}
+
+// GetDirLastUpdate returns the last update time of a directory.
+func GetDirLastUpdate(fsys fs.FS) (time.Time, error) {
+	var lastTime time.Time
+
+	return lastTime, fs.WalkDir(fsys, ".", func(path string, d os.DirEntry, err error) error { //nolint:wrapcheck
+		if err != nil {
+			return err
+		}
+		info, err := d.Info()
+		if err != nil {
+			return fmt.Errorf("error getting file info: %w", err)
+		}
+		mtime := info.ModTime()
+		if mtime.After(lastTime) {
+			lastTime = mtime
+		}
+		return nil
+	})
+}
+
+// GetDirUpdatedPaths returns a list of paths that have been updated since the given time.
+func GetDirUpdatedPaths(fsys fs.FS, earliest time.Time) ([]string, error) {
+	var paths []string
+
+	return paths, fs.WalkDir(fsys, ".", func(path string, d os.DirEntry, err error) error { //nolint:wrapcheck
+		if err != nil {
+			return err
+		}
+		info, err := d.Info()
+		if err != nil {
+			return fmt.Errorf("error getting file info: %w", err)
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if info.ModTime().After(earliest) {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+}
