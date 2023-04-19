@@ -85,16 +85,16 @@ func getFSInfo(fsys fs.FS) (*fsInfo, error) {
 
 func compareFinfo(path string, a, b fs.FileInfo) error {
 	if a.Name() != b.Name() {
-		return fmt.Errorf("Names should be equal for path: %s", path)
+		return fmt.Errorf("Names should be equal for path: %s, a: %s, b: %s", path, a.Name(), b.Name())
 	}
 	if a.Size() != b.Size() {
-		return fmt.Errorf("Sizes should be equal for path: %s", path)
+		return fmt.Errorf("Sizes should be equal for path: %s, a: %d, b: %d", path, a.Size(), b.Size())
 	}
 	if a.Mode() != b.Mode() {
-		return fmt.Errorf("Modes should be equal for path: %s", path)
+		return fmt.Errorf("Modes should be equal for path: %s, a: %v, b: %v", path, a.Mode(), b.Mode())
 	}
 	if a.IsDir() != b.IsDir() {
-		return fmt.Errorf("IsDir should be equal for path: %s", path)
+		return fmt.Errorf("IsDir should be equal for path: %s, a: %v, b: %v", path, a.IsDir(), b.IsDir())
 	}
 	// TODO: above can all be equal but the content can be different
 	// Do we want to check the content?
