@@ -16,12 +16,12 @@ func TestNewFSUtilAndClose(t *testing.T) {
 	require.NoError(t, err, "NewFSUtil should not return an error")
 
 	// Check if the directory exists and is a directory
-	dirInfo, err := os.Stat(fs.RootDir())
+	dirInfo, err := os.Stat(fs.RootDir)
 	require.NoError(t, err, "RootDir should exist")
 	assert.True(t, dirInfo.IsDir(), "RootDir should be a directory")
 
 	// Create a test file in the root directory
-	testFilePath := filepath.Join(fs.RootDir(), "test.txt")
+	testFilePath := filepath.Join(fs.RootDir, "test.txt")
 	err = ioutil.WriteFile(testFilePath, []byte("test"), 0644)
 	require.NoError(t, err, "Creating a test file should not return an error")
 
@@ -30,7 +30,7 @@ func TestNewFSUtilAndClose(t *testing.T) {
 	require.NoError(t, err, "Close should not return an error")
 
 	// Check if the temporary directory was removed
-	_, err = os.Stat(fs.RootDir())
+	_, err = os.Stat(fs.RootDir)
 	assert.Error(t, err, "RootDir should not exist after Close")
 	assert.True(t, os.IsNotExist(err), "RootDir should be removed")
 
@@ -80,7 +80,7 @@ func TestAddFileWithData(t *testing.T) {
 				require.NoError(t, err, "AddFileWithData should not return an error")
 
 				// Check if the file exists and has the correct content
-				filePath := filepath.Join(fs.RootDir(), tc.path)
+				filePath := filepath.Join(fs.RootDir, tc.path)
 				fileContent, err := ioutil.ReadFile(filePath)
 				require.NoError(t, err, "File should be readable")
 				assert.Equal(t, tc.data, fileContent, "File content should match the provided data")
@@ -133,7 +133,7 @@ func TestAddFileOfSize(t *testing.T) {
 				require.NoError(t, err, "AddFileOfSize should not return an error")
 
 				// Check if the file exists and has the correct size
-				filePath := filepath.Join(fs.RootDir(), tc.path)
+				filePath := filepath.Join(fs.RootDir, tc.path)
 				fileInfo, err := os.Stat(filePath)
 				require.NoError(t, err, "File should be stat-able")
 				assert.Equal(t, tc.size, fileInfo.Size(), "File size should match the provided size")
@@ -186,7 +186,7 @@ func TestAddFileOfSizeDeterministic(t *testing.T) {
 				require.NoError(t, err, "AddFileOfSizeDeterministic should not return an error")
 
 				// Check if the file exists and has the correct size
-				filePath := filepath.Join(fs.RootDir(), tc.path)
+				filePath := filepath.Join(fs.RootDir, tc.path)
 				fileInfo, err := os.Stat(filePath)
 				require.NoError(t, err, "File should be stat-able")
 				assert.Equal(t, tc.size, fileInfo.Size(), "File size should match the provided size")
