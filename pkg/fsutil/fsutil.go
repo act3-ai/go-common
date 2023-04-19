@@ -109,7 +109,7 @@ func (f *FSUtil) createPathAndFile(path string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.MkdirAll(filepath.Dir(fPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(fPath), 0775); err != nil {
 		return nil, fmt.Errorf("failed to create dir %s: %w", fPath, err)
 	}
 	file, err := os.Create(fPath)
