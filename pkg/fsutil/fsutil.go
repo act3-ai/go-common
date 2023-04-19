@@ -37,6 +37,7 @@ func (f *FSUtil) Close() error {
 }
 
 // AddFileWithData creates a file with the given data.
+// fPath is required to be a relative path.
 func (f *FSUtil) AddFileWithData(fPath string, data []byte) error {
 	file, err := f.createPathAndFile(fPath)
 	if err != nil {
@@ -52,6 +53,7 @@ func (f *FSUtil) AddFileWithData(fPath string, data []byte) error {
 }
 
 // AddFileOfSize creates a file with the given size, filled with random data.
+// fPath is required to be a relative path.
 func (f *FSUtil) AddFileOfSize(fPath string, size int64) error {
 	// TODO: int64 may not be large enough for large files
 
@@ -72,6 +74,7 @@ func (f *FSUtil) AddFileOfSize(fPath string, size int64) error {
 }
 
 // AddFileOfSizeDeterministic creates a file with the given size, filled with deterministic data.
+// fPath is required to be a relative path.
 func (f *FSUtil) AddFileOfSizeDeterministic(fPath string, size int64) error {
 	// TODO: int64 may not be large enough for large files
 
