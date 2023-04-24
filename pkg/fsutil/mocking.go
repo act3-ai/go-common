@@ -8,35 +8,35 @@ import (
 	"time"
 )
 
-type errorDirEntry struct {
+type errorDirEntry struct { //nolint: unused
 	fs.DirEntry
 }
 
-func (e *errorDirEntry) Info() (fs.FileInfo, error) {
+func (e *errorDirEntry) Info() (fs.FileInfo, error) { //nolint: unused
 	return nil, errors.New("Info error")
 }
 
-type errorFile struct {
+type errorFile struct { //nolint: unused
 	fs.File
 }
 
-func (ef *errorFile) Stat() (fs.FileInfo, error) {
+func (ef *errorFile) Stat() (fs.FileInfo, error) { //nolint: unused
 	return nil, fmt.Errorf("simulated error")
 }
 
-type customFS struct {
+type customFS struct { //nolint: unused
 	fs.FS
 	files map[string]customFileInfo
 }
 
-func newCustomFS(fs fs.FS, files map[string]customFileInfo) *customFS {
+func newCustomFS(fs fs.FS, files map[string]customFileInfo) *customFS { //nolint: unused
 	return &customFS{fs, files}
 }
 
-func (cfs *customFS) Open(name string) (fs.File, error) {
+func (cfs *customFS) Open(name string) (fs.File, error) { //nolint: unused
 	file, err := cfs.FS.Open(name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 
 	if info, ok := cfs.files[name]; ok {
@@ -46,25 +46,25 @@ func (cfs *customFS) Open(name string) (fs.File, error) {
 	return file, nil
 }
 
-type customFile struct {
+type customFile struct { //nolint: unused
 	fs.File
 	info customFileInfo
 }
 
-func (cf *customFile) Stat() (fs.FileInfo, error) {
+func (cf *customFile) Stat() (fs.FileInfo, error) { //nolint: unused
 	return cf.info.finfo, nil
 }
 
-type customFileInfo struct {
+type customFileInfo struct { //nolint: unused
 	finfo fs.FileInfo
 	atime time.Time
 }
 
-func newCustomFileInfo(finfo fs.FileInfo, atime time.Time) customFileInfo {
+func newCustomFileInfo(finfo fs.FileInfo, atime time.Time) customFileInfo { //nolint: unused
 	return customFileInfo{finfo, atime}
 }
 
-func (cfi *customFileInfo) Sys() any {
+func (cfi *customFileInfo) Sys() any { //nolint: unused
 	stat := &syscall.Stat_t{
 		Atim: syscall.Timespec{
 			Sec:  cfi.atime.Unix(),
@@ -74,20 +74,20 @@ func (cfi *customFileInfo) Sys() any {
 	return stat
 }
 
-type errorFS struct {
+type errorFS struct { //nolint: unused
 	fs.FS
 	triggerInfoError bool
 	triggerRootError bool
 }
 
-func newErrorFS(fs fs.FS, triggerInfoError bool, triggerRootError bool) *errorFS {
+func newErrorFS(fs fs.FS, triggerInfoError bool, triggerRootError bool) *errorFS { //nolint: unused
 	return &errorFS{fs, triggerInfoError, triggerRootError}
 }
 
-func (efs *errorFS) ReadDir(name string) ([]fs.DirEntry, error) {
+func (efs *errorFS) ReadDir(name string) ([]fs.DirEntry, error) { //nolint: unused
 	entries, err := fs.ReadDir(efs.FS, name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read dir: %w", err)
 	}
 
 	if efs.triggerInfoError {
@@ -103,14 +103,14 @@ func (efs *errorFS) ReadDir(name string) ([]fs.DirEntry, error) {
 }
 
 // Open opens the named file. implements fs.FS
-func (efs *errorFS) Open(name string) (fs.File, error) { // go-golangci-lint
+func (efs *errorFS) Open(name string) (fs.File, error) { //nolint: unused
 	if efs.triggerRootError && name == "." {
 		return nil, fmt.Errorf("simulated error")
 	}
 
 	file, err := efs.FS.Open(name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 
 	if name == "error.txt" {
