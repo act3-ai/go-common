@@ -1,10 +1,12 @@
 package fsutil
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
-	"os"
+	"syscall"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/djherbis/atime"
@@ -12,278 +14,447 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestDirSize tests the DirSize function with different test cases.
-func TestDirSize(t *testing.T) {
-	t.Run("empty directory", func(t *testing.T) {
-		tmpDir, err := os.MkdirTemp("", "test-empty-dir")
-		require.NoError(t, err)
-		defer os.RemoveAll(tmpDir)
-
-		fsys := os.DirFS(tmpDir)
-
-		size, err := DirSize(fsys)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(0), size)
-	})
-
-	t.Run("single file", func(t *testing.T) {
-		tmpDir, err := os.MkdirTemp("", "test-single-file")
-		require.NoError(t, err)
-		defer os.RemoveAll(tmpDir)
-
-		err = os.WriteFile(fmt.Sprintf("%s/file.txt", tmpDir), []byte("content"), 0644)
-		require.NoError(t, err)
-
-		fsys := os.DirFS(tmpDir)
-
-		size, err := DirSize(fsys)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(len("content")), size)
-	})
-
-	t.Run("nested directories", func(t *testing.T) {
-		tmpDir, err := os.MkdirTemp("", "test-nested-dir")
-		require.NoError(t, err)
-		defer os.RemoveAll(tmpDir)
-
-		err = os.WriteFile(fmt.Sprintf("%s/file1.txt", tmpDir), []byte("content1"), 0644)
-		require.NoError(t, err)
-		err = os.MkdirAll(fmt.Sprintf("%s/subdir", tmpDir), 0755)
-		require.NoError(t, err)
-		err = os.WriteFile(fmt.Sprintf("%s/subdir/file2.txt", tmpDir), []byte("content2"), 0644)
-		require.NoError(t, err)
-
-		fsys := os.DirFS(tmpDir)
-
-		size, err := DirSize(fsys)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(len("content1")+len("content2")), size)
-	})
-
-	t.Run("error on non-existent directory", func(t *testing.T) {
-		fsys := os.DirFS("non-existent")
-
-		size, err := DirSize(fsys)
-		assert.Error(t, err)
-		assert.Equal(t, int64(0), size)
-	})
-}
-
-// TestGetDirLastUpdate tests the GetDirLastUpdate function with different test cases.
-func TestGetDirLastUpdate(t *testing.T) {
+func TestEqualFilesystem(t *testing.T) {
 	testCases := []struct {
-		name      string
-		setupFunc func(t *testing.T) (fs.FS, func())
-		wantErr   bool
+		name        string
+		fsA         fstest.MapFS
+		fsB         fstest.MapFS
+		shouldError bool
 	}{
 		{
-			name: "empty directory",
-			setupFunc: func(t *testing.T) (fs.FS, func()) {
-				tmpDir, err := os.MkdirTemp("", "test-empty-dir")
-				require.NoError(t, err)
-
-				return os.DirFS(tmpDir), func() { os.RemoveAll(tmpDir) }
-			},
-			wantErr: false,
+			name:        "Empty filesystems",
+			fsA:         fstest.MapFS{},
+			fsB:         fstest.MapFS{},
+			shouldError: false,
 		},
 		{
-			name: "single file",
-			setupFunc: func(t *testing.T) (fs.FS, func()) {
-				tmpDir, err := os.MkdirTemp("", "test-single-file")
-				require.NoError(t, err)
-
-				err = os.WriteFile(fmt.Sprintf("%s/file.txt", tmpDir), []byte("content"), 0644)
-				require.NoError(t, err)
-
-				return os.DirFS(tmpDir), func() { os.RemoveAll(tmpDir) }
+			name: "Identical filesystems",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content")},
 			},
-			wantErr: false,
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content")},
+			},
+			shouldError: false,
 		},
 		{
-			name: "nested directories",
-			setupFunc: func(t *testing.T) (fs.FS, func()) {
-				tmpDir, err := os.MkdirTemp("", "test-nested-dir")
-				require.NoError(t, err)
-
-				err = os.WriteFile(fmt.Sprintf("%s/file1.txt", tmpDir), []byte("content1"), 0644)
-				require.NoError(t, err)
-				err = os.MkdirAll(fmt.Sprintf("%s/subdir", tmpDir), 0755)
-				require.NoError(t, err)
-				err = os.WriteFile(fmt.Sprintf("%s/subdir/file2.txt", tmpDir), []byte("content2"), 0644)
-				require.NoError(t, err)
-
-				return os.DirFS(tmpDir), func() { os.RemoveAll(tmpDir) }
+			name: "Different filesystems",
+			fsA: fstest.MapFS{
+				"fileA.txt": &fstest.MapFile{Data: []byte("File A content")},
 			},
-			wantErr: false,
+			fsB: fstest.MapFS{
+				"fileB.txt": &fstest.MapFile{Data: []byte("File B content")},
+			},
+			shouldError: true,
 		},
 		{
-			name: "non-existent directory",
-			setupFunc: func(t *testing.T) (fs.FS, func()) {
-				return os.DirFS("non-existent"), func() {}
+			name: "Filesystem with Info() error",
+			fsA: fstest.MapFS{
+				"file.txt":       &fstest.MapFile{Data: []byte("File content")},
+				"error_info.txt": &fstest.MapFile{Data: []byte("Error content")},
 			},
-			wantErr: true,
+			fsB: fstest.MapFS{
+				"file.txt":       &fstest.MapFile{Data: []byte("File content")},
+				"error_info.txt": &fstest.MapFile{Data: []byte("Error content")},
+			},
+			shouldError: true,
+		},
+		{
+			name: "Mismatched names",
+			fsA: fstest.MapFS{
+				"file_a.txt": &fstest.MapFile{Data: []byte("hello")},
+			},
+			fsB: fstest.MapFS{
+				"file_b.txt": &fstest.MapFile{Data: []byte("hello")},
+			},
+			shouldError: true,
+		},
+		{
+			name: "Mismatched sizes",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("hello")},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("hello world")},
+			},
+			shouldError: true,
+		},
+		{
+			name: "Mismatched modes",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("content"), Mode: 0600},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("content"), Mode: 0644},
+			},
+			shouldError: true,
+		},
+		{
+			name: "Mismatched directory status",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("content")},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("content"), Mode: fs.ModeDir},
+			},
+			shouldError: true,
+		},
+		{
+			name: "Directory missing in fsB",
+			fsA: fstest.MapFS{
+				"dir_a": &fstest.MapFile{Mode: fs.ModeDir},
+			},
+			fsB:         fstest.MapFS{}, // Empty MapFS
+			shouldError: true,
+		},
+		{
+			name: "Mismatched directory names",
+			fsA: fstest.MapFS{
+				"dir_a": &fstest.MapFile{Mode: fs.ModeDir},
+			},
+			fsB: fstest.MapFS{
+				"dir_b": &fstest.MapFile{Mode: fs.ModeDir},
+			},
+			shouldError: true,
+		},
+		{
+			name: "Mismatched directory modes",
+			fsA: fstest.MapFS{
+				"dir": &fstest.MapFile{Mode: fs.ModeDir | 0755},
+			},
+			fsB: fstest.MapFS{
+				"dir": &fstest.MapFile{Mode: fs.ModeDir | 0700},
+			},
+			shouldError: true,
+		},
+		{
+			name: "Mismatched directory status",
+			fsA: fstest.MapFS{
+				"dir": &fstest.MapFile{Mode: fs.ModeDir},
+			},
+			fsB: fstest.MapFS{
+				"dir": &fstest.MapFile{Data: []byte("content")}, // Not a directory
+			},
+			shouldError: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fsys, cleanup := tc.setupFunc(t)
-			defer cleanup()
+			fsA := &errorFS{FS: tc.fsA, triggerInfoError: tc.shouldError}
+			fsB := &errorFS{FS: tc.fsB, triggerInfoError: tc.shouldError}
+			err := EqualFilesystem(fsA, fsB)
 
-			lastUpdate, err := GetDirLastUpdate(fsys)
-
-			if tc.wantErr {
+			if tc.shouldError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.True(t, !lastUpdate.IsZero(), "lastUpdate should not be zero")
 			}
 		})
 	}
 }
 
-// TestReadDirSortedByAccessTime tests the ReadDirSortedByAccessTime function with different test cases.
-func TestReadDirSortedByAccessTime(t *testing.T) {
+func TestDirSize(t *testing.T) {
 	testCases := []struct {
-		name      string
-		setupFunc func(t *testing.T) (fs.FS, string, func())
-		wantErr   bool
+		name          string
+		fsys          fs.FS
+		expectedSize  int64
+		expectedError error
 	}{
 		{
-			name: "empty directory",
-			setupFunc: func(t *testing.T) (fs.FS, string, func()) {
-				tmpDir, err := os.MkdirTemp("", "test-empty-dir")
-				require.NoError(t, err)
-
-				return os.DirFS(tmpDir), ".", func() { os.RemoveAll(tmpDir) }
+			name: "normal",
+			fsys: fstest.MapFS{
+				"file1.txt": &fstest.MapFile{Data: []byte("12345")},
+				"file2.txt": &fstest.MapFile{Data: []byte("67890")},
 			},
-			wantErr: false,
+			expectedSize:  10,
+			expectedError: nil,
 		},
 		{
-			name: "single file",
-			setupFunc: func(t *testing.T) (fs.FS, string, func()) {
-				tmpDir, err := os.MkdirTemp("", "test-single-file")
-				require.NoError(t, err)
-
-				err = os.WriteFile(fmt.Sprintf("%s/file.txt", tmpDir), []byte("content"), 0644)
-				require.NoError(t, err)
-
-				return os.DirFS(tmpDir), ".", func() { os.RemoveAll(tmpDir) }
-			},
-			wantErr: false,
+			name: "error_accessing_directory",
+			fsys: newErrorFS(fstest.MapFS{
+				"file1.txt": &fstest.MapFile{Data: []byte("12345")},
+				"file2.txt": &fstest.MapFile{Data: []byte("67890")},
+			}, false, true),
+			expectedSize:  0,
+			expectedError: fmt.Errorf("error accessing directory: %w", errors.New("simulated error")),
 		},
 		{
-			name: "nested directories",
-			setupFunc: func(t *testing.T) (fs.FS, string, func()) {
-				tmpDir, err := os.MkdirTemp("", "test-nested-dir")
-				require.NoError(t, err)
-
-				err = os.WriteFile(fmt.Sprintf("%s/file1.txt", tmpDir), []byte("content1"), 0644)
-				require.NoError(t, err)
-				time.Sleep(500 * time.Millisecond) // Add sleep to ensure access time difference
-				err = os.MkdirAll(fmt.Sprintf("%s/subdir", tmpDir), 0755)
-				require.NoError(t, err)
-				err = os.WriteFile(fmt.Sprintf("%s/subdir/file2.txt", tmpDir), []byte("content2"), 0644)
-				require.NoError(t, err)
-
-				return os.DirFS(tmpDir), ".", func() { os.RemoveAll(tmpDir) }
-			},
-			wantErr: false,
-		},
-		{
-			name: "non-existent directory",
-			setupFunc: func(t *testing.T) (fs.FS, string, func()) {
-				return os.DirFS("non-existent"), ".", func() {}
-			},
-			wantErr: true,
+			name: "error_getting_file_info",
+			fsys: newErrorFS(fstest.MapFS{
+				"file1.txt":      &fstest.MapFile{Data: []byte("12345")},
+				"error_info.txt": &fstest.MapFile{Data: []byte("67890")},
+			}, true, false),
+			expectedSize:  0,
+			expectedError: fmt.Errorf("error getting file info: %w", errors.New("Info error")),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fsys, dir, cleanup := tc.setupFunc(t)
-			defer cleanup()
+			size, err := DirSize(tc.fsys)
 
-			infos, err := ReadDirSortedByAccessTime(fsys, dir)
-
-			if tc.wantErr {
-				assert.Error(t, err)
+			if tc.expectedError != nil {
+				assert.EqualError(t, err, tc.expectedError.Error())
 			} else {
 				assert.NoError(t, err)
-				if len(infos) > 1 {
-					for i := 1; i < len(infos); i++ {
-						assert.True(t, atime.Get(infos[i-1]).Before(atime.Get(infos[i])), "entries should be sorted by access time")
-					}
+				assert.Equal(t, tc.expectedSize, size)
+			}
+		})
+	}
+}
+
+func TestReadDirSortedByAccessTime(t *testing.T) {
+	// Define test cases
+	testCases := []struct {
+		name        string
+		setupFS     func() fs.FS
+		path        string
+		expectedErr error
+	}{
+		{
+			name: "normal",
+			setupFS: func() fs.FS {
+				fileA := &fstest.MapFile{
+					Data:    []byte("file A content"),
+					Mode:    0644,
+					ModTime: time.Now(),
+					Sys: func() interface{} {
+						return &syscall.Stat_t{
+							Atim: syscall.Timespec{Sec: time.Now().Unix(), Nsec: int64(time.Now().Nanosecond())},
+						}
+					}(),
+				}
+				fileB := &fstest.MapFile{
+					Data:    []byte("file B content"),
+					Mode:    0644,
+					ModTime: time.Now(),
+					Sys: func() interface{} {
+						return &syscall.Stat_t{
+							Atim: syscall.Timespec{Sec: time.Now().Add(-time.Hour).Unix(), Nsec: int64(time.Now().Add(-time.Hour).Nanosecond())},
+						}
+					}(),
+				}
+				return fstest.MapFS{
+					"fileA.txt": fileA,
+					"fileB.txt": fileB,
+				}
+			},
+			path:        ".",
+			expectedErr: nil,
+		},
+		{
+			name: "error_getting_file_info",
+			setupFS: func() fs.FS {
+				fileA := &fstest.MapFile{
+					Data:    []byte("file A content"),
+					Mode:    0644,
+					ModTime: time.Now(),
+					Sys: func() interface{} {
+						return &syscall.Stat_t{
+							Atim: syscall.Timespec{Sec: time.Now().Unix(), Nsec: int64(time.Now().Nanosecond())},
+						}
+					}(),
+				}
+				fileB := &fstest.MapFile{
+					Data:    []byte("file B content"),
+					Mode:    0644,
+					ModTime: time.Now(),
+					Sys: func() interface{} {
+						return &syscall.Stat_t{
+							Atim: syscall.Timespec{Sec: time.Now().Add(-time.Hour).Unix(), Nsec: int64(time.Now().Add(-time.Hour).Nanosecond())},
+						}
+					}(),
+				}
+				mapFS := fstest.MapFS{
+					"fileA.txt": fileA,
+					"fileB.txt": fileB,
+					"error_info.txt": &fstest.MapFile{
+						Data: []byte("error info content"),
+						Mode: 0644,
+					},
+				}
+				return newErrorFS(mapFS, true, false)
+			},
+			path:        ".",
+			expectedErr: fmt.Errorf("error getting file info: %w", errors.New("Info error")),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fsys := tc.setupFS()
+
+			infos, err := ReadDirSortedByAccessTime(fsys, tc.path)
+
+			if tc.expectedErr != nil {
+				require.Error(t, err)
+				assert.Equal(t, tc.expectedErr.Error(), err.Error())
+			} else {
+				require.NoError(t, err)
+
+				// Check if the files are sorted by access time
+				for i := 0; i < len(infos)-1; i++ {
+					assert.True(t, atime.Get(infos[i]).Before(atime.Get(infos[i+1])))
 				}
 			}
 		})
 	}
 }
 
-func TestGetDirUpdatedPaths(t *testing.T) {
+func TestGetDirLastUpdate(t *testing.T) {
+	// Define test cases
 	testCases := []struct {
-		name      string
-		setupFunc func(t *testing.T) (fs.FS, time.Time, func())
-		wantErr   bool
-		wantCount int
+		name        string
+		setupFS     func() fs.FS
+		expectedErr error
 	}{
 		{
-			name: "empty directory",
-			setupFunc: func(t *testing.T) (fs.FS, time.Time, func()) {
-				tmpDir, err := os.MkdirTemp("", "test-empty-dir")
-				require.NoError(t, err)
-
-				return os.DirFS(tmpDir), time.Now().Add(-time.Hour), func() { os.RemoveAll(tmpDir) }
+			name: "normal",
+			setupFS: func() fs.FS {
+				now := time.Now()
+				fileA := &fstest.MapFile{
+					Data:    []byte("file A content"),
+					Mode:    0644,
+					ModTime: now.Add(-time.Hour),
+				}
+				fileB := &fstest.MapFile{
+					Data:    []byte("file B content"),
+					Mode:    0644,
+					ModTime: now,
+				}
+				return fstest.MapFS{
+					"fileA.txt": fileA,
+					"fileB.txt": fileB,
+				}
 			},
-			wantErr:   false,
-			wantCount: 0,
+			expectedErr: nil,
 		},
 		{
-			name: "single file",
-			setupFunc: func(t *testing.T) (fs.FS, time.Time, func()) {
-				tmpDir, err := os.MkdirTemp("", "test-single-file")
-				require.NoError(t, err)
-
-				err = os.WriteFile(fmt.Sprintf("%s/file.txt", tmpDir), []byte("content"), 0644)
-				require.NoError(t, err)
-
-				return os.DirFS(tmpDir), time.Now().Add(-time.Hour), func() { os.RemoveAll(tmpDir) }
+			name: "error_getting_file_info",
+			setupFS: func() fs.FS {
+				now := time.Now()
+				fileA := &fstest.MapFile{
+					Data:    []byte("file A content"),
+					Mode:    0644,
+					ModTime: now.Add(-time.Hour),
+				}
+				fileB := &fstest.MapFile{
+					Data:    []byte("file B content"),
+					Mode:    0644,
+					ModTime: now,
+				}
+				mapFS := fstest.MapFS{
+					"fileA.txt": fileA,
+					"fileB.txt": fileB,
+					"error_info.txt": &fstest.MapFile{
+						Data: []byte("error info content"),
+						Mode: 0644,
+					},
+				}
+				return newErrorFS(mapFS, true, false)
 			},
-			wantErr:   false,
-			wantCount: 1,
-		},
-		{
-			name: "multiple files with varying modification times",
-			setupFunc: func(t *testing.T) (fs.FS, time.Time, func()) {
-				tmpDir, err := os.MkdirTemp("", "test-multi-file")
-				require.NoError(t, err)
-
-				err = os.WriteFile(fmt.Sprintf("%s/file1.txt", tmpDir), []byte("content1"), 0644)
-				require.NoError(t, err)
-				time.Sleep(500 * time.Millisecond)
-				err = os.WriteFile(fmt.Sprintf("%s/file2.txt", tmpDir), []byte("content2"), 0644)
-				require.NoError(t, err)
-				earliest := time.Now().Add(-(250 * time.Millisecond))
-
-				return os.DirFS(tmpDir), earliest, func() { os.RemoveAll(tmpDir) }
-			},
-			wantErr:   false,
-			wantCount: 1,
+			expectedErr: fmt.Errorf("error getting file info: %w", errors.New("Info error")),
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fsys, earliest, cleanup := tc.setupFunc(t)
-			defer cleanup()
+			fsys := tc.setupFS()
 
-			paths, err := GetDirUpdatedPaths(fsys, earliest)
+			lastUpdate, err := GetDirLastUpdate(fsys)
 
-			if tc.wantErr {
-				assert.Error(t, err)
+			if tc.expectedErr != nil {
+				require.Error(t, err)
+				assert.Equal(t, tc.expectedErr.Error(), err.Error())
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tc.wantCount, len(paths), "unexpected number of updated paths")
+				require.NoError(t, err)
+
+				fileBInfo, err := fsys.Open("fileB.txt")
+				require.NoError(t, err)
+				fileBStat, err := fileBInfo.Stat()
+				require.NoError(t, err)
+
+				assert.Equal(t, fileBStat.ModTime(), lastUpdate)
+			}
+		})
+	}
+}
+
+func TestGetDirUpdatedPaths(t *testing.T) {
+	// Define test cases
+	testCases := []struct {
+		name        string
+		setupFS     func() fs.FS
+		earliest    time.Time
+		expected    []string
+		expectedErr error
+	}{
+		{
+			name: "normal",
+			setupFS: func() fs.FS {
+				now := time.Now()
+				fileA := &fstest.MapFile{
+					Data:    []byte("file A content"),
+					Mode:    0644,
+					ModTime: now.Add(-2 * time.Hour),
+				}
+				fileB := &fstest.MapFile{
+					Data:    []byte("file B content"),
+					Mode:    0644,
+					ModTime: now.Add(-time.Hour),
+				}
+				return fstest.MapFS{
+					"fileA.txt": fileA,
+					"fileB.txt": fileB,
+				}
+			},
+			earliest: time.Now().Add(-90 * time.Minute),
+			expected: []string{"fileB.txt"},
+		},
+		{
+			name: "error_getting_file_info",
+			setupFS: func() fs.FS {
+				now := time.Now()
+				fileA := &fstest.MapFile{
+					Data:    []byte("file A content"),
+					Mode:    0644,
+					ModTime: now.Add(-2 * time.Hour),
+				}
+				fileB := &fstest.MapFile{
+					Data:    []byte("file B content"),
+					Mode:    0644,
+					ModTime: now.Add(-time.Hour),
+				}
+				mapFS := fstest.MapFS{
+					"fileA.txt": fileA,
+					"fileB.txt": fileB,
+					"error_info.txt": &fstest.MapFile{
+						Data: []byte("error info content"),
+						Mode: 0644,
+					},
+				}
+				return newErrorFS(mapFS, true, false)
+			},
+			earliest:    time.Now().Add(-90 * time.Minute),
+			expectedErr: fmt.Errorf("error getting file info: %w", errors.New("Info error")),
+		},
+	}
+
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fsys := tc.setupFS()
+
+			updatedPaths, err := GetDirUpdatedPaths(fsys, tc.earliest)
+
+			if tc.expectedErr != nil {
+				require.Error(t, err)
+				assert.Equal(t, tc.expectedErr.Error(), err.Error())
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expected, updatedPaths)
 			}
 		})
 	}
