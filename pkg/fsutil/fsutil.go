@@ -36,6 +36,19 @@ func (f *FSUtil) Close() error {
 	return nil
 }
 
+// AddDir creates a directory.
+// fPath is required to be a relative path.
+func (f *FSUtil) AddDir(fPath string) error {
+	fPath, err := f.joinRelative(fPath)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(fPath, 0775); err != nil {
+		return fmt.Errorf("failed to create dir %s: %w", fPath, err)
+	}
+	return nil
+}
+
 // AddFileWithData creates a file with the given data.
 // fPath is required to be a relative path.
 func (f *FSUtil) AddFileWithData(fPath string, data []byte) error {

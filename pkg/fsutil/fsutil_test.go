@@ -142,6 +142,54 @@ func TestAddFileOfSize(t *testing.T) {
 	}
 }
 
+func TestAddDir(t *testing.T) {
+	testCases := []struct {
+		name   string
+		path   string
+		errMsg string
+	}{
+		{
+			name: "Valid relative path",
+			path: "random",
+		},
+		{
+			name: "Nested relative path",
+			path: "nested/random",
+		},
+		{
+			name: "Empty",
+			path: "",
+		},
+		{
+			name:   "Invalid absolute path",
+			path:   "/invalid/random",
+			errMsg: "path /invalid/random is absolute. All FSUtil paths are relative",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fs, err := NewFSUtil("test")
+			require.NoError(t, err, "NewFSUtil should not return an error")
+			defer fs.Close()
+
+			err = fs.AddDir(tc.path)
+			if tc.errMsg != "" {
+				require.Error(t, err, "AddDir should return an error for invalid input")
+				assert.EqualError(t, err, tc.errMsg)
+			} else {
+				require.NoError(t, err, "AddDir should not return an error")
+
+				// Check if the file exists and has the correct size
+				dirPath := filepath.Join(fs.RootDir, tc.path)
+				dirInfo, err := os.Stat(dirPath)
+				require.NoError(t, err, "File should be stat-able")
+				assert.True(t, dirInfo.IsDir(), "File should be a directory")
+			}
+		})
+	}
+}
+
 func TestAddFileOfSizeDeterministic(t *testing.T) {
 	testCases := []struct {
 		name   string
