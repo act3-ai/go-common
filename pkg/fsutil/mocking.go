@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"syscall"
-	"time"
 )
 
 type errorDirEntry struct { //nolint: unused
@@ -22,56 +20,6 @@ type errorFile struct { //nolint: unused
 
 func (ef *errorFile) Stat() (fs.FileInfo, error) { //nolint: unused
 	return nil, fmt.Errorf("simulated error")
-}
-
-type customFS struct { //nolint: unused
-	fs.FS
-	files map[string]customFileInfo
-}
-
-func newCustomFS(fs fs.FS, files map[string]customFileInfo) *customFS { //nolint: unused
-	return &customFS{fs, files}
-}
-
-func (cfs *customFS) Open(name string) (fs.File, error) { //nolint: unused
-	file, err := cfs.FS.Open(name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
-	}
-
-	if info, ok := cfs.files[name]; ok {
-		return &customFile{file, info}, nil
-	}
-
-	return file, nil
-}
-
-type customFile struct { //nolint: unused
-	fs.File
-	info customFileInfo
-}
-
-func (cf *customFile) Stat() (fs.FileInfo, error) { //nolint: unused
-	return cf.info.finfo, nil
-}
-
-type customFileInfo struct { //nolint: unused
-	finfo fs.FileInfo
-	atime time.Time
-}
-
-func newCustomFileInfo(finfo fs.FileInfo, atime time.Time) customFileInfo { //nolint: unused
-	return customFileInfo{finfo, atime}
-}
-
-func (cfi *customFileInfo) Sys() any { //nolint: unused
-	stat := &syscall.Stat_t{
-		Atim: syscall.Timespec{
-			Sec:  cfi.atime.Unix(),
-			Nsec: int64(cfi.atime.Nanosecond()),
-		},
-	}
-	return stat
 }
 
 type errorFS struct { //nolint: unused
