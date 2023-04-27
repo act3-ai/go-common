@@ -154,6 +154,124 @@ func TestEqualFilesystem(t *testing.T) {
 	}
 }
 
+func TestDiffFS(t *testing.T) {
+	testCases := []struct {
+		name        string
+		fsA         fstest.MapFS
+		fsB         fstest.MapFS
+		expectedLen int
+	}{
+		{
+			name:        "Empty filesystems",
+			fsA:         fstest.MapFS{},
+			fsB:         fstest.MapFS{},
+			expectedLen: 0,
+		},
+		{
+			name: "Identical filesystems",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content")},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content")},
+			},
+			expectedLen: 0,
+		},
+		{
+			name: "Different filesystems",
+			fsA: fstest.MapFS{
+				"fileA.txt": &fstest.MapFile{Data: []byte("File A content")},
+			},
+			fsB: fstest.MapFS{
+				"fileB.txt": &fstest.MapFile{Data: []byte("File B content")},
+			},
+			expectedLen: 1,
+		},
+		{
+			name: "Mismatched names",
+			fsA: fstest.MapFS{
+				"file_a.txt": &fstest.MapFile{Data: []byte("hello")},
+			},
+			fsB: fstest.MapFS{
+				"file_b.txt": &fstest.MapFile{Data: []byte("hello")},
+			},
+			expectedLen: 1,
+		},
+		{
+			name: "Mismatched sizes",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("hello")},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("hello world")},
+			},
+			expectedLen: 1,
+		},
+		{
+			name: "Mismatched modes",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("content"), Mode: 0600},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("content"), Mode: 0644},
+			},
+			expectedLen: 1,
+		},
+		{
+			name: "Directory missing in fsB",
+			fsA: fstest.MapFS{
+				"dir_a": &fstest.MapFile{Mode: fs.ModeDir},
+			},
+			fsB:         fstest.MapFS{}, // Empty MapFS
+			expectedLen: 1,
+		},
+		{
+			name: "Mismatched directory names",
+			fsA: fstest.MapFS{
+				"dir_a": &fstest.MapFile{Mode: fs.ModeDir},
+			},
+			fsB: fstest.MapFS{
+				"dir_b": &fstest.MapFile{Mode: fs.ModeDir},
+			},
+			expectedLen: 1,
+		},
+		{
+			name: "Mismatched directory modes",
+			fsA: fstest.MapFS{
+				"dir": &fstest.MapFile{Mode: fs.ModeDir | 0755},
+			},
+			fsB:         fstest.MapFS{"dir": &fstest.MapFile{Mode: fs.ModeDir | 0700}},
+			expectedLen: 1,
+		},
+		{
+			name: "Mismatched directory status",
+			fsA: fstest.MapFS{
+				"dir": &fstest.MapFile{Mode: fs.ModeDir},
+			},
+			fsB: fstest.MapFS{
+				"dir": &fstest.MapFile{Data: []byte("content")}, // Not a directory
+			},
+			expectedLen: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fsA := tc.fsA
+			fsB := tc.fsB
+			diffs, err := DiffFS(fsA, fsB)
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if len(diffs) != tc.expectedLen {
+				t.Errorf("Expected %d diffs, got %d", tc.expectedLen, len(diffs))
+			}
+		})
+	}
+}
+
 func TestDirSize(t *testing.T) {
 	testCases := []struct {
 		name          string

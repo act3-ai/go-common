@@ -42,6 +42,46 @@ func EqualFilesystem(fsA, fsB fs.FS) error {
 	return nil
 }
 
+// DiffFS returns the differences between two filesystems. (A-B)
+func DiffFS(fsA, fsB fs.FS) ([]fs.FileInfo, error) {
+	fsInfoA, err := getFSInfo(fsA)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get fsInfo for fsA: %w", err)
+	}
+	fsInfoB, err := getFSInfo(fsB)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get fsInfo for fsB: %w", err)
+	}
+
+	var diffs []fs.FileInfo
+
+	for path, infoA := range fsInfoA.files {
+		infoB, ok := fsInfoB.files[path]
+		// if fileA not in fsB, add to diffs
+		if !ok {
+			diffs = append(diffs, infoA)
+			continue
+		}
+		// if fileA in fsB but not equal, add to diffs
+		if err := compareFinfo(path, infoA, infoB); err != nil {
+			diffs = append(diffs, infoA)
+		}
+	}
+
+	for path, infoA := range fsInfoA.dirs {
+		infoB, ok := fsInfoB.dirs[path]
+		if !ok {
+			diffs = append(diffs, infoA)
+			continue
+		}
+		if err := compareFinfo(path, infoA, infoB); err != nil {
+			diffs = append(diffs, infoA)
+		}
+	}
+	return diffs, nil
+
+}
+
 type fsInfo struct {
 	files map[string]os.FileInfo
 	dirs  map[string]os.FileInfo
