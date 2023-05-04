@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"runtime"
 	"sort"
 	"time"
 
@@ -13,24 +14,48 @@ import (
 // DirSize returns the size of a directory.
 func DirSize(fsys fs.FS) (int64, error) {
 	var size int64
-
-	// Check if the directory exists
-	if _, err := fs.Stat(fsys, "."); err != nil {
-		return 0, fmt.Errorf("error accessing directory: %w", err)
-	}
+	seen := make(map[uint64]string)
 
 	return size, fs.WalkDir(fsys, ".", func(path string, d os.DirEntry, err error) error { //nolint:wrapcheck
 		if err != nil {
 			return err
 		}
-		info, err := d.Info()
+
+		if d.IsDir() {
+			return nil
+		}
+
+		fi, err := d.Info()
 		if err != nil {
 			return fmt.Errorf("error getting file info: %w", err)
 		}
-		if !d.IsDir() {
-			// file
-			size += info.Size()
+		if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
+			return nil
 		}
+
+		var inode uint64
+
+		// for Windows, use the volume serial number and file index
+		// for Linux and macOS, use the inode number
+		// for other platforms, return an error
+		switch runtime.GOOS {
+		case "linux", "darwin", "windows":
+			inode, err = getInode(fi)
+			if err != nil {
+				return fmt.Errorf("error getting inode: %w", err)
+			}
+		default:
+			return fmt.Errorf("unsupported platform %s", runtime.GOOS)
+		}
+
+		_, ok := seen[inode]
+		if ok {
+			// duplicate inode number, skip
+			return nil
+		}
+		seen[inode] = path
+		size += fi.Size()
+
 		return nil
 	})
 }

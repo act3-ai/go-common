@@ -2,10 +2,10 @@
 package fsutil
 
 import (
-	"crypto/rand"
 	"fmt"
 	"io"
 	"io/fs"
+	"math/rand"
 	"os"
 	"path/filepath"
 )
@@ -15,17 +15,26 @@ import (
 // Using the struct directly is not recommended as it may not be initialized properly.
 type FSUtil struct {
 	RootDir string
+	source  rand.Source
 }
 
 // NewFSUtil creates a new FSUtil instance. A temporary directory is created with the given prefix.
 // The directory needs to be removed by the caller with the built in `Close` method.
 // Defer `Close` is not recommended as it ignores any errors while closing the complex filesystem.
 func NewFSUtil(prefix string) (*FSUtil, error) {
+	return NewFSUtilWithSource(prefix, rand.NewSource(rand.Int63()))
+}
+
+// NewFSUtilWithSource is identical to NewFSUtil but allows a custom math/rand.Source to be used.
+func NewFSUtilWithSource(prefix string, source rand.Source) (*FSUtil, error) {
 	tempDir, err := os.MkdirTemp("", prefix+"*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %w", err)
 	}
-	return &FSUtil{RootDir: tempDir}, nil
+	return &FSUtil{
+		RootDir: tempDir,
+		source:  source,
+	}, nil
 }
 
 // Close removes the root directory.
@@ -75,7 +84,9 @@ func (f *FSUtil) AddFileOfSize(fPath string, size int64) error {
 		return err
 	}
 
-	_, err = io.Copy(file, io.LimitReader(rand.Reader, size))
+	rng := rand.New(f.source)
+
+	_, err = io.CopyN(file, rng, size)
 	if err != nil {
 		return fmt.Errorf("failed to write file %s: %w", file.Name(), err)
 	}
