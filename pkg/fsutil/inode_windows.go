@@ -8,6 +8,8 @@ import (
 	"syscall"
 )
 
+// inspired by https://go.dev/src/os/types_windows.go
+
 // getInode returns the inode for a file on Windows.
 // this is a workaround for the lack of inode support on Windows.
 // the returned inode is a combination of the volume serial number and file index.
