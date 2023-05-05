@@ -13,8 +13,8 @@ import (
 	"git.act3-ace.com/ace/go-common/pkg/config"
 )
 
-// Run will run the root level cobra command but first setup logging with Zap
-func Run(cmd *cobra.Command, verbosityEnvName string) error {
+// RunWithContext will run the root level cobra command but first setup logging with Zap
+func RunWithContext(ctx context.Context, cmd *cobra.Command, verbosityEnvName string) error {
 	// Create the zap logger configuration
 	conf := zap.NewProductionConfig()
 	conf.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
@@ -42,6 +42,11 @@ func Run(cmd *cobra.Command, verbosityEnvName string) error {
 	x := cmd.PersistentFlags().Lookup("verbosity")
 	x.NoOptDefVal = "1"
 
-	ctx := logr.NewContext(context.Background(), logger)
+	ctx = logr.NewContext(ctx, logger)
 	return cmd.ExecuteContext(ctx)
+}
+
+// Run will run the root level cobra command but first setup logging with Zap
+func Run(cmd *cobra.Command, verbosityEnvName string) error {
+	return RunWithContext(context.Background(), cmd, verbosityEnvName)
 }
