@@ -21,12 +21,14 @@ func TestEqualFilesystem(t *testing.T) {
 		name        string
 		fsA         fstest.MapFS
 		fsB         fstest.MapFS
+		opts        ComparisonOpts
 		shouldError bool
 	}{
 		{
 			name:        "Empty filesystems",
 			fsA:         fstest.MapFS{},
 			fsB:         fstest.MapFS{},
+			opts:        DefaultComparisonOpts,
 			shouldError: false,
 		},
 		{
@@ -37,6 +39,7 @@ func TestEqualFilesystem(t *testing.T) {
 			fsB: fstest.MapFS{
 				"file.txt": &fstest.MapFile{Data: []byte("File content")},
 			},
+			opts:        DefaultComparisonOpts,
 			shouldError: false,
 		},
 		{
@@ -47,6 +50,7 @@ func TestEqualFilesystem(t *testing.T) {
 			fsB: fstest.MapFS{
 				"fileB.txt": &fstest.MapFile{Data: []byte("File B content")},
 			},
+			opts:        DefaultComparisonOpts,
 			shouldError: true,
 		},
 		{
@@ -59,6 +63,7 @@ func TestEqualFilesystem(t *testing.T) {
 				"file.txt":       &fstest.MapFile{Data: []byte("File content")},
 				"error_info.txt": &fstest.MapFile{Data: []byte("Error content")},
 			},
+			opts:        DefaultComparisonOpts,
 			shouldError: true,
 		},
 		{
@@ -69,6 +74,7 @@ func TestEqualFilesystem(t *testing.T) {
 			fsB: fstest.MapFS{
 				"file_b.txt": &fstest.MapFile{Data: []byte("hello")},
 			},
+			opts:        DefaultComparisonOpts,
 			shouldError: true,
 		},
 		{
@@ -79,6 +85,7 @@ func TestEqualFilesystem(t *testing.T) {
 			fsB: fstest.MapFS{
 				"file.txt": &fstest.MapFile{Data: []byte("hello world")},
 			},
+			opts:        DefaultComparisonOpts,
 			shouldError: true,
 		},
 		{
@@ -89,6 +96,7 @@ func TestEqualFilesystem(t *testing.T) {
 			fsB: fstest.MapFS{
 				"file.txt": &fstest.MapFile{Data: []byte("content"), Mode: 0644},
 			},
+			opts:        DefaultComparisonOpts,
 			shouldError: true,
 		},
 		{
@@ -99,6 +107,7 @@ func TestEqualFilesystem(t *testing.T) {
 			fsB: fstest.MapFS{
 				"file.txt": &fstest.MapFile{Data: []byte("content"), Mode: fs.ModeDir},
 			},
+			opts:        DefaultComparisonOpts,
 			shouldError: true,
 		},
 		{
@@ -107,6 +116,7 @@ func TestEqualFilesystem(t *testing.T) {
 				"dir_a": &fstest.MapFile{Mode: fs.ModeDir},
 			},
 			fsB:         fstest.MapFS{}, // Empty MapFS
+			opts:        DefaultComparisonOpts,
 			shouldError: true,
 		},
 		{
@@ -117,6 +127,7 @@ func TestEqualFilesystem(t *testing.T) {
 			fsB: fstest.MapFS{
 				"dir_b": &fstest.MapFile{Mode: fs.ModeDir},
 			},
+			opts:        DefaultComparisonOpts,
 			shouldError: true,
 		},
 		{
@@ -127,6 +138,7 @@ func TestEqualFilesystem(t *testing.T) {
 			fsB: fstest.MapFS{
 				"dir": &fstest.MapFile{Mode: fs.ModeDir | 0700},
 			},
+			opts:        DefaultComparisonOpts,
 			shouldError: true,
 		},
 		{
@@ -137,6 +149,29 @@ func TestEqualFilesystem(t *testing.T) {
 			fsB: fstest.MapFS{
 				"dir": &fstest.MapFile{Data: []byte("content")}, // Not a directory
 			},
+			opts:        DefaultComparisonOpts,
+			shouldError: true,
+		},
+		{
+			name: "File contents are equal",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content")},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content")},
+			},
+			opts:        AllComparisonOpts,
+			shouldError: false,
+		},
+		{
+			name: "File contents are not equal",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content A")},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content B")},
+			},
+			opts:        AllComparisonOpts,
 			shouldError: true,
 		},
 	}
@@ -145,7 +180,7 @@ func TestEqualFilesystem(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fsA := &errorFS{FS: tc.fsA, triggerInfoError: tc.shouldError}
 			fsB := &errorFS{FS: tc.fsB, triggerInfoError: tc.shouldError}
-			err := EqualFilesystem(fsA, fsB)
+			err := EqualFilesystem(fsA, fsB, tc.opts)
 
 			if tc.shouldError {
 				assert.Error(t, err)
@@ -161,12 +196,14 @@ func TestDiffFS(t *testing.T) {
 		name        string
 		fsA         fstest.MapFS
 		fsB         fstest.MapFS
+		opts        ComparisonOpts
 		expectedLen int
 	}{
 		{
 			name:        "Empty filesystems",
 			fsA:         fstest.MapFS{},
 			fsB:         fstest.MapFS{},
+			opts:        DefaultComparisonOpts,
 			expectedLen: 0,
 		},
 		{
@@ -177,6 +214,7 @@ func TestDiffFS(t *testing.T) {
 			fsB: fstest.MapFS{
 				"file.txt": &fstest.MapFile{Data: []byte("File content")},
 			},
+			opts:        DefaultComparisonOpts,
 			expectedLen: 0,
 		},
 		{
@@ -187,6 +225,7 @@ func TestDiffFS(t *testing.T) {
 			fsB: fstest.MapFS{
 				"fileB.txt": &fstest.MapFile{Data: []byte("File B content")},
 			},
+			opts:        DefaultComparisonOpts,
 			expectedLen: 1,
 		},
 		{
@@ -197,6 +236,7 @@ func TestDiffFS(t *testing.T) {
 			fsB: fstest.MapFS{
 				"file_b.txt": &fstest.MapFile{Data: []byte("hello")},
 			},
+			opts:        DefaultComparisonOpts,
 			expectedLen: 1,
 		},
 		{
@@ -207,6 +247,7 @@ func TestDiffFS(t *testing.T) {
 			fsB: fstest.MapFS{
 				"file.txt": &fstest.MapFile{Data: []byte("hello world")},
 			},
+			opts:        DefaultComparisonOpts,
 			expectedLen: 1,
 		},
 		{
@@ -217,6 +258,7 @@ func TestDiffFS(t *testing.T) {
 			fsB: fstest.MapFS{
 				"file.txt": &fstest.MapFile{Data: []byte("content"), Mode: 0644},
 			},
+			opts:        DefaultComparisonOpts,
 			expectedLen: 1,
 		},
 		{
@@ -225,6 +267,7 @@ func TestDiffFS(t *testing.T) {
 				"dir_a": &fstest.MapFile{Mode: fs.ModeDir},
 			},
 			fsB:         fstest.MapFS{}, // Empty MapFS
+			opts:        DefaultComparisonOpts,
 			expectedLen: 1,
 		},
 		{
@@ -235,6 +278,7 @@ func TestDiffFS(t *testing.T) {
 			fsB: fstest.MapFS{
 				"dir_b": &fstest.MapFile{Mode: fs.ModeDir},
 			},
+			opts:        DefaultComparisonOpts,
 			expectedLen: 1,
 		},
 		{
@@ -243,6 +287,7 @@ func TestDiffFS(t *testing.T) {
 				"dir": &fstest.MapFile{Mode: fs.ModeDir | 0755},
 			},
 			fsB:         fstest.MapFS{"dir": &fstest.MapFile{Mode: fs.ModeDir | 0700}},
+			opts:        DefaultComparisonOpts,
 			expectedLen: 1,
 		},
 		{
@@ -253,6 +298,29 @@ func TestDiffFS(t *testing.T) {
 			fsB: fstest.MapFS{
 				"dir": &fstest.MapFile{Data: []byte("content")}, // Not a directory
 			},
+			opts:        DefaultComparisonOpts,
+			expectedLen: 1,
+		},
+		{
+			name: "File contents are equal",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content")},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content")},
+			},
+			opts:        AllComparisonOpts,
+			expectedLen: 0,
+		},
+		{
+			name: "File contents are not equal",
+			fsA: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content A")},
+			},
+			fsB: fstest.MapFS{
+				"file.txt": &fstest.MapFile{Data: []byte("File content B")},
+			},
+			opts:        AllComparisonOpts,
 			expectedLen: 1,
 		},
 	}
@@ -261,7 +329,7 @@ func TestDiffFS(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fsA := tc.fsA
 			fsB := tc.fsB
-			diffs, err := DiffFS(fsA, fsB)
+			diffs, err := DiffFS(fsA, fsB, tc.opts)
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
