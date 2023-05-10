@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"runtime"
 	"sort"
 	"time"
 
@@ -33,19 +32,9 @@ func DirSize(fsys fs.FS) (int64, error) {
 			return nil
 		}
 
-		var inode uint64
-
-		// for Windows, use the volume serial number and file index
-		// for Linux and macOS, use the inode number
-		// for other platforms, return an error
-		switch runtime.GOOS {
-		case "linux", "darwin", "windows":
-			inode, err = getInode(fi)
-			if err != nil {
-				return fmt.Errorf("error getting inode: %w", err)
-			}
-		default:
-			return fmt.Errorf("unsupported platform %s", runtime.GOOS)
+		inode, err := getInode(fi)
+		if err != nil {
+			return fmt.Errorf("error getting inode: %w", err)
 		}
 
 		_, ok := seen[inode]
