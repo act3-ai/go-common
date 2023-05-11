@@ -107,7 +107,12 @@ func (f *FSUtil) AddFileOfSizeDeterministic(fPath string, size int64) error {
 		return err
 	}
 
-	_, err = io.Copy(file, io.LimitReader(zeroReader{}, size))
+	zeroReader, err := NewZeroReader(size)
+	if err != nil {
+		return fmt.Errorf("failed to create zero reader: %w", err)
+	}
+
+	_, err = io.Copy(file, zeroReader)
 	if err != nil {
 		return fmt.Errorf("failed to write file %s: %w", file.Name(), err)
 	}
