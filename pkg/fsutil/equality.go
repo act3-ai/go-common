@@ -43,27 +43,7 @@ func equalFilesystem(fsA, fsB fs.FS, opts ComparisonOpts, deep bool) (err error)
 			return err
 		}
 		if deep {
-			fA, err := fsA.Open(path)
-			if err != nil {
-				return fmt.Errorf("failed to open file in fsA: %w", err)
-			}
-			defer func() {
-				closeErr := fA.Close()
-				if err == nil {
-					err = closeErr
-				}
-			}()
-			fB, err := fsB.Open(path)
-			if err != nil {
-				return fmt.Errorf("failed to open file in fsB: %w", err)
-			}
-			defer func() {
-				closeErr := fB.Close()
-				if err == nil {
-					err = closeErr
-				}
-			}()
-			if err := compareFileContents(fA, fB); err != nil {
+			if err := openAndCompare(fsA, fsB, path); err != nil {
 				return fmt.Errorf("failed to compare file contents for path %s: %w", path, err)
 			}
 		}
@@ -122,15 +102,7 @@ func diffFS(fsA, fsB fs.FS, opts ComparisonOpts, deep bool) ([]fs.FileInfo, erro
 			// if no differences in file info, and deep, compare file contents
 			// no need to compare contents if there are differences in file info
 		} else if deep {
-			fA, err := fsA.Open(path)
-			if err != nil {
-				return nil, fmt.Errorf("failed to open file in fsA: %w", err)
-			}
-			fB, err := fsB.Open(path)
-			if err != nil {
-				return nil, fmt.Errorf("failed to open file in fsB: %w", err)
-			}
-			if err := compareFileContents(fA, fB); err != nil {
+			if err := openAndCompare(fsA, fsB, path); err != nil {
 				diffs = append(diffs, infoA)
 			}
 		}
@@ -221,6 +193,31 @@ func compareFinfo(path string, a, b fs.FileInfo, opts ComparisonOpts) error {
 		return fmt.Errorf("modes should be equal for path: %s, a: %v, b: %v", path, a.Mode(), b.Mode())
 	}
 	return nil
+}
+
+// openAndCompare opens two files and compares their contents.
+func openAndCompare(a fs.FS, b fs.FS, path string) error {
+	fA, err := a.Open(path)
+	if err != nil {
+		return fmt.Errorf("failed to open file in fsA: %w", err)
+	}
+	defer func() {
+		closeErr := fA.Close()
+		if err == nil {
+			err = closeErr
+		}
+	}()
+	fB, err := b.Open(path)
+	if err != nil {
+		return fmt.Errorf("failed to open file in fsB: %w", err)
+	}
+	defer func() {
+		closeErr := fB.Close()
+		if err == nil {
+			err = closeErr
+		}
+	}()
+	return compareFileContents(fA, fB)
 }
 
 // compareFileContents compares the contents of two files.
