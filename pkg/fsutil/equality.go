@@ -24,8 +24,7 @@ func EqualFilesystem(fsA, fsB fs.FS, opts ComparisonOpts) error {
 }
 
 // equalFilesystem checks that the filesystems (excluding hidden files/dirs) are identical.
-func equalFilesystem(fsA, fsB fs.FS, opts ComparisonOpts, deep bool) error {
-
+func equalFilesystem(fsA, fsB fs.FS, opts ComparisonOpts, deep bool) (err error) {
 	fsInfoA, err := getFSInfo(fsA)
 	if err != nil {
 		return fmt.Errorf("failed to get fsInfo for fsA: %w", err)
@@ -48,12 +47,22 @@ func equalFilesystem(fsA, fsB fs.FS, opts ComparisonOpts, deep bool) error {
 			if err != nil {
 				return fmt.Errorf("failed to open file in fsA: %w", err)
 			}
-			defer fA.Close()
+			defer func() {
+				closeErr := fA.Close()
+				if err == nil {
+					err = closeErr
+				}
+			}()
 			fB, err := fsB.Open(path)
 			if err != nil {
 				return fmt.Errorf("failed to open file in fsB: %w", err)
 			}
-			defer fB.Close()
+			defer func() {
+				closeErr := fB.Close()
+				if err == nil {
+					err = closeErr
+				}
+			}()
 			if err := compareFileContents(fA, fB); err != nil {
 				return fmt.Errorf("failed to compare file contents for path %s: %w", path, err)
 			}
