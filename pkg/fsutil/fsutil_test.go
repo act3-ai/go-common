@@ -267,17 +267,17 @@ func TestCanDirFS(t *testing.T) {
 }
 
 func TestFSUtil_Open(t *testing.T) {
-	fs, err := NewFSUtil("test")
+	fsys, err := NewFSUtil("test")
 	require.NoError(t, err, "NewFSUtil should not return an error")
-	defer fs.Close()
+	defer fsys.Close()
 
 	// Create a test file in the root directory
-	testFilePath := filepath.Join(fs.RootDir, "test.txt")
+	testFilePath := filepath.Join(fsys.RootDir, "test.txt")
 	err = os.WriteFile(testFilePath, []byte("test"), 0644)
 	require.NoError(t, err, "Creating a test file should not return an error")
 
 	// Test opening an existing file
-	file, err := fs.Open("test.txt")
+	file, err := fsys.Open("test.txt")
 	require.NoError(t, err, "Open should not return an error")
 	defer file.Close()
 
@@ -287,11 +287,11 @@ func TestFSUtil_Open(t *testing.T) {
 	assert.Equal(t, []byte("test"), content, "File content should match the expected value")
 
 	// Test opening a non-existing file
-	_, err = fs.Open("non-existing.txt")
+	_, err = fsys.Open("non-existing.txt")
 	assert.Error(t, err, "Open should return an error for non-existing files")
-	assert.True(t, os.IsNotExist(err), "Open should return a 'not exist' error for non-existing files")
+	assert.ErrorIs(t, err, os.ErrNotExist, "Open should return an ErrNotExist error for non-existing files")
 
 	// Test opening an absolute path (not allowed with fsutil)
-	_, err = fs.Open("/tmp/abs/non-existing.txt")
+	_, err = fsys.Open("/tmp/abs/non-existing.txt")
 	assert.Error(t, err, "Open should return an error for absolute paths")
 }
