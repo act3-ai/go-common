@@ -148,12 +148,14 @@ func (f *FSUtil) createPathAndFile(path string) (*os.File, error) {
 	return file, nil
 }
 
-// Open implements the io/fs.FS interface.
-// name is required to be a relative path.
 func (f *FSUtil) Open(name string) (fs.File, error) {
 	path, err := f.joinRelative(name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to join relative path: %w", err)
 	}
-	return os.Open(path)
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+	return file, nil
 }
