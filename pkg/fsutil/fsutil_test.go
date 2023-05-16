@@ -1,6 +1,7 @@
 package fsutil
 
 import (
+	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -250,7 +251,7 @@ func TestAddFileOfSizeDeterministic(t *testing.T) {
 	}
 }
 
-func TestToFS(t *testing.T) {
+func TestCanDirFS(t *testing.T) {
 	fsUtil, err := NewFSUtil("test")
 	require.NoError(t, err, "NewFSUtil should not return an error")
 	defer fsUtil.Close()
@@ -258,19 +259,39 @@ func TestToFS(t *testing.T) {
 	err = fsUtil.AddFileWithData("testfile.txt", []byte("Test data"))
 	require.NoError(t, err, "AddFileWithData should not return an error")
 
-	readOnlyFS, err := fsUtil.ToFS()
-	require.NoError(t, err, "ToFS should not return an error")
+	readOnlyFS := os.DirFS(fsUtil.RootDir)
 
 	data, err := fs.ReadFile(readOnlyFS, "testfile.txt")
 	require.NoError(t, err, "ReadFile should not return an error")
 	assert.Equal(t, []byte("Test data"), data, "File content should match the provided data")
 }
 
-func TestToFSFailEmptyRootDir(t *testing.T) {
-	// Create an FSUtil instance with an empty rootDir
-	fsUtil := &FSUtil{}
+func TestFSUtil_Open(t *testing.T) {
+	fs, err := NewFSUtil("test")
+	require.NoError(t, err, "NewFSUtil should not return an error")
+	defer fs.Close()
 
-	readOnlyFS, err := fsUtil.ToFS()
-	assert.Nil(t, readOnlyFS, "ToFS should return a nil FS when rootDir is empty")
-	assert.EqualError(t, err, "rootDir is empty", "ToFS should return an error when rootDir is empty")
+	// Create a test file in the root directory
+	testFilePath := filepath.Join(fs.RootDir, "test.txt")
+	err = os.WriteFile(testFilePath, []byte("test"), 0644)
+	require.NoError(t, err, "Creating a test file should not return an error")
+
+	// Test opening an existing file
+	file, err := fs.Open("test.txt")
+	require.NoError(t, err, "Open should not return an error")
+	defer file.Close()
+
+	// Read the file content
+	content, err := io.ReadAll(file)
+	require.NoError(t, err, "ReadAll should not return an error")
+	assert.Equal(t, []byte("test"), content, "File content should match the expected value")
+
+	// Test opening a non-existing file
+	_, err = fs.Open("non-existing.txt")
+	assert.Error(t, err, "Open should return an error for non-existing files")
+	assert.True(t, os.IsNotExist(err), "Open should return a 'not exist' error for non-existing files")
+
+	// Test opening an absolute path (not allowed with fsutil)
+	_, err = fs.Open("/tmp/abs/non-existing.txt")
+	assert.Error(t, err, "Open should return an error for absolute paths")
 }

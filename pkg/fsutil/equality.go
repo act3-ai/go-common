@@ -2,7 +2,6 @@ package fsutil
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -196,7 +195,7 @@ func compareFinfo(path string, a, b fs.FileInfo, opts ComparisonOpts) error {
 }
 
 // openAndCompare opens two files and compares their contents.
-func openAndCompare(a fs.FS, b fs.FS, path string) error {
+func openAndCompare(a fs.FS, b fs.FS, path string) (err error) {
 	fA, err := a.Open(path)
 	if err != nil {
 		return fmt.Errorf("failed to open file in fsA: %w", err)
@@ -222,27 +221,30 @@ func openAndCompare(a fs.FS, b fs.FS, path string) error {
 
 // compareFileContents compares the contents of two files.
 func compareFileContents(a, b fs.File) error {
-	bufA := make([]byte, 1024)
-	bufB := make([]byte, 1024)
+	bufSize := 4096
+	bufA := make([]byte, bufSize)
+	bufB := make([]byte, bufSize)
 
 	for {
-		nA, err := a.Read(bufA)
-		if err != nil && !errors.Is(err, io.EOF) {
-			return fmt.Errorf("failed to read from fileA: %w", err)
-		}
-		nB, err := b.Read(bufB)
-		if err != nil && !errors.Is(err, io.EOF) {
-			return fmt.Errorf("failed to read from fileB: %w", err)
-		}
-		if nA != nB {
-			return fmt.Errorf("file sizes should be equal: %d != %d", nA, nB)
-		}
+		nA, errA := io.ReadFull(a, bufA)
+		nB, errB := io.ReadFull(b, bufB)
+
 		if !bytes.Equal(bufA[:nA], bufB[:nB]) {
-			return fmt.Errorf("file contents should be equal: %s != %s", string(bufA[:nA]), string(bufB[:nB]))
+			return fmt.Errorf("files are not equal")
 		}
-		if errors.Is(err, io.EOF) {
+
+		if errA == io.EOF && errB == io.EOF {
 			break
 		}
+
+		if errA != nil && errA != io.ErrUnexpectedEOF {
+			return fmt.Errorf("failed to read from fileA: %w", errA)
+		}
+
+		if errB != nil && errB != io.ErrUnexpectedEOF {
+			return fmt.Errorf("failed to read from fileB: %w", errB)
+		}
 	}
+
 	return nil
 }

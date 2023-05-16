@@ -148,11 +148,12 @@ func (f *FSUtil) createPathAndFile(path string) (*os.File, error) {
 	return file, nil
 }
 
-// ToFS returns the root directory as a fs.FS.
-// the returned fs.FS is read-only and implements fs.StatFS
-func (f *FSUtil) ToFS() (fs.FS, error) {
-	if f.RootDir == "" {
-		return nil, fmt.Errorf("rootDir is empty")
+// Open implements the io/fs.FS interface.
+// name is required to be a relative path.
+func (f *FSUtil) Open(name string) (fs.File, error) {
+	path, err := f.joinRelative(name)
+	if err != nil {
+		return nil, err
 	}
-	return os.DirFS(f.RootDir), nil
+	return os.Open(path)
 }
