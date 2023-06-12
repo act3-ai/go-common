@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // define errors for config
@@ -19,14 +21,10 @@ var (
 
 // EnvOr grabs the env variable or the default
 func EnvOr(name, def string) string {
-	if name == "" {
-		panic("name must not be empty")
+	if val, err := Env(name); err == nil {
+		return val
 	}
-	envVal, ok := os.LookupEnv(name)
-	if !ok {
-		return def
-	}
-	return envVal
+	return def
 }
 
 // Env returns the named env variable if it exists,
@@ -42,20 +40,37 @@ func Env(name string) (string, error) {
 	return envVal, nil
 }
 
-// EnvIntOr grabs the env variable as an int or the default
-func EnvIntOr(name string, def int) int {
+// EnvQuantityOr grabs the env variable as a resource.Quantity or the default
+func EnvQuantityOr(name string, def resource.Quantity) resource.Quantity {
+	if val, err := EnvQuantity(name); err == nil {
+		return val
+	}
+	return def
+}
+
+// EnvQuantity returns the named env variable if it exists,
+// otherwise returns the default Quantity{} and an ErrEnvVarNotFound error.
+func EnvQuantity(name string) (resource.Quantity, error) {
 	if name == "" {
 		panic("name must not be empty")
 	}
 	envVal, ok := os.LookupEnv(name)
 	if !ok {
-		return def
+		return resource.Quantity{}, ErrEnvVarNotFound
 	}
-	ret, err := strconv.Atoi(envVal)
+	parsedVal, err := resource.ParseQuantity(envVal)
 	if err != nil {
-		return def
+		return resource.Quantity{}, ErrParseEnvVar
 	}
-	return ret
+	return parsedVal, nil
+}
+
+// EnvIntOr grabs the env variable as an int or the default
+func EnvIntOr(name string, def int) int {
+	if val, err := EnvInt(name); err == nil {
+		return val
+	}
+	return def
 }
 
 // EnvInt returns the named env variable if it exists,
@@ -77,18 +92,10 @@ func EnvInt(name string) (int, error) {
 
 // EnvBoolOr grabs the env variable as an int or the default
 func EnvBoolOr(name string, def bool) bool {
-	if name == "" {
-		panic("name must not be empty")
+	if val, err := EnvBool(name); err == nil {
+		return val
 	}
-	envVal, ok := os.LookupEnv(name)
-	if !ok {
-		return def
-	}
-	ret, err := strconv.ParseBool(envVal)
-	if err != nil {
-		return def
-	}
-	return ret
+	return def
 }
 
 // EnvBool returns the named env variable if it exists,
@@ -110,14 +117,23 @@ func EnvBool(name string) (bool, error) {
 
 // EnvArrayOr grabs the env variable as an array.  Returns an empty array if
 func EnvArrayOr(name string, def []string, sep string) []string {
+	if val, err := EnvArray(name, sep); err == nil {
+		return val
+	}
+	return def
+}
+
+// EnvArray returns the named env variable if it exists,
+// otherwise returns nil and an ErrEnvVarNotFound error.
+func EnvArray(name string, sep string) ([]string, error) {
 	if name == "" {
 		panic("name must not be empty")
 	}
 	envVal, ok := os.LookupEnv(name)
-	if !ok || envVal == "" {
-		return def
+	if !ok {
+		return nil, ErrEnvVarNotFound
 	}
-	return strings.Split(envVal, sep)
+	return strings.Split(envVal, sep), nil
 }
 
 // EnvPathOr grabs the env variable as an array splitting on the default (OS specific) path list separator
@@ -125,20 +141,18 @@ func EnvPathOr(name string, def []string) []string {
 	return EnvArrayOr(name, def, string(filepath.ListSeparator))
 }
 
+// EnvPath returns the named env variable if it exists,
+// otherwise returns nil and an ErrEnvVarNotFound error.
+func EnvPath(name string) ([]string, error) {
+	return EnvArray(name, string(filepath.ListSeparator))
+}
+
 // EnvDurationOr grabs the env variable as a Duration or the default
 func EnvDurationOr(name string, def time.Duration) time.Duration {
-	if name == "" {
-		panic("name must not be empty")
+	if val, err := EnvDuration(name); err == nil {
+		return val
 	}
-	envVal, ok := os.LookupEnv(name)
-	if !ok {
-		return def
-	}
-	ret, err := time.ParseDuration(envVal)
-	if err != nil {
-		return def
-	}
-	return ret
+	return def
 }
 
 // EnvDuration returns the named env variable if it exists,
