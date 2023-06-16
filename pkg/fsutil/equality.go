@@ -163,7 +163,9 @@ func compareFinfo(path string, a, b fs.FileInfo, opts ComparisonOpts) error {
 	if a.IsDir() != b.IsDir() {
 		return fmt.Errorf("IsDir should be equal for path: %s, a: %v, b: %v", path, a.IsDir(), b.IsDir())
 	}
-	if opts.Size && a.Size() != b.Size() {
+	// we can only compare file sizes if they are files.
+	// comparing the size of a directory is not reliable (and meaningless).
+	if !a.IsDir() && opts.Size && a.Size() != b.Size() {
 		return fmt.Errorf("sizes should be equal for path: %s, a: %d, b: %d", path, a.Size(), b.Size())
 	}
 	if opts.Mode && a.Mode() != b.Mode() {
