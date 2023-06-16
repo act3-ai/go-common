@@ -276,6 +276,52 @@ func TestLookupQuantity(t *testing.T) {
 	}
 }
 
+func TestValidateArgs(t *testing.T) {
+	// test name = ""
+	testName := ""
+
+	panicFunc := func() {
+		validateArgs(new(string), testName)
+	}
+	// assert panic
+	assert.PanicsWithError(t, "name must not be empty", panicFunc)
+
+	// test nil pointer
+	testName = "MY_STRING"
+	testPntr := (*string)(nil)
+	panicFunc = func() {
+		validateArgs(testPntr, testName)
+	}
+	// assert panic
+	assert.PanicsWithError(t, "pntr must not be nil", panicFunc)
+}
+
+func TestNilQuantity(t *testing.T) {
+	type testConfig struct {
+		Quantity *resource.Quantity
+	}
+	emptyConf := &testConfig{}
+	// Problem: can't set a nil pointer to a quantity
+	// Solution: no nil pointers allowed?
+	t.Setenv("QUANTITY", "1Gi")
+	h := &helper{
+		varType:       quantityType,
+		name:          "QUANTITY",
+		pntr:          emptyConf.Quantity,
+		handleSuccess: func() {},
+		handleLookupErr: func() error {
+			return ErrEnvVarNotFound
+		},
+		handleParseErr: func(failedStr string) error {
+			return ErrParseEnvVar
+		},
+	}
+
+	err := h.lookupQuantity()
+	assert.NoError(t, err)
+	assert.Equal(t, resource.MustParse("1Gi"), emptyConf.Quantity)
+}
+
 func TestLookupInt(t *testing.T) {
 	// Define test cases
 	testCases := []struct {
