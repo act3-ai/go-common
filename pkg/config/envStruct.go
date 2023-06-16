@@ -193,11 +193,11 @@ func NewEnvStruct() *EnvStruct {
 }
 
 func validateArgs(pntr any, name string) {
-	if reflect.ValueOf(pntr).IsNil() {
-		panic(errors.New("pntr must not be nil"))
-	}
 	if name == "" {
 		panic(errors.New("name must not be empty"))
+	}
+	if reflect.ValueOf(pntr).IsNil() {
+		panic(errors.New("pntr must not be nil for env: " + name))
 	}
 }
 

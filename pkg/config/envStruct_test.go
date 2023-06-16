@@ -293,7 +293,7 @@ func TestValidateArgs(t *testing.T) {
 		validateArgs(testPntr, testName)
 	}
 	// assert panic
-	assert.PanicsWithError(t, "pntr must not be nil", panicFunc)
+	assert.PanicsWithError(t, "pntr must not be nil for env: "+testName, panicFunc)
 }
 
 func TestNilQuantity(t *testing.T) {
