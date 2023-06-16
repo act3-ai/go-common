@@ -120,7 +120,7 @@ func (h *helper) lookupQuantity() error {
 		return h.handleParseErr(envVal)
 	}
 	constType := h.pntr.(*resource.Quantity)
-	*constType = parsedVal
+	*constType = parsedVal // We don't allow nil pointers so this is safe
 	h.handleSuccess()
 	return nil
 }
@@ -192,10 +192,17 @@ func NewEnvStruct() *EnvStruct {
 	}
 }
 
-func (es *EnvStruct) AddString(pntr *string, name string) {
+func validateArgs(pntr any, name string) {
+	if pntr == nil {
+		panic("nil pointers are not allowed")
+	}
 	if name == "" {
 		panic("name must not be empty")
 	}
+}
+
+func (es *EnvStruct) AddString(pntr *string, name string) {
+	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
 		varType: stringType,
 		name:    name,
@@ -204,9 +211,7 @@ func (es *EnvStruct) AddString(pntr *string, name string) {
 }
 
 func (es *EnvStruct) AddInt(pntr *int, name string) {
-	if name == "" {
-		panic("name must not be empty")
-	}
+	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
 		varType: intType,
 		name:    name,
@@ -215,9 +220,7 @@ func (es *EnvStruct) AddInt(pntr *int, name string) {
 }
 
 func (es *EnvStruct) AddBool(pntr *bool, name string) {
-	if name == "" {
-		panic("name must not be empty")
-	}
+	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
 		varType: boolType,
 		name:    name,
@@ -226,9 +229,7 @@ func (es *EnvStruct) AddBool(pntr *bool, name string) {
 }
 
 func (es *EnvStruct) AddQuantity(pntr *resource.Quantity, name string) {
-	if name == "" {
-		panic("name must not be empty")
-	}
+	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
 		varType: quantityType,
 		name:    name,
@@ -237,9 +238,7 @@ func (es *EnvStruct) AddQuantity(pntr *resource.Quantity, name string) {
 }
 
 func (es *EnvStruct) AddDuration(pntr *time.Duration, name string) {
-	if name == "" {
-		panic("name must not be empty")
-	}
+	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
 		varType: durationType,
 		name:    name,
@@ -248,9 +247,7 @@ func (es *EnvStruct) AddDuration(pntr *time.Duration, name string) {
 }
 
 func (es *EnvStruct) AddStringArray(pntr *[]string, name string, sep string) {
-	if name == "" {
-		panic("name must not be empty")
-	}
+	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
 		varType: stringArrayType,
 		name:    name,
@@ -260,9 +257,7 @@ func (es *EnvStruct) AddStringArray(pntr *[]string, name string, sep string) {
 }
 
 func (es *EnvStruct) AddPath(pntr *[]string, name string) {
-	if name == "" {
-		panic("name must not be empty")
-	}
+	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
 		varType: pathType,
 		name:    name,
