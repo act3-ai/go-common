@@ -202,7 +202,7 @@ func openAndCompare(a fs.FS, b fs.FS, path string) (err error) {
 	}
 	defer func() {
 		closeErr := fA.Close()
-		if err == nil {
+		if err != nil {
 			err = closeErr
 		}
 	}()
@@ -212,7 +212,7 @@ func openAndCompare(a fs.FS, b fs.FS, path string) (err error) {
 	}
 	defer func() {
 		closeErr := fB.Close()
-		if err == nil {
+		if err != nil {
 			err = closeErr
 		}
 	}()
