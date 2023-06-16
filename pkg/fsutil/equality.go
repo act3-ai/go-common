@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+// TODO we should probably use the options function pattern for these options.
+
 // ComparisonOpts stores options for comparing file system equality
 type ComparisonOpts struct {
 	Name    bool // Compare name
@@ -29,11 +31,6 @@ var DefaultComparisonOpts = ComparisonOpts{
 // EqualFilesystem checks that the filesystems (excluding hidden files/dirs) are identical.
 // Equality based on comparison options.
 func EqualFilesystem(fsA, fsB fs.FS, opts ComparisonOpts) error {
-	return equalFilesystem(fsA, fsB, opts)
-}
-
-// equalFilesystem checks that the filesystems (excluding hidden files/dirs) are identical.
-func equalFilesystem(fsA, fsB fs.FS, opts ComparisonOpts) (err error) {
 	fsInfoA, err := getFSInfo(fsA)
 	if err != nil {
 		return fmt.Errorf("failed to get fsInfo for fsA: %w", err)
@@ -73,13 +70,6 @@ func equalFilesystem(fsA, fsB fs.FS, opts ComparisonOpts) (err error) {
 
 // DiffFS returns the differences between two filesystems. (A-B)
 func DiffFS(fsA, fsB fs.FS, opts ComparisonOpts) ([]fs.FileInfo, error) {
-	return diffFS(fsA, fsB, opts)
-}
-
-// diffFS returns the differences between two filesystems. (A-B)
-// differences are determined by opts.
-// if deep is true, then the contents of files are also compared.
-func diffFS(fsA, fsB fs.FS, opts ComparisonOpts) ([]fs.FileInfo, error) {
 	fsInfoA, err := getFSInfo(fsA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get fsInfo for fsA: %w", err)
@@ -124,6 +114,7 @@ func diffFS(fsA, fsB fs.FS, opts ComparisonOpts) ([]fs.FileInfo, error) {
 	return diffs, nil
 }
 
+// TODO this should not be using maps.  We do not need to deduplicate nor do we want to tranverse in random order.  We want it deterministic.
 type fsInfo struct {
 	files map[string]os.FileInfo
 	dirs  map[string]os.FileInfo
