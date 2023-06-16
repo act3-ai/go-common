@@ -13,13 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-// the envStruct is a middleman between variables retreived from the configuration and the internal config struct
-
-// Configuration is a string, no getting around parsing values from env or flags
-
-// The documentation for what is a valid value for the variable is different
-// from the documentation of the internal configuration struct
-
 // instead of using reflection, we can create our own enum of types
 const (
 	stringType = iota
@@ -56,13 +49,13 @@ func (h *helper) docString() string {
 	case boolType:
 		return fmt.Sprintf("bool var: %s, allows true or false", h.name)
 	case quantityType:
-		return fmt.Sprintf("quantity var: %s, allows any valid quantity", h.name)
+		return fmt.Sprintf("quantity var: %s, allows any valid resource.Quantity", h.name)
 	case durationType:
-		return fmt.Sprintf("duration var: %s, allows any valid duration", h.name)
+		return fmt.Sprintf("duration var: %s, allows any valid time.Duration", h.name)
 	case stringArrayType:
-		return fmt.Sprintf("string array var: %s, allows any valid string array", h.name)
+		return fmt.Sprintf("string array var: %s, allows any valid string array with seperator: %s", h.name, h.sep)
 	case pathType:
-		return fmt.Sprintf("path var: %s, allows any valid path", h.name)
+		return fmt.Sprintf("path var: %s, allows any valid path with seperator: %s", h.name, h.sep)
 	default:
 		return ""
 	}
@@ -164,8 +157,11 @@ func (h *helper) lookupPath() error {
 	return nil
 }
 
-// Struct is for helping other users to manage their variables and
-// the variable's possible overrides based on flags or environment variables
+// EnvStruct is an environment variable override helper.
+// Each variable added to the EnvStruct is looked up and parsed from the environment during runtime.
+// Each variable also gets documentation generated based on type and name.
+// Variables added to the EnvStruct are non-nil pointers to the type of variable.
+// Set the handle functions to customize the 3 different end states of each variable.
 type EnvStruct struct {
 	// the variables that are added to the struct
 	variables []helper
@@ -178,6 +174,9 @@ type EnvStruct struct {
 	handleParseErr  func(name string, value string, err error) error
 }
 
+// NewEnvStruct returns a new EnvStruct.
+// The default handle functions are error passthroughs (return the error).
+// The default handle functions can be overridden by setting the handle functions.
 func NewEnvStruct() *EnvStruct {
 	return &EnvStruct{
 		variables: []helper{},
@@ -192,6 +191,7 @@ func NewEnvStruct() *EnvStruct {
 	}
 }
 
+// validateArgs panics if the name is empty or the pointer is nil.
 func validateArgs(pntr any, name string) {
 	if name == "" {
 		panic(errors.New("name must not be empty"))
@@ -201,6 +201,8 @@ func validateArgs(pntr any, name string) {
 	}
 }
 
+// AddString adds a string variable to the EnvStruct.
+// The pointer must be a non-nil pointer to a string.
 func (es *EnvStruct) AddString(pntr *string, name string) {
 	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
@@ -210,6 +212,8 @@ func (es *EnvStruct) AddString(pntr *string, name string) {
 	})
 }
 
+// AddInt adds an int variable to the EnvStruct.
+// The pointer must be a non-nil pointer to an int.
 func (es *EnvStruct) AddInt(pntr *int, name string) {
 	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
@@ -219,6 +223,8 @@ func (es *EnvStruct) AddInt(pntr *int, name string) {
 	})
 }
 
+// AddBool adds a bool variable to the EnvStruct.
+// The pointer must be a non-nil pointer to a bool.
 func (es *EnvStruct) AddBool(pntr *bool, name string) {
 	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
@@ -228,6 +234,8 @@ func (es *EnvStruct) AddBool(pntr *bool, name string) {
 	})
 }
 
+// AddQuantity adds a resource.Quantity variable to the EnvStruct.
+// The pointer must be a non-nil pointer to a resource.Quantity.
 func (es *EnvStruct) AddQuantity(pntr *resource.Quantity, name string) {
 	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
@@ -237,6 +245,8 @@ func (es *EnvStruct) AddQuantity(pntr *resource.Quantity, name string) {
 	})
 }
 
+// AddDuration adds a time.Duration variable to the EnvStruct.
+// The pointer must be a non-nil pointer to a time.Duration.
 func (es *EnvStruct) AddDuration(pntr *time.Duration, name string) {
 	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
@@ -246,6 +256,8 @@ func (es *EnvStruct) AddDuration(pntr *time.Duration, name string) {
 	})
 }
 
+// AddStringArray adds a []string variable to the EnvStruct.
+// The pointer must be a non-nil pointer to a []string.
 func (es *EnvStruct) AddStringArray(pntr *[]string, name string, sep string) {
 	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
@@ -256,6 +268,8 @@ func (es *EnvStruct) AddStringArray(pntr *[]string, name string, sep string) {
 	})
 }
 
+// AddPath adds a []string variable to the EnvStruct.
+// The pointer must be a non-nil pointer to a []string.
 func (es *EnvStruct) AddPath(pntr *[]string, name string) {
 	validateArgs(pntr, name)
 	es.variables = append(es.variables, helper{
@@ -266,31 +280,39 @@ func (es *EnvStruct) AddPath(pntr *[]string, name string) {
 	})
 }
 
+// SetHandleSuccess sets the function to handle what happens when there is a successful lookup and parse.
+// Default is a no-op.
 func (es *EnvStruct) SetHandleSuccess(f func(name string, value reflect.Value)) {
 	es.handleSuccess = f
 }
 
-// we want a method for adding a function to handle what happens when there is a failed lookup
+// SetHandleLookupErr sets the function to handle what happens when there is a failed lookup.
+// Default is to return an ErrEnvVarNotFound error.
 func (es *EnvStruct) SetHandleLookupErr(f func(name string, err error) error) {
 	es.handleLookupErr = f
 }
 
-// we want a method for adding a function to handle what happens when there is a failed parse
+// SetHandleParseErr sets the function to handle what happens when there is a failed parse.
+// Default is to return an ErrParseEnvVar error.
 func (es *EnvStruct) SetHandleParseErr(f func(name string, value string, err error) error) {
 	es.handleParseErr = f
 }
 
-// we want a method for creating a doc string for the varaibles added to the struct
+// DocString returns a string of the documentation for the EnvStruct.
+// The documentation is a concatenation of the documentation for each variable.
+// Each variable's documentation is it's type, name and valid values.
 func (es *EnvStruct) DocString() string {
 	// build string from variables
 	var b strings.Builder
 	for _, v := range es.variables {
-		b.WriteString(v.docString())
+		b.WriteString(v.docString() + "\n")
 	}
 	return b.String()
 }
 
-// we want a method for doing the work of parsing the variables
+// EnvOverrides overrides the variables added to the EnvStruct with the values from the environment.
+// An error is returned if any of the lookups or parses fail.
+// Error handling is done by the functions set by SetHandleLookupErr and SetHandleParseErr.
 func (es *EnvStruct) EnvOverrides() error {
 	var wasErr bool
 	for _, v := range es.variables {
@@ -325,6 +347,8 @@ func (es *EnvStruct) EnvOverrides() error {
 	return nil
 }
 
+// copyHandlers copies the handlers from the EnvStruct to the helper.
+// This is done so that the helper can use the handlers without having to know about the EnvStruct.
 func (es *EnvStruct) copyHandlers(h *helper) {
 	h.handleSuccess = func() {
 		es.handleSuccess(h.name, reflect.ValueOf(h.pntr).Elem())

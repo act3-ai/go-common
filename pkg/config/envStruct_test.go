@@ -13,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+const docstring = "string var: MY_STRING, allows any valid string\nint var: MY_INT, allows any valid integer\nbool var: MY_BOOL, allows true or false\nduration var: MY_DURATION, allows any valid time.Duration\nquantity var: MY_QUANTITY, allows any valid resource.Quantity\nstring array var: MY_STRING_ARRAY, allows any valid string array with seperator: ,\npath var: MY_PATH, allows any valid path with seperator: :\n"
+
 // TestStringEnv tests the StringEnv helper struct and its methods
 func TestNewEnvStruct(t *testing.T) {
 	testEnvStruct := NewEnvStruct()
@@ -71,6 +73,10 @@ func TestNewEnvStruct(t *testing.T) {
 	// Test lookup
 	err := testEnvStruct.EnvOverrides()
 	assert.NoError(t, err)
+
+	// test doc string
+	str := testEnvStruct.DocString()
+	assert.Equal(t, docstring, str)
 }
 
 func TestEnvStructHandlers(t *testing.T) {

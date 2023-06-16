@@ -19,20 +19,6 @@ var (
 	ErrParseEnvVar = errors.New("error parsing environment variable")
 )
 
-// StringEnv is a helper struct for organizing environment variables to be parsed as strings.
-// Range over a slice of these to populate your config struct.
-//
-// Example:
-//
-//	var envs = []StringEnv{
-//		{&config.MyString, "MY_STRING"},
-//		{&config.MyOtherString, "MY_OTHER_STRING"},
-//	}
-type StringEnv struct {
-	Data *string
-	Name string
-}
-
 // EnvOr grabs the env variable or the default
 func EnvOr(name, def string) string {
 	if val, err := Env(name); err == nil {
@@ -52,20 +38,6 @@ func Env(name string) (string, error) {
 		return "", ErrEnvVarNotFound
 	}
 	return envVal, nil
-}
-
-// QuantityEnv is a helper struct for organizing environment variables to be parsed as resource.Quantity.
-// Range over a slice of these to populate your config struct.
-//
-// Example:
-//
-//	var envs = []QuantityEnv{
-//		{&config.MyQuantity, "MY_QUANTITY"},
-//		{&config.MyOtherQuantity, "MY_OTHER_QUANTITY"},
-//	}
-type QuantityEnv struct {
-	Data *resource.Quantity
-	Name string
 }
 
 // EnvQuantityOr grabs the env variable as a resource.Quantity or the default
@@ -93,20 +65,6 @@ func EnvQuantity(name string) (resource.Quantity, error) {
 	return parsedVal, nil
 }
 
-// IntEnv is a helper struct for organizing environment variables to be parsed as ints.
-// Range over a slice of these to populate your config struct.
-//
-// Example:
-//
-//	var envs = []IntEnv{
-//		{&config.MyInt, "MY_INT"},
-//		{&config.MyOtherInt, "MY_OTHER_INT"},
-//	}
-type IntEnv struct {
-	Data *int
-	Name string
-}
-
 // EnvIntOr grabs the env variable as an int or the default
 func EnvIntOr(name string, def int) int {
 	if val, err := EnvInt(name); err == nil {
@@ -132,20 +90,6 @@ func EnvInt(name string) (int, error) {
 	return parsedVal, nil
 }
 
-// BoolEnv is a helper struct for organizing environment variables to be parsed as bools.
-// Range over a slice of these to populate your config struct.
-//
-// Example:
-//
-//	var envs = []BoolEnv{
-//		{&config.MyBool, "MY_BOOL"},
-//		{&config.MyOtherBool, "MY_OTHER_BOOL"},
-//	}
-type BoolEnv struct {
-	Data *bool
-	Name string
-}
-
 // EnvBoolOr grabs the env variable as an int or the default
 func EnvBoolOr(name string, def bool) bool {
 	if val, err := EnvBool(name); err == nil {
@@ -169,21 +113,6 @@ func EnvBool(name string) (bool, error) {
 		return false, ErrParseEnvVar
 	}
 	return parsedVal, nil
-}
-
-// StringArrayEnv is a helper struct for organizing environment variables to be parsed as string arrays.
-// Range over a slice of these to populate your config struct.
-// This struct is also used for EnvPath and EnvPathOr
-//
-// Example:
-//
-//	var envs = []StringArrayEnv{
-//		{&config.MyStringArray, "MY_STRING_ARRAY"},
-//		{&config.MyOtherStringArray, "MY_OTHER_STRING_ARRAY"},
-//	}
-type StringArrayEnv struct {
-	Data *[]string
-	Name string
 }
 
 // EnvArrayOr grabs the env variable as an array.  Returns an empty array if
@@ -216,20 +145,6 @@ func EnvPathOr(name string, def []string) []string {
 // otherwise returns nil and an ErrEnvVarNotFound error.
 func EnvPath(name string) ([]string, error) {
 	return EnvArray(name, string(filepath.ListSeparator))
-}
-
-// DurationEnv is a helper struct for organizing environment variables to be parsed as time.Durations.
-// Range over a slice of these to populate your config struct.
-//
-// Example:
-//
-//	var envs = []DurationEnv{
-//		{&config.MyDuration, "MY_DURATION"},
-//		{&config.MyOtherDuration, "MY_OTHER_DURATION"},
-//	}
-type DurationEnv struct {
-	Data *time.Duration
-	Name string
 }
 
 // EnvDurationOr grabs the env variable as a Duration or the default
