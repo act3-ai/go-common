@@ -53,9 +53,9 @@ func (h *helper) docString() string {
 	case durationType:
 		return fmt.Sprintf("duration var: %s, allows any valid time.Duration", h.name)
 	case stringArrayType:
-		return fmt.Sprintf("string array var: %s, allows any valid string array with seperator: %s", h.name, h.sep)
+		return fmt.Sprintf("string array var: %s, allows any valid string array with separator: %s", h.name, h.sep)
 	case pathType:
-		return fmt.Sprintf("path var: %s, allows any valid path with seperator: %s", h.name, h.sep)
+		return fmt.Sprintf("path var: %s, allows any valid path with separator: %s", h.name, h.sep)
 	default:
 		return ""
 	}
@@ -305,7 +305,9 @@ func (es *EnvStruct) DocString() string {
 	// build string from variables
 	var b strings.Builder
 	for _, v := range es.variables {
-		b.WriteString(v.docString() + "\n")
+		if _, err := b.WriteString(v.docString() + "\n"); err != nil {
+			panic(err)
+		}
 	}
 	return b.String()
 }
