@@ -3,15 +3,17 @@ package httputil
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/segmentio/ksuid"
+
+	"git.act3-ace.com/ace/go-common/pkg/logger"
 )
 
 type middlewareFunc = func(http.Handler) http.Handler
@@ -42,14 +44,14 @@ func TracingMiddleware(next http.Handler) http.Handler {
 var _ middlewareFunc = TracingMiddleware
 
 // LoggingMiddleware injects a logger into the context
-func LoggingMiddleware(log logr.Logger) middlewareFunc {
+func LoggingMiddleware(log *slog.Logger) middlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			path := r.URL.Path
 			id := InstanceFromContext(ctx)
-			log = log.WithValues("path", path, "qs", r.URL.Query(), "instance", id.String())
-			ctx = logr.NewContext(r.Context(), log)
+			log = log.With("path", path, "qs", r.URL.Query(), "instance", id.String())
+			ctx = logger.NewContext(ctx, log)
 			// Call the next handler
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -72,7 +74,7 @@ func ServerHeaderMiddleware(server string) middlewareFunc {
 // statusMiddleware logs the status response, install after the LoggingMiddleware
 func statusMiddleware(next http.Handler) http.Handler {
 	ctx := r.Context()
-	log := logr.FromContextOrDiscard(ctx)
+	log := logger.FromContext(ctx)
 	// TODO or use https://github.com/felixge/httpsnoop directly
 	return handlers.CustomLoggingHandler(nil, next,
 		func(_ io.Writer, params handlers.LogFormatterParams) {
@@ -114,18 +116,19 @@ var _ middlewareFunc = PrometheusMiddleware
 // KMT - I am not sure we need this middleware since the golang server already recovers from panics.  It just does not use our logger or return a 500.
 func RecovererMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		defer func() {
 			if rvr := recover(); rvr != nil {
-				log := logr.FromContextOrDiscard(r.Context())
+				log := logger.FromContext(r.Context())
 				switch t := rvr.(type) {
 				case error:
 					if errors.Is(t, http.ErrAbortHandler) {
-						log.Info("Handler panic-ed", "error", t)
+						log.InfoContext(ctx, "Handler panic-ed", "error", t)
 					} else {
-						log.Error(t, "Handler panic-ed")
+						log.ErrorContext(ctx, "Handler panic-ed", "error", t)
 					}
 				default:
-					log.Error(nil, "Handler panic-ed with unknown error", "value", rvr)
+					log.ErrorContext(ctx, "Handler panic-ed with unknown error", "value", rvr)
 				}
 				w.WriteHeader(http.StatusInternalServerError)
 			}
