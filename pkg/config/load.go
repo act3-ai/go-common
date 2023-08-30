@@ -2,12 +2,12 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/adrg/xdg"
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
@@ -17,14 +17,14 @@ import (
 // It uses https://github.com/imdario/mergo   mergo.Merge()
 
 // Load reads in config file by searching for the first in configFiles
-func Load(log logr.Logger, scheme *runtime.Scheme, conf runtime.Object, configFiles []string) error {
+func Load(log *slog.Logger, scheme *runtime.Scheme, conf runtime.Object, configFiles []string) error {
 	codecs := serializer.NewCodecFactory(scheme, serializer.EnableStrict)
 
 	// For now we simply pick the first one.  If we wanted to expand this we could use mergo (see above) to merge the files in reverse order.
 	for _, filename := range configFiles {
 		content, err := os.ReadFile(filename)
 		if err != nil {
-			log.V(1).Info("Skipping config file", "path", filename, "reason", err)
+			log.Debug("Skipping config file", "path", filename, "reason", err)
 			continue
 		}
 
