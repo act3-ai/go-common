@@ -1,7 +1,10 @@
 // Package redact performs data redaction to prevent credential leakage in logs or the console.
 package redact
 
-import "net/url"
+import (
+	"log/slog"
+	"net/url"
+)
 
 // datapolicy could be used to redact sensitive information before logging (not implemented yet).  Something like https://gist.github.com/hvoecking/10772475
 // Redacting bools does not make any sense. Redacted pointer, slices, arrays, can be nilled.  Redacted string can be "[REDACTED]".  Redacted values of map[string]string we need to know if the redaction should happen in the key or value or both.  Maybe we can change the type to map[string]Secret wherethe struct Secret has a field that has the datapolicy tag.
@@ -10,6 +13,18 @@ import "net/url"
 
 // Redacted is a string used to replace redacted data
 const Redacted = "[REDACTED]"
+
+type Secret string
+
+func (r Secret) LogValue() slog.Value {
+	return slog.StringValue(Redacted)
+}
+
+type SecretURL string
+
+func (r SecretURL) LogValue() slog.Value {
+	return slog.StringValue(URLString(string(r)))
+}
 
 // URLString removes the password from the URL if present
 func URLString(s string) string {
