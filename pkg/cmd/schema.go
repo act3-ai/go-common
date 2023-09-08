@@ -146,35 +146,50 @@ func generateSchema(r *jsonschema.Reflector, dir string, schemaType any) (string
 	return schemaFile, nil
 }
 
-func generateVSCodeSettings(schemaFile string, fileMatches []string) (vsCodeYAMLSchemaSettings, vsCodeJSONSchemaSettings) {
-	yamlSettings := vsCodeYAMLSchemaSettings{}
-	jsonSettings := vsCodeJSONSchemaSettings{}
-
+func generateVSCodeSettings(schemaFile string, fileMatches []string) (yamlRule vsCodeYAMLSchemaSettings, jsonRule vsCodeJSONSchemaSettings) {
 	// VS Code requires local file paths begin with "file://"
 	schemaFileURI := "file://" + schemaFile
 
+	yamlFiles := []string{}
+	jsonFiles := []string{}
+
 	// Process file matches to output settings to add to VS Code
-	jsonRule := vsCodeJSONSchemaSetting{
-		URL:       schemaFileURI,
-		FileMatch: []string{},
-	}
 	for _, pattern := range fileMatches {
 		switch filepath.Ext(pattern) {
 		case ".yaml", ".yml":
 			// Add entry to the YAML schemas map
-			yamlSettings[schemaFileURI] = pattern
+			yamlFiles = append(yamlFiles, pattern)
 		case ".json":
 			// Add to list of file matches
-			jsonRule.FileMatch = append(jsonRule.FileMatch, pattern)
+			jsonFiles = append(jsonFiles, pattern)
+		}
+	}
+
+	// Only add the YAML setting if there were YAML files given
+	switch length := len(yamlFiles); {
+	case length == 1:
+		// Add as a string for single file association
+		yamlRule = vsCodeYAMLSchemaSettings{
+			schemaFileURI: yamlFiles[0],
+		}
+	case length > 1:
+		// Add as a list for multiple file associations
+		yamlRule = vsCodeYAMLSchemaSettings{
+			schemaFileURI: yamlFiles,
 		}
 	}
 
 	// Only add the JSON setting if there were JSON files given
-	if len(jsonRule.FileMatch) > 0 {
-		jsonSettings = append(jsonSettings, jsonRule)
+	if len(jsonFiles) > 0 {
+		jsonRule = vsCodeJSONSchemaSettings{
+			{
+				URL:       schemaFileURI,
+				FileMatch: jsonFiles,
+			},
+		}
 	}
 
-	return yamlSettings, jsonSettings
+	return yamlRule, jsonRule
 }
 
 /*
@@ -185,7 +200,7 @@ Example VS Code YAML schemas setting:
 		"https://goreleaser.com/static/schema.json": ".goreleaser.yaml",
 	},
 */
-type vsCodeYAMLSchemaSettings map[string]string
+type vsCodeYAMLSchemaSettings map[string]any
 
 func (s *vsCodeYAMLSchemaSettings) add(newSettings vsCodeYAMLSchemaSettings) {
 	maps.Copy(*s, newSettings)
