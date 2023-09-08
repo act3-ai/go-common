@@ -33,7 +33,7 @@ func main() {
 		commands.NewGendocsCmd(nil),
 	)
 
-	if err := runner.Run(root, "ACE_TELEMETRY_VERBOSITY"); err != nil {
+	if err := runner.Run(root, "ACE_SAMPLE_VERBOSITY"); err != nil {
 		// fmt.Fprintln(os.Stderr, "Error occurred", err)
 		os.Exit(1)
 	}

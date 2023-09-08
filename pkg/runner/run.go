@@ -15,7 +15,11 @@ import (
 // RunWithContext will run the root level cobra command but first setup logging with Zap
 func RunWithContext(ctx context.Context, cmd *cobra.Command, verbosityEnvName string) error {
 	level := new(slog.LevelVar)
-	log := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	options := &slog.HandlerOptions{
+		AddSource: true,
+		Level:     level,
+	}
+	log := slog.New(slog.NewJSONHandler(os.Stderr, options))
 
 	// flags
 	var verbosity int
