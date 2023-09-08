@@ -8,7 +8,8 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-logr/logr"
+
+	"git.act3-ace.com/ace/go-common/pkg/logger"
 )
 
 // adapted from https://medium.com/@ozdemir.zynl/rest-api-error-handling-in-go-behavioral-type-assertion-509d93636afd
@@ -24,7 +25,7 @@ func (fn RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	log := logr.FromContextOrDiscard(ctx)
+	log := logger.FromContext(ctx)
 
 	// Handle the error
 	uid := InstanceFromContext(ctx).String()
@@ -33,22 +34,22 @@ func (fn RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var clientError ClientError
 	if !errors.As(err, &clientError) {
 		// If the error is not ClientError, assume that it is a ServerError.
-		log.Error(err, "Internal error")
+		log.ErrorContext(ctx, "Internal error", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		// dump the instance out in the body as a field in JSON so the user can use it in reporting the error (so we can correlate it with the log on the server-side)
 		if err := WriteJSON(w, map[string]any{"instance": uid, "statusCode": http.StatusInternalServerError}); err != nil {
-			log.Error(err, "Failed to write error body")
+			log.ErrorContext(ctx, "Failed to write error body", "error", err)
 		}
 		return
 	}
 
 	// It is a ClientError
-	log.V(1).Info("ClientError", append([]any{"error", clientError.Error()}, clientError.ErrorArgs()...)...)
+	log.DebugContext(ctx, "ClientError", append([]any{"error", clientError.Error()}, clientError.ErrorArgs()...)...)
 
 	// Provide the error to the client
 	body, err := clientError.ResponseBody()
 	if err != nil {
-		log.Error(err, "Failed to get the response body")
+		log.ErrorContext(ctx, "Failed to get the response body", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -58,7 +59,7 @@ func (fn RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(status)
 	if _, err := w.Write(body); err != nil {
-		log.Error(err, "Failed to write error body")
+		log.ErrorContext(ctx, "Failed to write error body", "error", err)
 	}
 }
 
