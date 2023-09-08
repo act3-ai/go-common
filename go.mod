@@ -8,6 +8,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zapr v1.2.4
+	github.com/invopop/jsonschema v0.8.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.7.0
@@ -24,6 +25,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
+	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
