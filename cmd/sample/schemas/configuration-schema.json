@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pt.act3-ace.io/v1alpha3/configuration",
+  "$ref": "#/$defs/Configuration",
+  "$defs": {
+    "Configuration": {
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "apiVersion": {
+          "type": "string"
+        },
+        "users": {
+          "items": {
+            "$ref": "#/$defs/User"
+          },
+          "type": "array",
+          "description": "List of GitLab instances with authorization"
+        },
+        "name": {
+          "type": "string",
+          "description": "Your name, i.e. \"John Doe\""
+        },
+        "email": {
+          "type": "string",
+          "description": "Your email, i.e. \"john.doe@email.com\""
+        },
+        "templateDir": {
+          "type": "string",
+          "description": "Local directory to use for template storage (default \"$XDG_CACHE_HOME/act3/pt/templates\")"
+        },
+        "worktreeDir": {
+          "type": "string",
+          "description": "Local directory to use for Git worktrees (default \"$XDG_CACHE_HOME/act3/pt/worktrees\")"
+        },
+        "cacheDir": {
+          "type": "string",
+          "description": "Local directory to use for for general cache (default \"$XDG_CACHE_HOME/act3/pt/cache\")"
+        },
+        "catalog": {
+          "type": "string",
+          "description": "Git Repository URL or path to a template catalog (default \"https://git.act3-ace.com/devsecops/project-templates/catalog.git\")"
+        },
+        "offline": {
+          "type": "boolean",
+          "description": "Disable network-reliant features"
+        },
+        "ci": {
+          "type": "boolean",
+          "description": "For CI pipeline use. When enabled, act3-pt will use CI_JOB_TOKEN for read operations"
+        },
+        "urlType": {
+          "type": "string",
+          "description": "URL protocol to use for Git operations, either SSH or HTTPS (\"ssh\"/\"https\")"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "users",
+        "name",
+        "email",
+        "urlType"
+      ],
+      "description": "Configuration type is used to store a user's current configuration settings"
+    },
+    "User": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name for the GitLab instance (ex. act3)"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL to the GitLab instance (i.e. git.act3-ace.com)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "User stores authorization for a GitLab user"
+    }
+  }
+}
