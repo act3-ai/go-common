@@ -1,4 +1,58 @@
-// Package genschema generates JSON Schema definitions for Go types
+/*
+Package genschema generates JSON Schema definitions for Go types.
+
+The JSON Schema generation uses [invopop/jsonschema], which is based on type reflection.
+
+The schema definitions are intended to be embedded in a Go CLI binary to be "generated" on the user's system. Below is an example of how to generate the schema use the go:generate directive:
+
+	package gen
+
+	//go:generate go run internal/gen/main.go
+
+And the main.go file called by "//go:generate go run internal/gen/main.go"
+
+	//go:build ignore
+
+	package main
+
+	import (
+		"fmt"
+		"log"
+
+		"git.act3-ace.com/ace/go-common/pkg/genschema"
+		"git.act3-ace.com/devsecops/act3-pt/pkg/apis/pt.act3-ace.io/v1alpha3"
+	)
+
+	func main() {
+	 	// Generate JSON Schema definitions
+	 	if err := genschema.GenJSONSchema(
+	 		"cmd/act3-pt/schemas",
+	 		[]any{&v1alpha3.Project{}, &v1alpha3.Template{}, &v1alpha3.Configuration{}},
+	 		"pt.act3-ace.io/v1alpha3",
+	 		"git.act3-ace.com/devsecops/act3-pt",
+	 	); err != nil {
+	 		log.Fatal(fmt.Errorf("JSON Schema generation failed: %w", err))
+	 	}
+	}
+
+And finally, embedding the JSON Schema definitions and adding a "genschema" command:
+
+	//go:embed schemas/*
+	var schemaDefs embed.FS
+
+	associations := []SchemaAssociation{
+		{
+			Definition: "schemas/project-schema.json",
+			FileMatch:  []string{".act3-pt.yaml"},
+		},
+		{
+			Definition: "schemas/template-shema.json",
+			FileMatch:  []string{".act3-template.yaml"},
+		},
+	}
+
+	NewGenschemaCmd(schemaDefs, associations)
+*/
 package genschema
 
 import (
