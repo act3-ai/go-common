@@ -3,51 +3,60 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
 
-	"github.com/invopop/jsonschema"
 	"github.com/spf13/cobra"
 )
 
-// Schema represents a JSON Schema definition to generate
+// SchemaAssociation associates a JSON Schema definition to the files it validates
 //
 // Example:
 //
-//	schemas := []Schema{
+//	associations := []SchemaAssociation{
 //		{
-//			Type:      &v1alpha3.Project{},
-//			FileMatch: []string{".act3-pt.yaml"},
+//			Definition: "project-schema.json",
+//			FileMatch:  []string{".act3-pt.yaml"},
 //		},
 //		{
-//			Type:      &v1alpha3.Template{},
-//			FileMatch: []string{".act3-template.yaml"},
+//			Definition: "template-shema.json",
+//			FileMatch:  []string{".act3-template.yaml"},
 //		},
 //	}
-type Schema struct {
-	Type      any      // The type representing the schema
-	FileMatch []string // List of filenames to validate with the schema
+type SchemaAssociation struct {
+	Definition string   // Path to the schema definition
+	FileMatch  []string // List of filenames to validate with the schema
 }
 
-// NewSchemaCmd creates a command to generate the internal schema definitions in JSONSchema
-// schemaMap is a map of types (schema) to a list of patterns for files that should match the schema
+// NewGenschemaCmd creates the genschema command, which generates JSON Schema definitions.
+//
+// The JSON Schema definitions must be made available in the schemaDefs fs.FS by embedding them. The [go-common/pkg/genschema] package provides the functionality to generate the JSON Schema definitions from Go types at build time.
+//
+// The associations list is used to create a snippet of VS Code settings to enable YAML/JSON file validation using the generated schema definitions.
 //
 // Example:
 //
-//	schemas := []Schema{
+//	//go:embed schemas/*
+//	var schemaDefs embed.FS
+//
+//	associations := []SchemaAssociation{
 //		{
-//			Type:      &v1alpha3.Project{},
-//			FileMatch: []string{".act3-pt.yaml"},
+//			Definition: "schemas/project-schema.json",
+//			FileMatch:  []string{".act3-pt.yaml"},
 //		},
 //		{
-//			Type:      &v1alpha3.Template{},
-//			FileMatch: []string{".act3-template.yaml"},
+//			Definition: "schemas/template-shema.json",
+//			FileMatch:  []string{".act3-template.yaml"},
 //		},
 //	}
 //
-//	NewSchemaCmd("git.act3-ace.com/devsecops/act3-pt", "pt.act3-ace.io/v1alpha3", schemas)
-func NewSchemaCmd(module string, baseSchemaID string, schemas []Schema) *cobra.Command {
+//	NewGenschemaCmd(schemaDefs, associations)
+//
+// [go-common/pkg/genschema]: https://git.act3-ace.com/ace/go-common/-/tree/main/pkg/genschema
+func NewGenschemaCmd(schemaDefs fs.FS, associations []SchemaAssociation) *cobra.Command {
 	var schemaCmd = &cobra.Command{
 		Use:   "genschema <schema location>",
 		Short: "Outputs configuration file validators",
@@ -61,26 +70,8 @@ Provides instructions for adding the schema definitions to VS Code to validate c
 			}
 
 			if err := os.MkdirAll(schemaDir, 0o755); err != nil {
-				return fmt.Errorf("failed to create parent directory: %w", err)
+				return fmt.Errorf("failed to create output directory: %w", err)
 			}
-
-			/*
-				JSON Schema Generator Setup
-
-				AddGoComments: enables setting descriptions from Go comments
-				SetBaseSchemaID: changes the $id field of the schema to start with this string
-										rather than the module path
-
-			*/
-
-			r := new(jsonschema.Reflector)
-
-			err = r.AddGoComments(module, "./")
-			if err != nil {
-				return fmt.Errorf("could not add comments to schema generator: %w", err)
-			}
-
-			r.SetBaseSchemaID(baseSchemaID)
 
 			/*
 				Iterate over each schema that needs generated
@@ -89,34 +80,51 @@ Provides instructions for adding the schema definitions to VS Code to validate c
 			yamlSettings := vsCodeYAMLSchemaSettings{}
 			jsonSettings := vsCodeJSONSchemaSettings{}
 
-			for _, schema := range schemas {
-				// Create the JSON Schema
-				schemaFile, err := generateSchema(r, schemaDir, schema.Type)
+			if err = fs.WalkDir(schemaDefs, ".", func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
 				}
 
-				// Build the VS Code settings to associate the schema with files
-				newYAML, newJSON := generateVSCodeSettings(schemaFile, schema.FileMatch)
+				if d.IsDir() {
+					return nil
+				}
 
-				// Add the settings to the global settings
-				yamlSettings.add(newYAML)
-				jsonSettings.add(newJSON)
+				// Create file from fs.FS to schemaDir
+				if err = copyFile(schemaDefs, schemaDir, path); err != nil {
+					return fmt.Errorf("could not create schema definition %q: %w", path, err)
+				}
+
+				schemaFile := filepath.Join(schemaDir, path)
+
+				for _, assoc := range associations {
+					if path == assoc.Definition {
+						// Build the VS Code settings to associate the schema with files
+						newYAML, newJSON := generateVSCodeSettings(schemaFile, assoc.FileMatch)
+
+						// Add the settings to the global settings
+						yamlSettings.add(newYAML)
+						jsonSettings.add(newJSON)
+					}
+				}
+
+				return nil
+			}); err != nil {
+				return fmt.Errorf("error generating schema files: %w", err)
 			}
 
-			yamlout, err := yamlSettings.marshal()
-			if err != nil {
-				return err
-			}
-			if len(yamlout) > 0 {
+			if len(yamlSettings) > 0 {
+				yamlout, err := yamlSettings.marshal()
+				if err != nil {
+					return err
+				}
 				cmd.Println("Add the following to VS Code's settings.json file to enable YAML file validation:\n\n" + yamlout + "\n")
 			}
 
-			jsonout, err := jsonSettings.marshal()
-			if err != nil {
-				return err
-			}
-			if len(jsonout) > 0 {
+			if len(jsonSettings) > 0 {
+				jsonout, err := jsonSettings.marshal()
+				if err != nil {
+					return err
+				}
 				cmd.Println("Add the following to VS Code's settings.json file to enable JSON file validation:\n\n" + jsonout + "\n")
 			}
 
@@ -127,23 +135,24 @@ Provides instructions for adding the schema definitions to VS Code to validate c
 	return schemaCmd
 }
 
-func generateSchema(r *jsonschema.Reflector, dir string, schemaType any) (string, error) {
-	// Create the JSON Schema
-	schema := r.Reflect(schemaType)
-
-	bts, err := json.MarshalIndent(schema, "", "  ")
+func copyFile(srcFS fs.FS, dstDir, path string) error {
+	src, err := srcFS.Open(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to create jsonschema: %w", err)
+		return fmt.Errorf("could not open file %q: %w", path, err)
 	}
 
-	// Write JSON Schema definition to a file
-	// Derive file name from "schema.ID", format is Go type name in lowercase
-	schemaFile := filepath.Join(dir, filepath.Base(schema.ID.Base().String())+"-schema.json")
-	if err := os.WriteFile(schemaFile, bts, 0o666); err != nil {
-		return schemaFile, fmt.Errorf("failed to write jsonschema file: %w", err)
+	destFile := filepath.Join(dstDir, path)
+
+	dst, err := os.Create(destFile)
+	if err != nil {
+		return fmt.Errorf("could not create file %q: %w", destFile, err)
 	}
 
-	return schemaFile, nil
+	if _, err = io.Copy(dst, src); err != nil {
+		return fmt.Errorf("could not copy content to %q: %w", dst.Name(), err)
+	}
+
+	return nil
 }
 
 func generateVSCodeSettings(schemaFile string, fileMatches []string) (yamlRule vsCodeYAMLSchemaSettings, jsonRule vsCodeJSONSchemaSettings) {
