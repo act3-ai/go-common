@@ -1,3 +1,4 @@
+// Package logger is common logging functionality to use slog
 package logger
 
 import (

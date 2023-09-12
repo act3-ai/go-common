@@ -14,14 +14,18 @@ import (
 // Redacted is a string used to replace redacted data
 const Redacted = "[REDACTED]"
 
+// Secret represents a secret string that will be redacted
 type Secret string
 
+// LogValue implements slog.LogValuer
 func (r Secret) LogValue() slog.Value {
 	return slog.StringValue(Redacted)
 }
 
+// SecretURL represents a URL that might contain secret credentials that will be redacted
 type SecretURL string
 
+// LogValue implements slog.LogValuer
 func (r SecretURL) LogValue() slog.Value {
 	return slog.StringValue(URLString(string(r)))
 }
