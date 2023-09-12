@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sample.act3-ace.io/v1alpha1/configuration",
+  "$ref": "#/$defs/Configuration",
+  "$defs": {
+    "Configuration": {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    }
+  }
+}

@@ -58,3 +58,11 @@ func DefaultConfigSearchPath(parts ...string) []string {
 func DefaultConfigPath(parts ...string) string {
 	return filepath.Join(xdg.ConfigHome, filepath.Join(parts...))
 }
+
+// DefaultConfigValidatePath returns the list of paths to validate as configuration files
+func DefaultConfigValidatePath(parts ...string) []string {
+	return []string{
+		strings.Join(parts, "-"),
+		filepath.Join(parts...),
+	}
+}
