@@ -1,15 +1,20 @@
 /*
 Package genschema generates JSON Schema definitions for Go types.
 
-The JSON Schema generation uses [invopop/jsonschema], which is based on type reflection.
+The JSON Schema generation uses [invopop/jsonschema], which is based on type reflection. The schema definitions are intended to be embedded in a Go CLI binary to be "generated" on the user's system.
 
-The schema definitions are intended to be embedded in a Go CLI binary to be "generated" on the user's system. Below is an example of how to generate the schema use the go:generate directive:
+# Example
 
+Below is an example of how to generate the schema use the go:generate directive:
+
+	// gen.go
 	package gen
 
-	//go:generate go run internal/gen/main.go
+	//go:generate go run internal/gen/main.go cmd/example/schemas
 
-And the main.go file called by "//go:generate go run internal/gen/main.go"
+And the file called by the go:generate directive in gen.go:
+
+	// internal/gen/main.go
 
 	//go:build ignore
 
@@ -20,38 +25,69 @@ And the main.go file called by "//go:generate go run internal/gen/main.go"
 		"log"
 
 		"git.act3-ace.com/ace/go-common/pkg/genschema"
-		"git.act3-ace.com/devsecops/act3-pt/pkg/apis/pt.act3-ace.io/v1alpha3"
+		"git.act3-ace.com/ace/example/pkg/apis/example.act3-ace.io/v1alpha1"
 	)
 
 	func main() {
+		if len(os.Args) < 1 {
+			log.Fatal("Must specify a target directory for schema generation.")
+		}
 	 	// Generate JSON Schema definitions
 	 	if err := genschema.GenJSONSchema(
 	 		"cmd/act3-pt/schemas",
-	 		[]any{&v1alpha3.Project{}, &v1alpha3.Template{}, &v1alpha3.Configuration{}},
-	 		"pt.act3-ace.io/v1alpha3",
-	 		"git.act3-ace.com/devsecops/act3-pt",
+	 		[]any{&v1alpha1.Configuration{}, &v1alpha1.Data{}},
+	 		"example.act3-ace.io/v1alpha1",
+	 		"git.act3-ace.com/ace/example",
 	 	); err != nil {
 	 		log.Fatal(fmt.Errorf("JSON Schema generation failed: %w", err))
 	 	}
 	}
 
-And finally, embedding the JSON Schema definitions and adding a "genschema" command:
+And finally, embedding the JSON Schema definitions in a CLI and adding the "genschema" command:
+
+	// cmd/example/main.go
+	package main
+
+	import (
+		"embed"
+		"io/fs"
+		"log"
+		"os"
+
+		"github.com/spf13/cobra"
+
+		commands "git.act3-ace.com/ace/go-common/pkg/cmd"
+	)
 
 	//go:embed schemas/*
-	var schemaDefs embed.FS
+	var schemas embed.FS
 
-	associations := []SchemaAssociation{
-		{
-			Definition: "schemas/project-schema.json",
-			FileMatch:  []string{".act3-pt.yaml"},
-		},
-		{
-			Definition: "schemas/template-shema.json",
-			FileMatch:  []string{".act3-template.yaml"},
-		},
+	func main() {
+		cmd := &cobra.Command{
+			Use: "example",
+		}
+
+		schemaAssociations := []SchemaAssociation{
+			{
+				Definition: "schemas/configuration-schema.json",
+				FileMatch:  []string{"ace-example-configuration.yaml"},
+			},
+			{
+				Definition: "schemas/data-shema.json",
+				FileMatch:  []string{"ace-example-data.json"},
+			},
+		}
+
+		cmd.AddCommand(
+			commands.NewGenschemaCmd(schemas, schemaAssociations),
+		)
+
+		if err := cmd.Execute(); err != nil {
+			os.Exit(1)
+		}
 	}
 
-	NewGenschemaCmd(schemaDefs, associations)
+Now, running "go generate ./..." before running "go build ./cmd/example" results in a CLI with a "genschema" command that will generate accurate JSON Schema definitions for the provided schemas.
 */
 package genschema
 
@@ -71,7 +107,7 @@ import (
 // - baseSchemaID is the base name for the schema definitions. Use "apiVersion" values for KRM file schemas.
 // - moduleName is used to add Go comments to the schema as descriptions, pass an empty string to disable this.
 //
-//	GenJSONSchema("schemas", []any{&v1alpha3.Project{}, &v1alpha3.Template{}}, "pt.act3-ace.io/v1alpha3", "git.act3-ace.com/devsecops/act3-pt")
+//	GenJSONSchema("schemas", []any{&v1alpha1.Configuration{}, &v1alpha1.Data{}}, "example.act3-ace.io/v1alpha1", "git.act3-ace.com/ace/example")
 func GenJSONSchema(schemaDir string, schemas []any, baseSchemaID string, moduleName string) error {
 	if err := os.MkdirAll(schemaDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create schema directory: %w", err)
