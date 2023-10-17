@@ -62,7 +62,8 @@ func NewGenschemaCmd(schemaDefs fs.FS, associations []SchemaAssociation) *cobra.
 		Short: "Outputs configuration file validators",
 		Long: `Outputs schema definitions for configuration files in JSON Schema format.
 Provides instructions for adding the schema definitions to VS Code to validate configuration files.`,
-		Args: cobra.ExactArgs(1),
+		Args:   cobra.ExactArgs(1),
+		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			schemaDir, err := filepath.Abs(args[0])
 			if err != nil {
