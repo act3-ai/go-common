@@ -2,12 +2,58 @@ package genschema
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
-	"github.com/iancoleman/orderedmap"
 	"github.com/invopop/jsonschema"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+// GenerateGroupSchemas is a helper to generate all the schemas you want into dir
+func GenerateGroupSchemas(dir string, scheme *runtime.Scheme, apiGroups []string, moduleName string) error {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("failed to create schema directory: %w", err)
+	}
+
+	/*
+		JSON Schema Generator Setup
+
+		AddGoComments: enables setting descriptions from Go comments
+		SetBaseSchemaID: changes the $id field of the schema to start with this string
+								rather than the module path
+	*/
+
+	r := new(jsonschema.Reflector)
+	r.DoNotReference = true
+
+	if moduleName != "" {
+		// WARNING: because of the "./" argument, this only works when running on the source files
+		// 	This can cause errors when running in an executable since it will try to parse any .go files
+		// 	on the system. This limitation is why we generate the schema at build time and embed the
+		// 	schema files into the executable.
+		err := r.AddGoComments(moduleName, "./")
+		if err != nil {
+			return fmt.Errorf("could not add comments to schema generator: %w", err)
+		}
+	}
+
+	// Iterate over each schema that needs generated
+	for _, group := range apiGroups {
+		// Create the JSON Schema
+		schema, err := ForAPIGroup(r, scheme, group)
+		if err != nil {
+			return err
+		}
+
+		schemaFile := group + ".schema.json"
+		if err = WriteSchema(schema, filepath.Join(dir, schemaFile)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // ForAPIGroup creates a JSONSchema validator for an API Group recognized by a runtime.Scheme.
 //
@@ -24,89 +70,80 @@ func ForAPIGroup(r *jsonschema.Reflector, scheme *runtime.Scheme, group string) 
 
 	// Iterate over each defined version for this group
 	for _, gv := range scheme.PrioritizedVersionsForGroup(group) {
-		versionSchema, err := ForAPIVersion(r, scheme, gv)
+		versionSchema, err := forAPIVersion(r, scheme, gv)
 		if err != nil {
 			return groupSchema, err
 		}
 
-		// "#/$defs/" + version
-		groupSchema.AllOf = append(groupSchema.AllOf, apiVersionLinker(versionSchema.ID.String(), gv))
-
 		groupSchema.Definitions[gv.Version] = versionSchema
+
+		// Add a rule for each definition
+		for name := range versionSchema.Definitions {
+			groupSchema.AllOf = append(groupSchema.AllOf,
+				linkGVK(
+					gv.WithKind(name),
+					"#/$defs/"+gv.Version+"/$defs/"+name,
+				),
+			)
+		}
 	}
 
 	return groupSchema, nil
 }
 
-// ForAPIVersion creates a JSONSchema validator for an API Version recognized by a runtime.Scheme.
+// forAPIVersion creates a JSONSchema validator for an API Version recognized by a runtime.Scheme.
 //
 // The resulting schema validates all Kinds recognized by the Scheme as part of the GroupVersion
 // by mapping each "kind" to a subschema.
-func ForAPIVersion(r *jsonschema.Reflector, scheme *runtime.Scheme, gv schema.GroupVersion) (*jsonschema.Schema, error) {
+func forAPIVersion(r *jsonschema.Reflector, scheme *runtime.Scheme, gv schema.GroupVersion) (*jsonschema.Schema, error) {
 	versionSchema := &jsonschema.Schema{
-		Version:     jsonschema.Version,
-		ID:          jsonschema.ID("https://" + gv.Group).Add(gv.Version),
+		Version: jsonschema.Version,
+		ID:      jsonschema.ID("https://" + gv.Group).Add(gv.Version),
+		// ID:          jsonschema.ID("/" + gv.Version),
 		Description: fmt.Sprintf("Version %s of the API %s", gv.Version, gv.Version),
 		Definitions: make(jsonschema.Definitions),
 	}
 
 	// Iterate over each defined kind for this version of this group
 	for name := range scheme.KnownTypes(gv) {
-		kindSchema := ForAPIKind(r, scheme, gv.WithKind(name))
-
-		// Add rule to associate the GroupVersionKind with
-		// the newly-added schema definition
-		versionSchema.AllOf = append(
-			versionSchema.AllOf,
-			kindLinker(
-				kindSchema.ID.String(),
-				gv.WithKind(name),
-			),
-		)
-
-		versionSchema.Definitions[name] = kindSchema
+		versionSchema.Definitions[name] = forAPIKind(r, scheme, gv.WithKind(name))
 	}
 
 	return versionSchema, nil
 }
 
-// ForAPIKind creates a JSONSchema validator for an API GroupVersionKind recognized by a runtime.Scheme.
-func ForAPIKind(r *jsonschema.Reflector, scheme *runtime.Scheme, gvk schema.GroupVersionKind) *jsonschema.Schema {
-	r.SetBaseSchemaID(jsonschema.ID("https://" + gvk.Version).Add(gvk.Version).String())
+// forAPIKind creates a JSONSchema validator for an API GroupVersionKind recognized by a runtime.Scheme.
+func forAPIKind(r *jsonschema.Reflector, scheme *runtime.Scheme, gvk schema.GroupVersionKind) *jsonschema.Schema {
+	r.SetBaseSchemaID(jsonschema.ID("https://" + gvk.Group).Add(gvk.Version).String())
+	// r.SetBaseSchemaID("/" + gvk.Version)
 
 	kindType := scheme.KnownTypes(gvk.GroupVersion())[gvk.Kind]
 	kindSchema := r.ReflectFromType(kindType)
 
+	kindSchema.Properties.Set("apiVersion", &jsonschema.Schema{
+		Type:        "string",
+		Const:       gvk.GroupVersion().String(),
+		Description: "Identifies the API group name and version for this data",
+	})
+
+	kindSchema.Properties.Set("kind", &jsonschema.Schema{
+		Type:        "string",
+		Const:       gvk.Kind,
+		Description: "Identifies the API kind for this data",
+	})
+
 	return kindSchema
 }
 
-// func groupLinker(refToGroupDefinition, groupName string) *jsonschema.Schema {
-// 	// Regex to match any apiVersion specifying the group "groupName"
-// 	pattern := fmt.Sprintf("^%s(/.*)*$", groupName)
-
-// 	propMap := orderedmap.New()
-// 	propMap.Set("apiVersion", &jsonschema.Schema{
-// 		Pattern: pattern,
-// 	})
-
-// 	gvkRule := &jsonschema.Schema{
-// 		If: &jsonschema.Schema{
-// 			Properties: propMap,
-// 		},
-// 		Then: &jsonschema.Schema{
-// 			Ref: refToGroupDefinition,
-// 		},
-// 	}
-
-// 	return gvkRule
-// }
-
-// kindLinker creates a JSONSchema "if/then" condition to associate objects matching
-// the "apiVersion" field to the subschema for that GroupVersion
-func apiVersionLinker(refToVersionDefinition string, gv schema.GroupVersion) *jsonschema.Schema {
-	propMap := orderedmap.New()
+// linkGVK creates a JSONSchema "if/then" condition to associate objects matching
+// the "apiVersion" and "kind" fields to the subschema for that GroupVersionKind
+func linkGVK(gvk schema.GroupVersionKind, jsonPointer string) *jsonschema.Schema {
+	propMap := jsonschema.NewProperties()
 	propMap.Set("apiVersion", &jsonschema.Schema{
-		Const: gv.String(),
+		Const: gvk.GroupVersion().String(),
+	})
+	propMap.Set("kind", &jsonschema.Schema{
+		Const: gvk.Kind,
 	})
 
 	gvkRule := &jsonschema.Schema{
@@ -114,33 +151,7 @@ func apiVersionLinker(refToVersionDefinition string, gv schema.GroupVersion) *js
 			Properties: propMap,
 		},
 		Then: &jsonschema.Schema{
-			Ref: refToVersionDefinition,
-		},
-	}
-
-	return gvkRule
-}
-
-// kindLinker creates a JSONSchema "if/then" condition to associate objects matching
-// the "apiVersion" and "kind" fields to the subschema for that GroupVersionKind
-func kindLinker(refToKindDefinition string, gvk schema.GroupVersionKind) *jsonschema.Schema {
-	apiVersionConst := &jsonschema.Schema{
-		Const: gvk.GroupVersion().String(),
-	}
-	kindConst := &jsonschema.Schema{
-		Const: gvk.Kind,
-	}
-
-	propMap := orderedmap.New()
-	propMap.Set("apiVersion", apiVersionConst)
-	propMap.Set("kind", kindConst)
-
-	gvkRule := &jsonschema.Schema{
-		If: &jsonschema.Schema{
-			Properties: propMap,
-		},
-		Then: &jsonschema.Schema{
-			Ref: refToKindDefinition,
+			Ref: jsonPointer,
 		},
 	}
 

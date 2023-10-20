@@ -10,14 +10,14 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-// GenJSONSchema generates JSON Schema definitions for internal Go types
+// GenerateTypeSchemas generates JSON Schema definitions for internal Go types
 //
 // - schemas is a list of types (schema) to a generate schema for.
 // - baseSchemaID is the base name for the schema definitions. Use "apiVersion" values for KRM file schemas.
 // - moduleName is used to add Go comments to the schema as descriptions, pass an empty string to disable this.
 //
-//	GenJSONSchema("schemas", []any{&v1alpha1.Configuration{}, &v1alpha1.Data{}}, "example.act3-ace.io/v1alpha1", "git.act3-ace.com/ace/example")
-func GenJSONSchema(schemaDir string, schemas []any, baseSchemaID string, moduleName string) error {
+//	GenerateTypeSchemas("schemas", []any{&v1alpha1.Configuration{}, &v1alpha1.Data{}}, "example.act3-ace.io/v1alpha1", "git.act3-ace.com/ace/example")
+func GenerateTypeSchemas(schemaDir string, types []any, baseSchemaID string, moduleName string) error {
 	if err := os.MkdirAll(schemaDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create schema directory: %w", err)
 	}
@@ -50,7 +50,7 @@ func GenJSONSchema(schemaDir string, schemas []any, baseSchemaID string, moduleN
 	r.SetBaseSchemaID(baseSchemaID)
 
 	// Iterate over each schema that needs generated
-	for _, schema := range schemas {
+	for _, schema := range types {
 		// Create the JSON Schema
 		_, err := generateSchema(r, schemaDir, schema)
 		if err != nil {
@@ -78,4 +78,19 @@ func generateSchema(r *jsonschema.Reflector, dir string, schemaType any) (string
 	}
 
 	return schemaFile, nil
+}
+
+// WriteSchema marshals a JSONSchema definition to JSON and writes it to file
+func WriteSchema(schema *jsonschema.Schema, file string) error {
+	bts, err := json.MarshalIndent(schema, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to create jsonschema: %w", err)
+	}
+
+	// Write JSON Schema definition to a file
+	if err := os.WriteFile(file, bts, 0o666); err != nil {
+		return fmt.Errorf("failed to write jsonschema file: %w", err)
+	}
+
+	return nil
 }
