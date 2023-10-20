@@ -82,7 +82,7 @@ func generateSchema(r *jsonschema.Reflector, dir string, schemaType any) (string
 
 // WriteSchema marshals a JSONSchema definition to JSON and writes it to file
 func WriteSchema(schema *jsonschema.Schema, file string) error {
-	bts, err := json.MarshalIndent(schema, "", "  ")
+	bts, err := json.Marshal(schema)
 	if err != nil {
 		return fmt.Errorf("failed to create jsonschema: %w", err)
 	}
