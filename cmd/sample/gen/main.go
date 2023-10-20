@@ -20,8 +20,9 @@ func main() {
 	if len(os.Args) < 1 {
 		log.Fatal("Must specify a target directory for schema generation.")
 	}
+
 	// Generate JSON Schema definitions
-	if err := genschema.GenJSONSchema(
+	if err := genschema.GenerateTypeSchemas(
 		os.Args[1],
 		[]any{&Configuration{}},
 		"sample.act3-ace.io/v1alpha1",
