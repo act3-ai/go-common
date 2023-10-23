@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/invopop/jsonschema"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -70,7 +71,7 @@ func ForAPIGroup(r *jsonschema.Reflector, scheme *runtime.Scheme, group string) 
 
 	// Iterate over each defined version for this group
 	for _, gv := range scheme.PrioritizedVersionsForGroup(group) {
-		versionSchema, err := forAPIVersion(r, scheme, gv)
+		versionSchema, typeNames, err := forAPIVersion(r, scheme, gv)
 		if err != nil {
 			return groupSchema, err
 		}
@@ -78,13 +79,8 @@ func ForAPIGroup(r *jsonschema.Reflector, scheme *runtime.Scheme, group string) 
 		groupSchema.Definitions[gv.Version] = versionSchema
 
 		// Add a rule for each definition
-		for name := range versionSchema.Definitions {
-			groupSchema.AllOf = append(groupSchema.AllOf,
-				linkGVK(
-					gv.WithKind(name),
-					"#/$defs/"+gv.Version+"/$defs/"+name,
-				),
-			)
+		for _, name := range typeNames {
+			groupSchema.AllOf = append(groupSchema.AllOf, linkGVK(gv.WithKind(name)))
 		}
 	}
 
@@ -95,7 +91,7 @@ func ForAPIGroup(r *jsonschema.Reflector, scheme *runtime.Scheme, group string) 
 //
 // The resulting schema validates all Kinds recognized by the Scheme as part of the GroupVersion
 // by mapping each "kind" to a subschema.
-func forAPIVersion(r *jsonschema.Reflector, scheme *runtime.Scheme, gv schema.GroupVersion) (*jsonschema.Schema, error) {
+func forAPIVersion(r *jsonschema.Reflector, scheme *runtime.Scheme, gv schema.GroupVersion) (*jsonschema.Schema, []string, error) {
 	versionSchema := &jsonschema.Schema{
 		Version: jsonschema.Version,
 		ID:      jsonschema.ID("https://" + gv.Group).Add(gv.Version),
@@ -104,12 +100,20 @@ func forAPIVersion(r *jsonschema.Reflector, scheme *runtime.Scheme, gv schema.Gr
 		Definitions: make(jsonschema.Definitions),
 	}
 
+	// Sort names so resulting schema is stable
+	knownTypes := scheme.KnownTypes(gv)
+	typeNames := make([]string, 0, len(knownTypes))
+	for name := range knownTypes {
+		typeNames = append(typeNames, name)
+	}
+	slices.Sort(typeNames)
+
 	// Iterate over each defined kind for this version of this group
-	for name := range scheme.KnownTypes(gv) {
+	for _, name := range typeNames {
 		versionSchema.Definitions[name] = forAPIKind(r, scheme, gv.WithKind(name))
 	}
 
-	return versionSchema, nil
+	return versionSchema, typeNames, nil
 }
 
 // forAPIKind creates a JSONSchema validator for an API GroupVersionKind recognized by a runtime.Scheme.
@@ -137,23 +141,22 @@ func forAPIKind(r *jsonschema.Reflector, scheme *runtime.Scheme, gvk schema.Grou
 
 // linkGVK creates a JSONSchema "if/then" condition to associate objects matching
 // the "apiVersion" and "kind" fields to the subschema for that GroupVersionKind
-func linkGVK(gvk schema.GroupVersionKind, jsonPointer string) *jsonschema.Schema {
-	propMap := jsonschema.NewProperties()
-	propMap.Set("apiVersion", &jsonschema.Schema{
-		Const: gvk.GroupVersion().String(),
-	})
-	propMap.Set("kind", &jsonschema.Schema{
-		Const: gvk.Kind,
-	})
-
+func linkGVK(gvk schema.GroupVersionKind) *jsonschema.Schema {
 	gvkRule := &jsonschema.Schema{
-		If: &jsonschema.Schema{
-			Properties: propMap,
-		},
+		If: &jsonschema.Schema{Properties: jsonschema.NewProperties()},
 		Then: &jsonschema.Schema{
-			Ref: jsonPointer,
+			Ref: "#/$defs/" + gvk.Version + "/$defs/" + gvk.Kind,
 		},
 	}
+
+	//
+	gvkRule.If.Properties.Set("apiVersion", &jsonschema.Schema{
+		Const: gvk.GroupVersion().String(),
+	})
+
+	gvkRule.If.Properties.Set("kind", &jsonschema.Schema{
+		Const: gvk.Kind,
+	})
 
 	return gvkRule
 }
