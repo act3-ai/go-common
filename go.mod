@@ -7,6 +7,7 @@ require (
 	github.com/djherbis/atime v1.1.0
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/invopop/jsonschema v0.12.0
+	github.com/neilotoole/slogt v1.1.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/cobra v1.7.0
