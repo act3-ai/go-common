@@ -1,86 +1,126 @@
 package cmd
 
 import (
-	"fmt"
-	"io"
-	"io/fs"
-	"os"
-	"path/filepath"
-
 	"github.com/spf13/cobra"
-	"github.com/spf13/cobra/doc"
+
+	embedutil "git.act3-ace.com/ace/go-common/pkg/embedutil"
 )
 
-// NewGendocsCmd is a command to generate the internal CLI documentation in markdown
-// additionalManpages is a map of non-generatable man pages to be included (ex. Quick Start Guides, User Guides)
-func NewGendocsCmd(additionalManpages fs.FS) *cobra.Command {
-	var format string
-	var gendocsCmd = &cobra.Command{
-		Use:    "gendocs <docs location>",
-		Short:  "Generate documentation from usage descriptions",
-		Args:   cobra.ExactArgs(1),
-		Hidden: true,
+// NewGendocsCmd creates a gendocs command group that allows tools to
+// output embedded documentation in various formats
+func NewGendocsCmd(docs *embedutil.Documentation) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "gendocs",
+		Short: "Generate documentation for the tool in various formats",
+	}
+
+	cmd.AddCommand(
+		newHTMLCmd(docs),
+		newMarkdownCmd(docs),
+		newManpageCmd(docs),
+	)
+
+	return cmd
+}
+
+func newHTMLCmd(docs *embedutil.Documentation) *cobra.Command {
+	opts := &embedutil.Options{
+		Format: embedutil.HTML,
+		Types:  []embedutil.DocType{embedutil.TypeGeneral, embedutil.TypeCommands, embedutil.TypeSchemas},
+		Index:  true,
+		Flat:   false,
+	}
+
+	cmd := &cobra.Command{
+		Use: "html [dir]",
+		Aliases: []string{
+			"web",
+			"webpage",
+		},
+		Short: "Generate documentation in HTML format",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			docsPath := args[0]
-
-			root := cmd.Root()
-			root.DisableAutoGenTag = true
-			if format == "md" {
-				return doc.GenMarkdownTree(root, docsPath) //nolint:wrapcheck
-			} else if format == "man" {
-				err := doc.GenManTree(root, nil, docsPath)
-				if err != nil {
-					return err //nolint:wrapcheck
-				}
-
-				if additionalManpages == nil {
-					return nil
-				}
-
-				// Map filename to src path
-				srcMap := map[string]string{}
-
-				return fs.WalkDir(additionalManpages, ".", func(path string, d fs.DirEntry, err error) error { //nolint:wrapcheck
-					if err != nil {
-						return err
-					}
-
-					if d.IsDir() {
-						return nil
-					}
-
-					src, err := additionalManpages.Open(path)
-					if err != nil {
-						return fmt.Errorf("could not open manpage %q: %w", path, err)
-					}
-
-					// Flatten to just filename
-					filename := filepath.Base(path)
-
-					// Check if filename has already been found in the fs.FS so files are not overwritten
-					if srcPath, ok := srcMap[filename]; ok {
-						return fmt.Errorf("duplicate filename %q from %q and %q", filename, path, srcPath)
-					}
-
-					srcMap[filename] = path
-
-					destPath := filepath.Join(docsPath, filename)
-					dst, err := os.Create(destPath)
-					if err != nil {
-						return fmt.Errorf("could not create file %q: %w", destPath, err)
-					}
-
-					if _, err = io.Copy(dst, src); err != nil {
-						return fmt.Errorf("could not copy content to %q: %w", dst.Name(), err)
-					}
-
-					return nil
-				})
+			dir := "."
+			if len(args) > 0 {
+				dir = args[0]
 			}
 
-			return fmt.Errorf("incorrect value for format")
+			return docs.Write(dir, opts)
 		},
 	}
-	gendocsCmd.Flags().StringVarP(&format, "format", "f", "md", "Set output documentation format. Supports \"md\" for markdown or \"man\" for manpage")
-	return gendocsCmd
+
+	cmd.Flags().BoolVarP(&opts.Index, "index", "i", true, `generate an index.html index file`)
+	cmd.Flags().BoolVarP(&opts.Flat, "flat", "f", false, `generate docs in a flat directory structure`)
+	// gendocsCmd.Flags().BoolVarP(&opts.Serve, "serve", "s", opts.Serve, "Serve generated docs")
+
+	return cmd
+}
+
+func newMarkdownCmd(docs *embedutil.Documentation) *cobra.Command {
+	opts := &embedutil.Options{
+		Format: embedutil.Markdown,
+		Types:  []embedutil.DocType{embedutil.TypeGeneral, embedutil.TypeCommands, embedutil.TypeSchemas},
+		Index:  true,
+		Flat:   false,
+	}
+
+	var onlyCommands bool
+
+	cmd := &cobra.Command{
+		Use: "md [dir]",
+		Aliases: []string{
+			"markdown",
+		},
+		Short: "Generate documentation in Markdown format",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if onlyCommands {
+				opts.Types = []embedutil.DocType{embedutil.TypeCommands}
+				opts.Flat = true
+				opts.Index = false
+			}
+
+			dir := "."
+			if len(args) > 0 {
+				dir = args[0]
+			}
+			return docs.Write(dir, opts)
+		},
+	}
+
+	cmd.Flags().BoolVarP(&opts.Index, "index", "i", true, `generate a README.md index file`)
+	cmd.Flags().BoolVarP(&opts.Flat, "flat", "f", false, `generate docs in a flat directory structure`)
+	cmd.Flags().BoolVar(&onlyCommands, "only-commands", false, "only generate command documentation")
+	cmd.MarkFlagsMutuallyExclusive("only-commands", "index")
+	cmd.MarkFlagsMutuallyExclusive("only-commands", "flat")
+
+	return cmd
+}
+
+func newManpageCmd(docs *embedutil.Documentation) *cobra.Command {
+	opts := &embedutil.Options{
+		Format: embedutil.Manpage,
+		Types:  []embedutil.DocType{embedutil.TypeGeneral, embedutil.TypeCommands},
+		Index:  false,
+		Flat:   true,
+	}
+
+	cmd := &cobra.Command{
+		Use: "man [dir]",
+		Aliases: []string{
+			"manpage",
+			"manpages",
+		},
+		Short: "Generate documentation in manpage format",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dir := "."
+			if len(args) > 0 {
+				dir = args[0]
+			}
+			return docs.Write(dir, opts)
+		},
+	}
+
+	return cmd
 }

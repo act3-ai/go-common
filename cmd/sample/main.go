@@ -3,22 +3,27 @@ package main
 
 import (
 	"embed"
-	"io/fs"
-	"log"
 	"os"
 
 	"github.com/spf13/cobra"
 
 	commands "git.act3-ace.com/ace/go-common/pkg/cmd"
 	"git.act3-ace.com/ace/go-common/pkg/config"
+	"git.act3-ace.com/ace/go-common/pkg/embedutil"
 	"git.act3-ace.com/ace/go-common/pkg/runner"
 	vv "git.act3-ace.com/ace/go-common/pkg/version"
 )
 
 // manpages and schema definitions are embedded here for use in the gendocs and genschema commands
 //
-//go:embed manpages/* schemas/*
-var embeds embed.FS
+//go:embed schemas/*
+var schemas embed.FS
+
+// an example quick start guide is embedded here
+// for use in the "gendocs" and "info" commands
+//
+//go:embed embeds/*
+var docs embed.FS
 
 // getVersionInfo retreives the proper version information for this executable
 func getVersionInfo() vv.Info {
@@ -37,18 +42,6 @@ func main() {
 		Use: "sample",
 	}
 
-	// Create fs.FS rooted in the "manpages" dir
-	manpages, err := fs.Sub(embeds, "manpages")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Create fs.FS rooted in the "schemas" dir
-	schemas, err := fs.Sub(embeds, "schemas")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	schemaAssociations := []commands.SchemaAssociation{
 		{
 			Definition: "configuration-schema.json",
@@ -56,9 +49,21 @@ func main() {
 		},
 	}
 
+	docs := &embedutil.Documentation{
+		Title:   "Sample command showing the use of go-common's utilities for CLI development",
+		Command: root,
+		Categories: []*embedutil.Category{
+			embedutil.NewCategory(
+				"docs", "General Documentation",
+				embedutil.LoadMarkdown("quick-start-guide", "Example Quick Start Guide", "embeds/quick-start-guide.md", docs),
+			),
+		},
+	}
+
 	root.AddCommand(
 		commands.NewVersionCmd(info),
-		commands.NewGendocsCmd(manpages),
+		commands.NewInfoCmd(docs),
+		commands.NewGendocsCmd(docs),
 		commands.NewGenschemaCmd(schemas, schemaAssociations),
 	)
 
