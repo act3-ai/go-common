@@ -5,15 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 
 	"github.com/MakeNowJust/heredoc/v2"
-
-	"git.act3-ace.com/ace/go-common/pkg/fsutil"
 )
 
 // Index creates an index file for the documentation in the requested format
-func (docs *Documentation) Index(outFS *fsutil.FSUtil, opts *Options) ([]byte, error) {
+func (docs *Documentation) Index(outputDir string, opts *Options) ([]byte, error) {
 	if !opts.Format.indexable() || !opts.Index {
 		// Skip indexing if not enabled in options
 		// or not supported by the output format (manpages)
@@ -21,7 +20,7 @@ func (docs *Documentation) Index(outFS *fsutil.FSUtil, opts *Options) ([]byte, e
 	}
 
 	// Generate a markdown-formatted index file
-	index, err := docs.generateMarkdownIndex(outFS, opts)
+	index, err := docs.generateMarkdownIndex(outputDir, opts)
 	if err != nil {
 		return index, err
 	}
@@ -40,20 +39,7 @@ func (docs *Documentation) Index(outFS *fsutil.FSUtil, opts *Options) ([]byte, e
 	}
 }
 
-func (docs *Documentation) writeIndex(outFS *fsutil.FSUtil, opts *Options) error {
-	index, err := docs.Index(outFS, opts)
-	if err != nil {
-		return err
-	}
-
-	if index == nil {
-		return nil
-	}
-
-	return outFS.AddFileWithData(opts.Format.IndexFile(), index)
-}
-
-func (docs *Documentation) generateMarkdownIndex(outFS *fsutil.FSUtil, opts *Options) ([]byte, error) {
+func (docs *Documentation) generateMarkdownIndex(outputDir string, opts *Options) ([]byte, error) {
 	index := new(bytes.Buffer)
 
 	_, _ = fmt.Fprint(index, heredoc.Docf(`
@@ -87,12 +73,14 @@ func (docs *Documentation) generateMarkdownIndex(outFS *fsutil.FSUtil, opts *Opt
 		return nil
 	}
 
+	outputFS := os.DirFS(outputDir)
+
 	addGroupFromDir := func(groupName string, dir string) error {
-		entries, err := fs.ReadDir(outFS, dir)
+		entries, err := fs.ReadDir(outputFS, dir)
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		} else if err != nil {
-			return fmt.Errorf("could not read directory %s: %w", filepath.Join(outFS.RootDir, dir), err)
+			return err
 		}
 
 		if len(entries) == 0 {

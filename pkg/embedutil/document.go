@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"git.act3-ace.com/ace/go-common/pkg/fsutil"
 )
 
 // DocType represents an overarching area of documentation
@@ -70,21 +68,6 @@ func (doc *Document) Render(format Format) ([]byte, error) {
 	}
 
 	return convFunc(doc.Contents)
-}
-
-// helper to write a doc to an FS
-func (doc *Document) write(outFS *fsutil.FSUtil, opts *Options) error {
-	// Evaluate output path
-	path := doc.RenderedName(opts.Format)
-
-	// Evaluate document contents
-	contents, err := doc.Render(opts.Format)
-	if err != nil {
-		return err
-	}
-
-	// Write the file to outFS
-	return outFS.AddFileWithData(path, contents)
 }
 
 // Replaces the current file extension of path with newExtension

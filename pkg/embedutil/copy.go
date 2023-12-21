@@ -3,8 +3,8 @@ package embedutil
 import (
 	"fmt"
 	"io/fs"
-
-	"git.act3-ace.com/ace/go-common/pkg/fsutil"
+	"os"
+	"path/filepath"
 )
 
 // copyOpts stores options for copying an fs.FS
@@ -18,14 +18,15 @@ type copyOpts struct {
 	ContentFunc func(data []byte) ([]byte, error)
 }
 
-// copyFS writes the contents of an fs.FS to a directory, performing path transformations and content conversions in the process.
-func copyFS(sourceFS fs.FS, outputFS *fsutil.FSUtil, opts *copyOpts) ([]string, error) {
+// copyConvert writes the contents of a directory, performing path transformations and content conversions in the process
+func copyConvert(sourceDir, outputDir string, opts *copyOpts) ([]string, error) {
 	// Map of paths output to outputFS to the unmodified path from sourceFS
 	usedPaths := map[string]string{}
 
 	// Store all used paths for indexing later
 	paths := []string{}
 
+	sourceFS := os.DirFS(sourceDir)
 	err := fs.WalkDir(sourceFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -68,7 +69,7 @@ func copyFS(sourceFS fs.FS, outputFS *fsutil.FSUtil, opts *copyOpts) ([]string, 
 
 		paths = append(paths, outPath)
 
-		return outputFS.AddFileWithData(outPath, outContent)
+		return os.WriteFile(filepath.Join(outputDir, outPath), outContent, 0644)
 	})
 	if err != nil {
 		return paths, fmt.Errorf("failed to walk fs: %w", err)

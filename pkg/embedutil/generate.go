@@ -2,12 +2,11 @@ package embedutil
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
-
-	"git.act3-ace.com/ace/go-common/pkg/fsutil"
 )
 
 // Options stores configuration for rendering embedded documentation
@@ -20,23 +19,20 @@ type Options struct {
 
 // Write outputs all embedded documentation in the outputDir
 func (docs *Documentation) Write(outputDir string, opts *Options) error {
-	outFS, err := newFS(outputDir)
+	err := os.MkdirAll(outputDir, 0775)
 	if err != nil {
 		return err
 	}
 
 	if opts.TypeRequested(TypeCommands) && docs.Command != nil {
-		cmdFS := outFS
+		cmdDir := outputDir
 		if !opts.Flat {
 			// Create FS for the category's docs
-			cmdFS, err = newFS(filepath.Join(outputDir, "cli"))
-			if err != nil {
-				return err
-			}
+			cmdDir = filepath.Join(outputDir, "cli")
 		}
 
 		// Generate CLI documentation
-		err = renderCommandDocs(docs.Command, cmdFS, opts)
+		err = renderCommandDocs(docs.Command, cmdDir, opts)
 		if err != nil {
 			return err
 		}
@@ -45,17 +41,19 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 	if opts.TypeRequested(TypeGeneral) {
 		// Generate each category
 		for _, cat := range docs.Categories {
-			catFS := outFS
+			catDir := outputDir
 			if !opts.Flat {
 				// Create FS for the category's docs
-				catFS, err = newFS(filepath.Join(outputDir, cat.dirName()))
-				if err != nil {
-					return err
-				}
+				catDir = filepath.Join(outputDir, cat.dirName())
 			}
 
 			for _, doc := range cat.Docs {
-				err = doc.write(catFS, opts)
+				contents, err := doc.Render(opts.Format)
+				if err != nil {
+					return err
+				}
+
+				err = os.WriteFile(filepath.Join(catDir, doc.RenderedName(opts.Format)), contents, 0644)
 				if err != nil {
 					return err
 				}
@@ -71,12 +69,23 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 	// Check if we can index the output format and if it was requested
 	if opts.Format.indexable() && opts.Index {
 		// Create an index file (either README.md or index.html)
-		err = docs.writeIndex(outFS, opts)
+		index, err := docs.Index(outputDir, opts)
 		if err != nil {
 			return err
 		}
 
-		_, err = fmt.Println("Generated documentation index: " + filepath.Join(outputDir, opts.Format.IndexFile()))
+		if index == nil {
+			return nil
+		}
+
+		indexFile := filepath.Join(outputDir, opts.Format.IndexFile())
+
+		err = os.WriteFile(indexFile, index, 0644)
+		if err != nil {
+			return err
+		}
+
+		_, err = fmt.Println("Generated documentation index: " + indexFile)
 		if err != nil {
 			return err
 		}
@@ -95,44 +104,42 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 }
 
 // Render command documentation into the specified format
-func renderCommandDocs(cmd *cobra.Command, outFS *fsutil.FSUtil, opts *Options) error {
+func renderCommandDocs(cmd *cobra.Command, outputDir string, opts *Options) error {
 	cmd.DisableAutoGenTag = true // disable the cobra-generated footer
 
 	switch opts.Format {
 	case Manpage:
 		// Generate manpages from the commands
-		err := doc.GenManTree(cmd, nil, outFS.RootDir)
+		err := doc.GenManTree(cmd, nil, outputDir)
 		if err != nil {
 			return fmt.Errorf("failed to document commands: %w", err)
 		}
 	case Markdown:
-		err := doc.GenMarkdownTree(cmd, outFS.RootDir)
+		err := doc.GenMarkdownTree(cmd, outputDir)
 		if err != nil {
 			return fmt.Errorf("failed to document commands: %w", err)
 		}
 	case HTML:
-		// Create temp directory to write markdown documentation into
-		tempFS, err := newTempFS(cmd.Name() + "-command-docs")
+		tempDir, err := os.MkdirTemp("", cmd.Name()+"-command-docs-*")
 		if err != nil {
 			return err
 		}
 
 		// Generate markdown docs into temp directory
-		err = doc.GenMarkdownTree(cmd, tempFS.RootDir)
+		err = doc.GenMarkdownTree(cmd, tempDir)
 		if err != nil {
 			return fmt.Errorf("failed to document commands: %w", err)
 		}
 
 		// Dump markdown files from temp directory to destination,
 		// converting files to HTML along the way
-		_, err = copyFS(tempFS, outFS, htmlOpts)
+		_, err = copyConvert(tempDir, outputDir, htmlOpts)
 		if err != nil {
 			return err
 		}
 
 		// Clean up temp directory
-		err = tempFS.Close()
-		if err != nil {
+		if err := os.RemoveAll(tempDir); err != nil {
 			return err
 		}
 	}
