@@ -36,13 +36,13 @@ linters:
 
 linters-settings:
   # importas:
-    # if set to `true`, force to use alias.
-    # no-unaliased: true
-    # List of aliases
-    # alias:
-    #   - pkg: github.com/opencontainers/go-digest
-    #     alias: digest
-  
+  # if set to `true`, force to use alias.
+  # no-unaliased: true
+  # List of aliases
+  # alias:
+  #   - pkg: github.com/opencontainers/go-digest
+  #     alias: digest
+
   exhaustive:
     default-signifies-exhaustive: true
 
@@ -50,7 +50,7 @@ linters-settings:
     # Select the Go version to target. The default is '1.13'.
     go: "1.19"
     # https://staticcheck.io/docs/options#checks
-    checks: [ "all" ]
+    checks: ["all"]
 
   revive:
     ignore-generated-header: true
@@ -122,6 +122,11 @@ linters-settings:
       # expected to work
       - .ExecuteContext( # cobra command
       - (*golang.org/x/sync/errgroup.Group).Wait()
+      - os.WriteFile
+      - os.Mkdir
+      - os.MkdirAll
+      - os.RemoveAll
+      - fs.ReadDir
     ignoreSigRegexps:
       # ignore printing (to stdout)
       - "fmt\\..?(P|p)rint.*\\("
