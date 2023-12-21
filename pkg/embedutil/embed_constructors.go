@@ -18,12 +18,19 @@ const (
 )
 
 // NewCategory initializes a new Category object
-func NewCategory(key, title string, docs ...*Document) *Category {
-	return &Category{
+func NewCategory(key, title string, manpageExt int8, docs ...*Document) *Category {
+	cat := &Category{
 		Key:   key,
 		Title: title,
 		Docs:  docs,
 	}
+
+	// Set manpage extensions
+	for _, doc := range cat.Docs {
+		doc.manpageExt = manpageExt
+	}
+
+	return cat
 }
 
 // LoadMarkdown loads a markdown file into a Document

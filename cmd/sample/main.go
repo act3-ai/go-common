@@ -54,7 +54,7 @@ func main() {
 		Command: root,
 		Categories: []*embedutil.Category{
 			embedutil.NewCategory(
-				"docs", "General Documentation",
+				"docs", "General Documentation", 1,
 				embedutil.LoadMarkdown("quick-start-guide", "Example Quick Start Guide", "embeds/quick-start-guide.md", docs),
 			),
 		},
