@@ -23,7 +23,7 @@ func TestNewFSUtilAndClose(t *testing.T) {
 
 	// Create a test file in the root directory
 	testFilePath := filepath.Join(fs.RootDir, "test.txt")
-	err = ioutil.WriteFile(testFilePath, []byte("test"), 0644)
+	err = os.WriteFile(testFilePath, []byte("test"), 0644)
 	require.NoError(t, err, "Creating a test file should not return an error")
 
 	// Close FSUtil and remove the temporary directory
@@ -34,7 +34,6 @@ func TestNewFSUtilAndClose(t *testing.T) {
 	_, err = os.Stat(fs.RootDir)
 	assert.Error(t, err, "RootDir should not exist after Close")
 	assert.True(t, os.IsNotExist(err), "RootDir should be removed")
-
 }
 
 func TestAddFileWithData(t *testing.T) {
