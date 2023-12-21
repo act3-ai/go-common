@@ -75,7 +75,7 @@ func TestReadDirSortedByAccessTime(t *testing.T) {
 					ModTime: time.Now(),
 					Sys: func() interface{} {
 						return &syscall.Stat_t{
-							Atime: syscall.Timespec{Sec: time.Now().Unix(), Nsec: int64(time.Now().Nanosecond())},
+							Atimespec: syscall.Timespec{Sec: time.Now().Unix(), Nsec: int64(time.Now().Nanosecond())},
 						}
 					}(),
 				}
@@ -85,7 +85,7 @@ func TestReadDirSortedByAccessTime(t *testing.T) {
 					ModTime: time.Now(),
 					Sys: func() interface{} {
 						return &syscall.Stat_t{
-							Atim: syscall.Timespec{Sec: time.Now().Add(-time.Hour).Unix(), Nsec: int64(time.Now().Add(-time.Hour).Nanosecond())},
+							Atimespec: syscall.Timespec{Sec: time.Now().Add(-time.Hour).Unix(), Nsec: int64(time.Now().Add(-time.Hour).Nanosecond())},
 						}
 					}(),
 				}
@@ -106,7 +106,7 @@ func TestReadDirSortedByAccessTime(t *testing.T) {
 					ModTime: time.Now(),
 					Sys: func() interface{} {
 						return &syscall.Stat_t{
-							Atim: syscall.Timespec{Sec: time.Now().Unix(), Nsec: int64(time.Now().Nanosecond())},
+							Atimespec: syscall.Timespec{Sec: time.Now().Unix(), Nsec: int64(time.Now().Nanosecond())},
 						}
 					}(),
 				}
@@ -116,7 +116,7 @@ func TestReadDirSortedByAccessTime(t *testing.T) {
 					ModTime: time.Now(),
 					Sys: func() interface{} {
 						return &syscall.Stat_t{
-							Atim: syscall.Timespec{Sec: time.Now().Add(-time.Hour).Unix(), Nsec: int64(time.Now().Add(-time.Hour).Nanosecond())},
+							Atimespec: syscall.Timespec{Sec: time.Now().Add(-time.Hour).Unix(), Nsec: int64(time.Now().Add(-time.Hour).Nanosecond())},
 						}
 					}(),
 				}
