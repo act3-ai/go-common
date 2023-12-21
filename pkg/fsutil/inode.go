@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-// getInode returns the inode for a file.
-func getInode(fi fs.FileInfo) (uint64, error) {
+// GetInode returns the inode for a file.
+func GetInode(fi fs.FileInfo) (uint64, error) {
 	return fi.Sys().(*syscall.Stat_t).Ino, nil
 }

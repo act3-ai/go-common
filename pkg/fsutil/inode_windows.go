@@ -13,7 +13,7 @@ import (
 // getInode returns the inode for a file on Windows.
 // this is a workaround for the lack of inode support on Windows.
 // the returned inode is a combination of the volume serial number and file index.
-func getInode(fi fs.FileInfo) (uint64, error) {
+func GetInode(fi fs.FileInfo) (uint64, error) {
 	var inode uint64
 	pathp, err := syscall.UTF16PtrFromString(fi.Name())
 	if err != nil {
