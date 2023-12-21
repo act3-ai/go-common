@@ -1,3 +1,4 @@
+// Package fsutil provides filesystem utilities for testing purposes
 package fsutil
 
 import (
