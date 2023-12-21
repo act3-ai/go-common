@@ -7,7 +7,7 @@ func newFS(dir string) (*fsutil.FSUtil, error) {
 	filesys := &fsutil.FSUtil{
 		RootDir: dir,
 	}
-	err := filesys.AddDir(dir)
+	err := filesys.AddDir(".")
 	return filesys, err
 }
 

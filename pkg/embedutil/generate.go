@@ -26,15 +26,13 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 	}
 
 	if opts.TypeRequested(TypeCommands) && docs.Command != nil {
-		cmdDir := outputDir
+		cmdFS := outFS
 		if !opts.Flat {
-			cmdDir = filepath.Join(outputDir, "cli")
-		}
-
-		// Create FS for the category's docs
-		cmdFS, err := newFS(cmdDir)
-		if err != nil {
-			return err
+			// Create FS for the category's docs
+			cmdFS, err = newFS(filepath.Join(outputDir, "cli"))
+			if err != nil {
+				return err
+			}
 		}
 
 		// Generate CLI documentation
@@ -47,15 +45,13 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 	if opts.TypeRequested(TypeGeneral) {
 		// Generate each category
 		for _, cat := range docs.Categories {
-			catDir := outputDir
+			catFS := outFS
 			if !opts.Flat {
-				catDir = filepath.Join(outputDir, cat.dirName())
-			}
-
-			// Create FS for the category's docs
-			catFS, err := newFS(catDir)
-			if err != nil {
-				return err
+				// Create FS for the category's docs
+				catFS, err = newFS(filepath.Join(outputDir, cat.dirName()))
+				if err != nil {
+					return err
+				}
 			}
 
 			for _, doc := range cat.Docs {
