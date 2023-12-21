@@ -75,7 +75,7 @@ func TestReadDirSortedByAccessTime(t *testing.T) {
 					ModTime: time.Now(),
 					Sys: func() interface{} {
 						return &syscall.Stat_t{
-							Atim: syscall.Timespec{Sec: time.Now().Unix(), Nsec: int64(time.Now().Nanosecond())},
+							Atime: syscall.Timespec{Sec: time.Now().Unix(), Nsec: int64(time.Now().Nanosecond())},
 						}
 					}(),
 				}

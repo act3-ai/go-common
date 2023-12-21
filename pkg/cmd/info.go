@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
 
-	embedutil "git.act3-ace.com/ace/go-common/pkg/embedutil"
-	"git.act3-ace.com/ace/go-common/pkg/fsutil"
+	"git.act3-ace.com/ace/go-common/pkg/embedutil"
 )
 
 // NewInfoCmd creates an info command that allows the viewing of embedded documentation
@@ -60,17 +60,15 @@ func newDocCmd(doc *embedutil.Document) *cobra.Command {
 			}
 
 			if writeDir != "" {
-				outFS := &fsutil.FSUtil{
-					RootDir: writeDir,
+				if err := os.MkdirAll(writeDir, 0775); err != nil {
+					return fmt.Errorf("failed to create dir %s: %w", writeDir, err)
 				}
-				err = outFS.AddDir(".")
-				if err != nil {
-					return err
-				}
+
 				file := doc.RenderedName(embedutil.Markdown)
-				err = outFS.AddFileWithData(file, contents)
+
+				err = os.WriteFile(filepath.Join(writeDir, file), contents, 0644)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to write file %s: %w", file, err)
 				}
 
 				cmd.Printf("Wrote the %q document: %s\n", doc.Title, filepath.Join(writeDir, file))

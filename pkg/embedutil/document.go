@@ -63,43 +63,13 @@ func (doc *Document) ManpageExt() string {
 
 // Render produces the document's content in the requested format
 func (doc *Document) Render(format Format) ([]byte, error) {
-	// Output JSON Schema docs as-is
-	if doc.encoding == EncodingJSONSchema {
-		return doc.Contents, nil
+	conv := conversion{doc.encoding, format}
+	convFunc, ok := supportedConversions[conv]
+	if !ok {
+		return nil, fmt.Errorf("unsupported conversion: cannot convert %q from %s to %s", doc.name, doc.encoding, format)
 	}
 
-	noConvErr := fmt.Errorf("unsupported conversion: cannot convert %q from %s to %s", doc.name, doc.encoding, format)
-
-	// Render docs to specified output format
-	switch format {
-	case Manpage:
-		switch doc.encoding {
-		case EncodingManpage, EncodingJSONSchema, EncodingRaw:
-			return doc.Contents, nil
-		case EncodingMarkdown:
-			return FormatManpage(doc.Contents)
-		default:
-			return nil, noConvErr
-		}
-	case Markdown:
-		switch doc.encoding {
-		case EncodingMarkdown, EncodingJSONSchema, EncodingRaw:
-			return doc.Contents, nil
-		default:
-			return nil, noConvErr
-		}
-	case HTML:
-		switch doc.encoding {
-		case EncodingHTML, EncodingJSONSchema, EncodingRaw:
-			return doc.Contents, nil
-		case EncodingMarkdown:
-			return FormatHTML(doc.Contents)
-		default:
-			return nil, noConvErr
-		}
-	default:
-		return nil, noConvErr
-	}
+	return convFunc(doc.Contents)
 }
 
 // helper to write a doc to an FS

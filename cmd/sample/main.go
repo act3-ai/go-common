@@ -22,7 +22,7 @@ var schemas embed.FS
 // an example quick start guide is embedded here
 // for use in the "gendocs" and "info" commands
 //
-//go:embed embeds/*
+//go:embed docs/*
 var docs embed.FS
 
 // getVersionInfo retreives the proper version information for this executable

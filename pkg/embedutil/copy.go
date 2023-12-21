@@ -1,5 +1,4 @@
-// Package dumpfs is a simple utility for writing the contents of an fs.FS to a directory, performing path transformations and content conversions in the process.
-package dumpfs
+package embedutil
 
 import (
 	"fmt"
@@ -8,8 +7,8 @@ import (
 	"git.act3-ace.com/ace/go-common/pkg/fsutil"
 )
 
-// Options for dumping an fs.FS
-type Options struct {
+// copyOpts stores options for copying an fs.FS
+type copyOpts struct {
 	// PathFunc is called on each file path to
 	// modify the file name or location based on the desired output format
 	PathFunc func(path string) (string, error)
@@ -19,8 +18,8 @@ type Options struct {
 	ContentFunc func(data []byte) ([]byte, error)
 }
 
-// DumpFS dumps the contents of an fs.FS into another fs.FS
-func DumpFS(sourceFS fs.FS, outputFS *fsutil.FSUtil, opts *Options) ([]string, error) {
+// copyFS writes the contents of an fs.FS to a directory, performing path transformations and content conversions in the process.
+func copyFS(sourceFS fs.FS, outputFS *fsutil.FSUtil, opts *copyOpts) ([]string, error) {
 	// Map of paths output to outputFS to the unmodified path from sourceFS
 	usedPaths := map[string]string{}
 

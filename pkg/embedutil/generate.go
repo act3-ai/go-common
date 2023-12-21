@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 
-	"git.act3-ace.com/ace/go-common/pkg/embedutil/dumpfs"
 	"git.act3-ace.com/ace/go-common/pkg/fsutil"
 )
 
@@ -50,7 +49,7 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 		for _, cat := range docs.Categories {
 			catDir := outputDir
 			if !opts.Flat {
-				catDir = filepath.Join(outputDir, cat.DirName())
+				catDir = filepath.Join(outputDir, cat.dirName())
 			}
 
 			// Create FS for the category's docs
@@ -74,7 +73,7 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 	}
 
 	// Check if we can index the output format and if it was requested
-	if opts.Format.Indexable() && opts.Index {
+	if opts.Format.indexable() && opts.Index {
 		// Create an index file (either README.md or index.html)
 		err = docs.writeIndex(outFS, opts)
 		if err != nil {
@@ -130,7 +129,7 @@ func renderCommandDocs(cmd *cobra.Command, outFS *fsutil.FSUtil, opts *Options) 
 
 		// Dump markdown files from temp directory to destination,
 		// converting files to HTML along the way
-		_, err = dumpfs.DumpFS(tempFS, outFS, htmlOpts)
+		_, err = copyFS(tempFS, outFS, htmlOpts)
 		if err != nil {
 			return err
 		}

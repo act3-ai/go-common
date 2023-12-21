@@ -31,8 +31,8 @@ type Category struct {
 	Docs  []*Document // List of documents contained in the category
 }
 
-// DirName produces the directory name used for the category
-func (cat *Category) DirName() string {
+// dirName produces the directory name used for the category
+func (cat *Category) dirName() string {
 	if cat.Key == "" {
 		cat.Key = strcase.ToKebab(cat.Title)
 	}
@@ -62,17 +62,3 @@ func (docs *Documentation) FindDocument(key string) *Document {
 
 	return nil
 }
-
-// // DocumentKeys returns a list of all available document keys
-// func (docs *Documentation) DocumentKeys() []string {
-// 	keys := []string{}
-
-// 	// Show help for docs
-// 	for _, cat := range docs.Categories {
-// 		for _, doc := range cat.Docs {
-// 			keys = append(keys, doc.Key)
-// 		}
-// 	}
-
-// 	return keys
-// }

@@ -14,7 +14,7 @@ import (
 
 // Index creates an index file for the documentation in the requested format
 func (docs *Documentation) Index(outFS *fsutil.FSUtil, opts *Options) ([]byte, error) {
-	if !opts.Format.Indexable() || !opts.Index {
+	if !opts.Format.indexable() || !opts.Index {
 		// Skip indexing if not enabled in options
 		// or not supported by the output format (manpages)
 		return nil, nil
@@ -28,7 +28,7 @@ func (docs *Documentation) Index(outFS *fsutil.FSUtil, opts *Options) ([]byte, e
 
 	switch opts.Format {
 	case HTML:
-		index, err = FormatHTML(index)
+		index, err = formatHTML(index)
 		if err != nil {
 			return index, err
 		}
@@ -78,7 +78,7 @@ func (docs *Documentation) generateMarkdownIndex(outFS *fsutil.FSUtil, opts *Opt
 			docPath := doc.RenderedName(opts.Format)
 			if !opts.Flat {
 				// Append category dir for non-flat renders
-				docPath = filepath.Join(cat.DirName(), docPath)
+				docPath = filepath.Join(cat.dirName(), docPath)
 			}
 			// Append file link
 			_, _ = fmt.Fprintf(index, mdLinkTemplate, doc.Title, docPath)
