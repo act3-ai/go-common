@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	github.com/adrg/xdg v0.4.0
-	github.com/djherbis/atime v1.1.0
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/invopop/jsonschema v0.12.0
 	github.com/neilotoole/slogt v1.1.0
