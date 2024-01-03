@@ -18,7 +18,7 @@ const (
 )
 
 // NewCategory initializes a new Category object
-func NewCategory(key, title string, manpageExt int8, docs ...*Document) *Category {
+func NewCategory(key, title, manpagePrefix string, manpageExt int8, docs ...*Document) *Category {
 	cat := &Category{
 		Key:   key,
 		Title: title,
@@ -27,6 +27,7 @@ func NewCategory(key, title string, manpageExt int8, docs ...*Document) *Categor
 
 	// Set manpage extensions
 	for _, doc := range cat.Docs {
+		doc.manpagePrefix = manpagePrefix
 		doc.manpageExt = manpageExt
 	}
 
