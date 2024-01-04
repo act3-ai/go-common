@@ -41,12 +41,13 @@ func (cat *Category) dirName() string {
 
 // Document represents an embedded document
 type Document struct {
-	Key        string   // Key name for the file in kebab-case
-	Title      string   // Human-readable title for the document
-	name       string   // Internal file name
-	manpageExt int8     // Manpage extension for the file. Ex: 1 for normal docs, 5 for config docs
-	Contents   []byte   // Contents of the document
-	encoding   Encoding // Encoding of the file
+	Key           string   // Key name for the file in kebab-case
+	Title         string   // Human-readable title for the document
+	name          string   // Internal file name
+	manpageExt    int8     // Manpage extension for the file. Ex: 1 for normal docs, 5 for config docs
+	manpagePrefix string   // Prefix for the manpage version of this file
+	Contents      []byte   // Contents of the document
+	encoding      Encoding // Encoding of the file
 }
 
 // FindDocument returns the Document with the requested key

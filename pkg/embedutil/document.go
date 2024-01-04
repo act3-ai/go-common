@@ -36,7 +36,8 @@ func (doc *Document) RenderedName(format Format) string {
 
 	// Set manpage extensions
 	if format == Manpage {
-		return setExtension(doc.Key, doc.ManpageExt())
+		name := doc.manpagePrefix + "-" + strings.TrimPrefix(doc.Key, doc.manpagePrefix)
+		return setExtension(name, doc.ManpageExt())
 	}
 
 	// Set extensions for MD or HTML
