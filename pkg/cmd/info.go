@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/glamour"
+	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 
 	"git.act3-ace.com/ace/go-common/pkg/embedutil"
@@ -14,7 +15,7 @@ import (
 // NewInfoCmd creates an info command that allows the viewing of embedded documentation
 // in the terminal, converted to Markdown and formatted with glamour
 func NewInfoCmd(docs *embedutil.Documentation) *cobra.Command {
-	var infoCmd = &cobra.Command{
+	infoCmd := &cobra.Command{
 		Use:   "info <topic>",
 		Short: "View detailed documentation for the tool",
 		Long:  "The info command provides detailed documentation in your terminal.",
@@ -60,13 +61,13 @@ func newDocCmd(doc *embedutil.Document) *cobra.Command {
 			}
 
 			if writeDir != "" {
-				if err := os.MkdirAll(writeDir, 0775); err != nil {
+				if err := os.MkdirAll(writeDir, 0o775); err != nil {
 					return err
 				}
 
 				file := doc.RenderedName(embedutil.Markdown)
 
-				err = os.WriteFile(filepath.Join(writeDir, file), contents, 0644)
+				err = os.WriteFile(filepath.Join(writeDir, file), contents, 0o644)
 				if err != nil {
 					return err
 				}
@@ -78,6 +79,8 @@ func newDocCmd(doc *embedutil.Document) *cobra.Command {
 			r, _ := glamour.NewTermRenderer(
 				// detect background color and pick either the default dark or light theme
 				glamour.WithAutoStyle(),
+				// set color profile, glamour does not automatically check things like NO_COLOR=1
+				glamour.WithColorProfile(termenv.EnvColorProfile()),
 			)
 
 			// Show help for docs
