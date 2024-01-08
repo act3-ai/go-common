@@ -1,4 +1,28 @@
 include:
   - project: devsecops/cicd/pipeline
-    ref: v17.0.2
+    ref: v17.1.1
     file: main.yml
+
+generate go package docs:
+  extends: .generate_go_package_docs
+
+# TODO deploy a different site for each branch:
+# https://docs.gitlab.com/ee/user/project/pages/#create-multiple-deployments
+pages:
+  stage: Deploy
+  needs:
+    - generate go package docs
+  rules:
+    # Skip release commits
+    - if: !reference [.release_commit_rule]
+      when: never
+    # Run for all commits to default branch
+    - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH && $DEP_CHECK != "true"'
+  image: cgr.dev/chainguard/wolfi-base
+  script:
+    - mkdir public
+    - cp -r ci/docs/go public
+    - echo "Pages accessible through ${CI_PAGES_URL}/${PAGES_PREFIX}"
+  artifacts:
+    paths:
+      - public
