@@ -60,7 +60,11 @@ func main() {
 		},
 	}
 
-	root.AddCommand(
+	commands.AddGroupedCommands(root,
+		&cobra.Group{
+			ID:    "utils",
+			Title: "Utility commands",
+		},
 		commands.NewVersionCmd(info),
 		commands.NewInfoCmd(docs),
 		commands.NewGendocsCmd(docs),
