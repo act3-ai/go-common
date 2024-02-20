@@ -1,13 +1,11 @@
 include:
   - project: devsecops/cicd/pipeline
-    ref: v17.1.1
+    ref: v18.0.7
     file: main.yml
 
 generate go package docs:
   extends: .generate_go_package_docs
 
-# TODO deploy a different site for each branch:
-# https://docs.gitlab.com/ee/user/project/pages/#create-multiple-deployments
 pages:
   stage: Deploy
   needs:
@@ -21,7 +19,7 @@ pages:
   image: cgr.dev/chainguard/wolfi-base
   script:
     - mkdir public
-    - cp -r ci/docs/go public
+    - cp -r docs/pkg public
     - echo "Pages accessible through ${CI_PAGES_URL}/${PAGES_PREFIX}"
   artifacts:
     paths:
