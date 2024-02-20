@@ -32,9 +32,8 @@ func copyConvert(sourceDir, outputDir string, opts *copyOpts) ([]string, error) 
 			return err
 		}
 
-		// Skip directories, AddFileWithData handles directory creation
 		if d.IsDir() {
-			return nil
+			return os.MkdirAll(filepath.Join(outputDir, path), 0o755)
 		}
 
 		// Read file content
@@ -69,7 +68,7 @@ func copyConvert(sourceDir, outputDir string, opts *copyOpts) ([]string, error) 
 
 		paths = append(paths, outPath)
 
-		return os.WriteFile(filepath.Join(outputDir, outPath), outContent, 0644)
+		return os.WriteFile(filepath.Join(outputDir, outPath), outContent, 0o644)
 	})
 	if err != nil {
 		return paths, fmt.Errorf("failed to walk fs: %w", err)

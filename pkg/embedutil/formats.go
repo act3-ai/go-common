@@ -58,7 +58,16 @@ func formatHTML(data []byte) ([]byte, error) {
 	opts := html.RendererOptions{Flags: htmlFlags}
 	renderer := html.NewRenderer(opts)
 
-	return markdown.Render(doc, renderer), nil
+	out := markdown.Render(doc, renderer)
+
+	// // Add simple styling
+	// out = append([]byte(heredoc.Doc(`
+	// 	<head>
+	// 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+	// 	</head>
+	// `)), out...)
+
+	return out, nil
 }
 
 // represents a conversion from encoding format to output format

@@ -19,7 +19,7 @@ type Options struct {
 
 // Write outputs all embedded documentation in the outputDir
 func (docs *Documentation) Write(outputDir string, opts *Options) error {
-	err := os.MkdirAll(outputDir, 0775)
+	err := os.MkdirAll(outputDir, 0o775)
 	if err != nil {
 		return err
 	}
@@ -43,8 +43,12 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 		for _, cat := range docs.Categories {
 			catDir := outputDir
 			if !opts.Flat {
-				// Create FS for the category's docs
+				// Create directory for the category's docs
 				catDir = filepath.Join(outputDir, cat.dirName())
+				err = os.MkdirAll(catDir, 0o775)
+				if err != nil {
+					return err
+				}
 			}
 
 			for _, doc := range cat.Docs {
@@ -53,7 +57,7 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 					return err
 				}
 
-				err = os.WriteFile(filepath.Join(catDir, doc.RenderedName(opts.Format)), contents, 0644)
+				err = os.WriteFile(filepath.Join(catDir, doc.RenderedName(opts.Format)), contents, 0o644)
 				if err != nil {
 					return err
 				}
@@ -66,38 +70,35 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 		return err
 	}
 
+	return docs.writeIndex(outputDir, opts)
+}
+
+func (docs *Documentation) writeIndex(outputDir string, opts *Options) error {
 	// Check if we can index the output format and if it was requested
-	if opts.Format.indexable() && opts.Index {
-		// Create an index file (either README.md or index.html)
-		index, err := docs.Index(outputDir, opts)
-		if err != nil {
-			return err
-		}
+	if !opts.Format.indexable() || !opts.Index {
+		return nil
+	}
 
-		if index == nil {
-			return nil
-		}
+	// Create an index file (either README.md or index.html)
+	index, err := docs.Index(outputDir, opts)
+	if err != nil {
+		return err
+	}
 
-		indexFile := filepath.Join(outputDir, opts.Format.IndexFile())
+	if index == nil {
+		return nil
+	}
 
-		err = os.WriteFile(indexFile, index, 0644)
-		if err != nil {
-			return err
-		}
+	indexFile := filepath.Join(outputDir, opts.Format.IndexFile())
 
-		_, err = fmt.Println("Generated documentation index: " + indexFile)
-		if err != nil {
-			return err
-		}
+	err = os.WriteFile(indexFile, index, 0o644)
+	if err != nil {
+		return err
+	}
 
-		// if opts.Format == HTML {
-		// 	absIndex, err := filepath.Abs(filepath.Join(outputDir, opts.Format.IndexFile()))
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	fmt.Println("Open documentation in your browser: file://" + absIndex)
-		// }
+	_, err = fmt.Println("Generated documentation index: " + indexFile)
+	if err != nil {
+		return err
 	}
 
 	return nil

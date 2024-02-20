@@ -52,6 +52,30 @@ func LoadMarkdown(key, title, name string, filesys fs.FS) *Document {
 	return d
 }
 
+// LoadMarkdownString loads a markdown string into a Document
+func LoadMarkdownString(key, title, name string, data string) *Document {
+	d := &Document{
+		Key:      key,
+		Title:    title,
+		name:     name,
+		Contents: []byte(data),
+		encoding: EncodingMarkdown,
+	}
+	return d
+}
+
+// LoadMarkdownBytes loads markdown bytes into a Document
+func LoadMarkdownBytes(key, title, name string, data []byte) *Document {
+	d := &Document{
+		Key:      key,
+		Title:    title,
+		name:     name,
+		Contents: data,
+		encoding: EncodingMarkdown,
+	}
+	return d
+}
+
 // LoadJSONSchema loads a JSON Schema definition into a Document
 // name must be the path to the document in filesys
 func LoadJSONSchema(key, title, name string, filesys fs.FS) *Document {
@@ -67,6 +91,32 @@ func LoadJSONSchema(key, title, name string, filesys fs.FS) *Document {
 	d.Contents, err = fs.ReadFile(filesys, name)
 	if err != nil {
 		panic(err)
+	}
+	return d
+}
+
+// LoadJSONSchemaString loads a JSON Schema definition string into a Document
+func LoadJSONSchemaString(key, title, name, data string) *Document {
+	d := &Document{
+		Key:        key,
+		Title:      title,
+		name:       name,
+		Contents:   []byte(data),
+		manpageExt: 5,
+		encoding:   EncodingJSONSchema,
+	}
+	return d
+}
+
+// LoadJSONSchemaBytes loads JSON Schema definition bytes into a Document
+func LoadJSONSchemaBytes(key, title, name string, data []byte) *Document {
+	d := &Document{
+		Key:        key,
+		Title:      title,
+		name:       name,
+		Contents:   data,
+		manpageExt: 5,
+		encoding:   EncodingJSONSchema,
 	}
 	return d
 }
