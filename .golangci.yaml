@@ -123,10 +123,12 @@ linters-settings:
       - .ExecuteContext( # cobra command
       - (*golang.org/x/sync/errgroup.Group).Wait()
       - os.WriteFile
+      - os.Create
       - os.Mkdir
       - os.MkdirAll
       - os.RemoveAll
       - fs.ReadDir
+      - (*bytes.Buffer).WriteTo
     ignoreSigRegexps:
       # ignore printing (to stdout)
       - "fmt\\..?(P|p)rint.*\\("

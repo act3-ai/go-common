@@ -26,7 +26,7 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 
 	if opts.TypeRequested(TypeCommands) && docs.Command != nil {
 		cmdDir := outputDir
-		if !opts.Flat {
+		if !opts.Flat && len(opts.Types) > 1 {
 			// Create FS for the category's docs
 			cmdDir = filepath.Join(outputDir, "cli")
 		}
@@ -116,7 +116,7 @@ func renderCommandDocs(cmd *cobra.Command, outputDir string, opts *Options) erro
 			return fmt.Errorf("failed to document commands: %w", err)
 		}
 	case Markdown:
-		err := doc.GenMarkdownTree(cmd, outputDir)
+		err := renderMarkdownTree(cmd, outputDir, opts)
 		if err != nil {
 			return fmt.Errorf("failed to document commands: %w", err)
 		}
@@ -127,7 +127,7 @@ func renderCommandDocs(cmd *cobra.Command, outputDir string, opts *Options) erro
 		}
 
 		// Generate markdown docs into temp directory
-		err = doc.GenMarkdownTree(cmd, tempDir)
+		err = renderMarkdownTree(cmd, outputDir, opts)
 		if err != nil {
 			return fmt.Errorf("failed to document commands: %w", err)
 		}

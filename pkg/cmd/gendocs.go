@@ -76,7 +76,6 @@ func newMarkdownCmd(docs *embedutil.Documentation) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if onlyCommands {
 				opts.Types = []embedutil.DocType{embedutil.TypeCommands}
-				opts.Flat = true
 				opts.Index = false
 			}
 
@@ -92,7 +91,6 @@ func newMarkdownCmd(docs *embedutil.Documentation) *cobra.Command {
 	cmd.Flags().BoolVarP(&opts.Flat, "flat", "f", false, `generate docs in a flat directory structure`)
 	cmd.Flags().BoolVar(&onlyCommands, "only-commands", false, "only generate command documentation")
 	cmd.MarkFlagsMutuallyExclusive("only-commands", "index")
-	cmd.MarkFlagsMutuallyExclusive("only-commands", "flat")
 
 	return cmd
 }
