@@ -21,7 +21,7 @@ type Options struct {
 func (docs *Documentation) Write(outputDir string, opts *Options) error {
 	err := os.MkdirAll(outputDir, 0o775)
 	if err != nil {
-		return err
+		return fmt.Errorf("writing documentation: %w", err)
 	}
 
 	if opts.TypeRequested(TypeCommands) && docs.Command != nil {
@@ -47,7 +47,7 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 				catDir = filepath.Join(outputDir, cat.dirName())
 				err = os.MkdirAll(catDir, 0o775)
 				if err != nil {
-					return err
+					return fmt.Errorf("creating document: %w", err)
 				}
 			}
 
@@ -59,7 +59,7 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 
 				err = os.WriteFile(filepath.Join(catDir, doc.RenderedName(opts.Format)), contents, 0o644)
 				if err != nil {
-					return err
+					return fmt.Errorf("creating document: %w", err)
 				}
 			}
 		}
@@ -93,7 +93,7 @@ func (docs *Documentation) writeIndex(outputDir string, opts *Options) error {
 
 	err = os.WriteFile(indexFile, index, 0o644)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating index: %w", err)
 	}
 
 	_, err = fmt.Println("Generated documentation index: " + indexFile)
@@ -113,23 +113,23 @@ func renderCommandDocs(cmd *cobra.Command, outputDir string, opts *Options) erro
 		// Generate manpages from the commands
 		err := doc.GenManTree(cmd, nil, outputDir)
 		if err != nil {
-			return fmt.Errorf("failed to document commands: %w", err)
+			return fmt.Errorf("documenting commands: %w", err)
 		}
 	case Markdown:
 		err := renderMarkdownTree(cmd, outputDir, opts)
 		if err != nil {
-			return fmt.Errorf("failed to document commands: %w", err)
+			return fmt.Errorf("documenting commands: %w", err)
 		}
 	case HTML:
 		tempDir, err := os.MkdirTemp("", cmd.Name()+"-command-docs-*")
 		if err != nil {
-			return err
+			return fmt.Errorf("documenting commands: %w", err)
 		}
 
 		// Generate markdown docs into temp directory
 		err = renderMarkdownTree(cmd, outputDir, opts)
 		if err != nil {
-			return fmt.Errorf("failed to document commands: %w", err)
+			return fmt.Errorf("documenting commands: %w", err)
 		}
 
 		// Dump markdown files from temp directory to destination,
@@ -141,7 +141,7 @@ func renderCommandDocs(cmd *cobra.Command, outputDir string, opts *Options) erro
 
 		// Clean up temp directory
 		if err := os.RemoveAll(tempDir); err != nil {
-			return err
+			return fmt.Errorf("documenting commands: %w", err)
 		}
 	}
 	return nil
