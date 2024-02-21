@@ -13,7 +13,6 @@ import (
 // Serve will run the http server until the context is done.  Then it gracefully shutdown.
 func Serve(ctx context.Context, srv *http.Server, timeout time.Duration) error {
 	log := logger.FromContext(ctx)
-	log.InfoContext(ctx, "Listening", "addr", srv.Addr)
 
 	// Run our server in a goroutine so that it doesn't block.
 	// TODO use structured concurrency here (conc.WaitGroup)
