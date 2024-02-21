@@ -14,7 +14,7 @@ var loggerContextKey contextKey
 func FromContext(ctx context.Context) *slog.Logger {
 	logger, ok := ctx.Value(loggerContextKey).(*slog.Logger)
 	if !ok {
-		slog.Debug("did not find logger in context, returning default logger")
+		slog.DebugContext(ctx, "did not find logger in context, returning default logger")
 		return slog.Default()
 	}
 
