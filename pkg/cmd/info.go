@@ -62,14 +62,14 @@ func newDocCmd(doc *embedutil.Document) *cobra.Command {
 
 			if writeDir != "" {
 				if err := os.MkdirAll(writeDir, 0o775); err != nil {
-					return err
+					return fmt.Errorf("creating document: %w", err)
 				}
 
 				file := doc.RenderedName(embedutil.Markdown)
 
 				err = os.WriteFile(filepath.Join(writeDir, file), contents, 0o644)
 				if err != nil {
-					return err
+					return fmt.Errorf("creating document: %w", err)
 				}
 
 				cmd.Printf("Wrote the %q document: %s\n", doc.Title, filepath.Join(writeDir, file))

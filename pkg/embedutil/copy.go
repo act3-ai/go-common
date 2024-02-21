@@ -33,7 +33,10 @@ func copyConvert(sourceDir, outputDir string, opts *copyOpts) ([]string, error) 
 		}
 
 		if d.IsDir() {
-			return os.MkdirAll(filepath.Join(outputDir, path), 0o755)
+			err = os.MkdirAll(filepath.Join(outputDir, path), 0o755)
+			if err != nil {
+				return fmt.Errorf("converting: %w", err)
+			}
 		}
 
 		// Read file content
@@ -68,7 +71,12 @@ func copyConvert(sourceDir, outputDir string, opts *copyOpts) ([]string, error) 
 
 		paths = append(paths, outPath)
 
-		return os.WriteFile(filepath.Join(outputDir, outPath), outContent, 0o644)
+		err = os.WriteFile(filepath.Join(outputDir, outPath), outContent, 0o644)
+		if err != nil {
+			return fmt.Errorf("converting: %w", err)
+		}
+
+		return nil
 	})
 	if err != nil {
 		return paths, fmt.Errorf("failed to walk fs: %w", err)
