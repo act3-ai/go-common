@@ -10,6 +10,8 @@ import (
 	"git.act3-ace.com/ace/go-common/pkg/logger"
 )
 
+// TODO support HTTPS (TLS) with srv.ListenAndServeTLS(certFile, keyFile)
+
 // Serve will run the http server until the context is done.  Then it gracefully shutdown.
 func Serve(ctx context.Context, srv *http.Server, timeout time.Duration) error {
 	log := logger.FromContext(ctx)
@@ -29,7 +31,7 @@ func Serve(ctx context.Context, srv *http.Server, timeout time.Duration) error {
 	// graceful shutdown adapted from https://github.com/gorilla/mux#graceful-shutdown (and Telemetry)
 
 	<-ctx.Done()
-	log.InfoContext(ctx, "Shutdown requested")
+	log.InfoContext(ctx, "Graceful HTTP server shutdown requested")
 
 	// Create a deadline to wait for.
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), timeout)
