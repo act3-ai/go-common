@@ -13,7 +13,7 @@
 	title: "go-common Source Code",
 	author: "ACT3",
 	description: [
-		The go-common repository contains common Go packages for ACT3 projects. The packages are tailored for CLI and REST API development. The "cmd/sample" directory contains a sample CLI application demonstrating the use of go-common's packages for CLI development.
+		The go-common repository contains common Go packages for ACT3 projects. The packages implement some standard configurations and functionality for CLI and REST API development. The "cmd/sample" directory contains a sample CLI application demonstrating the use of go-common's packages for CLI development.
 	],
 	sourcefiles: files
 )
