@@ -29,6 +29,8 @@ func (h *levelAdjustedHandler) Handle(ctx context.Context, record slog.Record) e
 	return h.Handler.Handle(ctx, record) //nolint:wrapcheck
 }
 
+// TODO maybe NewLevelAdjustedHandler() should not be exported (and then it can return *levelAdjustedHandler).
+
 // NewLevelAdjustedHandler wraps the handler to perform logging at the adjusted
 // level.  The bias value is positive decrease chattiness, e.g., by making Info log entries silent unless verbosity has
 // been upgraded.
