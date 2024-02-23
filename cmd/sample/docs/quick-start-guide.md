@@ -1,4 +1,4 @@
-# Test Project Quick Start Guide
+# Sample CLI Quick Start Guide
 
 ## Purpose
 
@@ -6,9 +6,9 @@
 
 This should be a 1-2 sentence summary of the documentation. The first sentence is provided below. Add additional content if needed. -->
 
-This Quick Start Guide is for users who have already [installed Test Project](installation-guide.md) and who are ready to take advantage of its features.
+This Quick Start Guide is for users who have already installed Sample CLI and who are ready to take advantage of its features.
 
-You will be guided through the steps necessary to begin using Test Project
+You will be guided through the steps necessary to begin using Sample CLI
 <!-- Include a Table of Contents that links to steps below if possible -->
 
 - [Purpose](#purpose)
@@ -34,5 +34,5 @@ Add as many sub-sections as needed.-->
 
 ## Additional Resources
 
-- [Documentation](../README.md#documentation)
-- [Support](../README.md#support)
+<!-- - [Documentation](../README.md#documentation) -->
+<!-- - [Support](../README.md#support) -->

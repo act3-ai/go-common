@@ -45,7 +45,7 @@ func main() {
 	schemaAssociations := []commands.SchemaAssociation{
 		{
 			Definition: "configuration-schema.json",
-			FileMatch:  config.DefaultConfigValidatePath("ace", "sample", "config.yaml"),
+			FileMatch:  config.DefaultConfigValidatePath("cli", "sample", "config.yaml"),
 		},
 	}
 
@@ -71,8 +71,7 @@ func main() {
 		commands.NewGenschemaCmd(schemas, schemaAssociations),
 	)
 
-	if err := runner.Run(root, "ACE_SAMPLE_VERBOSITY"); err != nil {
-		// fmt.Fprintln(os.Stderr, "Error occurred", err)
+	if err := runner.Run(root, "SAMPLE_VERBOSITY"); err != nil {
 		os.Exit(1)
 	}
 }

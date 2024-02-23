@@ -28,7 +28,7 @@ See each sub-command's help for details on how to use the generated script.
 ## Options inherited from parent commands
 
 ```plaintext
-  -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
+  -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable SAMPLE_VERBOSITY)
                                    Aliases: error=0, warn=4, info=8, debug=12 (default [error])
 ```
 

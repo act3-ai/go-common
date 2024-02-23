@@ -1,0 +1,5 @@
+.codereportignore
+.gitignore
+go.sum
+go-common_codereport.typ
+cmd/sample/docs/cli/

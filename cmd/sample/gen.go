@@ -1,8 +1,8 @@
 // Package gen is for go:generate directives to generate files.
-package gen
+package main
 
 // Generate JSON Schema definitions with genschema package
-//go:generate go run cmd/sample/gen/main.go cmd/sample/schemas
+//go:generate go run gen/main.go schemas
 
 // Generate CLI documentation with gendocs command
-//go:generate go run ./cmd/sample gendocs md cmd/sample/docs/cli --only-commands
+//go:generate go run . gendocs md docs/cli --only-commands
