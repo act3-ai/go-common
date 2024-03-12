@@ -84,12 +84,13 @@ func statusMiddleware(next http.Handler) http.Handler {
 }
 */
 
-var (
-	httpDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "http_request_duration_seconds",
-		Help: "Duration of HTTP requests in seconds.",
-	}, []string{"method", "route"})
-)
+// HTTPDuration is prometheus histogram of the time for the server to handle a HTTP request
+// Users need to register this with prometheus.
+var HTTPDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	Name:    "http_request_duration_seconds",
+	Help:    "Duration of HTTP requests in seconds.",
+	Buckets: []float64{0.1, .25, .5, 1, 2.5, 5, 10},
+}, []string{"method", "route"})
 
 // PrometheusMiddleware records timing metrics
 func PrometheusMiddleware(next http.Handler) http.Handler {
@@ -103,7 +104,7 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 		routePattern := strings.Join(rctx.RoutePatterns, "")
 		routePattern = strings.ReplaceAll(routePattern, "/*/", "/")
 
-		httpDuration.WithLabelValues(r.Method, routePattern).Observe(float64(time.Since(start).Microseconds()) / 1000000)
+		HTTPDuration.WithLabelValues(r.Method, routePattern).Observe(time.Since(start).Seconds())
 	})
 }
 
