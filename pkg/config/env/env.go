@@ -30,9 +30,9 @@ func Or(name, def string) string {
 	return envVal
 }
 
-// Must returns the named env variable if it exists,
+// OrError returns the named env variable if it exists,
 // otherwise returns empty string and an ErrEnvVarNotFound error.
-func Must(name string) (string, error) {
+func OrError(name string) (string, error) {
 	if name == "" {
 		panic("name must not be empty")
 	}
@@ -59,9 +59,9 @@ func IntOr(name string, def int) int {
 	return ret
 }
 
-// IntMust returns the named env variable if it exists,
+// IntOrError returns the named env variable if it exists,
 // otherwise returns 0 and either an ErrEnvVarNotFound or an ErrParseEnvVar error.
-func IntMust(name string) (int, error) {
+func IntOrError(name string) (int, error) {
 	if name == "" {
 		panic("name must not be empty")
 	}
@@ -92,9 +92,9 @@ func BoolOr(name string, def bool) bool {
 	return ret
 }
 
-// BoolMust returns the named env variable if it exists,
+// BoolOrError returns the named env variable if it exists,
 // otherwise returns false and either an ErrEnvVarNotFound or an ErrParseEnvVar error.
-func BoolMust(name string) (bool, error) {
+func BoolOrError(name string) (bool, error) {
 	if name == "" {
 		panic("name must not be empty")
 	}
@@ -142,9 +142,9 @@ func DurationOr(name string, def time.Duration) time.Duration {
 	return ret
 }
 
-// DurationMust returns the named env variable if it exists,
+// DurationOrError returns the named env variable if it exists,
 // otherwise returns 0 and either an ErrEnvVarNotFound or an ErrParseEnvVar error.
-func DurationMust(name string) (time.Duration, error) {
+func DurationOrError(name string) (time.Duration, error) {
 	if name == "" {
 		panic("name must not be empty")
 	}

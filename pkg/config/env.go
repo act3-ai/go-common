@@ -19,20 +19,20 @@ var (
 
 	// Env returns the named env variable if it exists,
 	// otherwise returns empty string and an ErrEnvVarNotFound error.
-	Env = env.Must
+	Env = env.OrError
 
 	// EnvIntOr grabs the env variable as an int or the default
 	EnvIntOr = env.IntOr
 	// EnvInt returns the named env variable if it exists,
 	// otherwise returns 0 and either an ErrEnvVarNotFound or an ErrParseEnvVar error.
-	EnvInt = env.IntMust
+	EnvInt = env.IntOrError
 
 	// EnvBoolOr grabs the env variable as an int or the default
 	EnvBoolOr = env.BoolOr
 
 	// EnvBool returns the named env variable if it exists,
 	// otherwise returns false and either an ErrEnvVarNotFound or an ErrParseEnvVar error.
-	EnvBool = env.BoolMust
+	EnvBool = env.BoolOrError
 
 	// EnvArrayOr grabs the env variable as an array.  Returns an empty array if
 	EnvArrayOr = env.ArrayOr
@@ -45,5 +45,5 @@ var (
 
 	// EnvDuration returns the named env variable if it exists,
 	// otherwise returns 0 and either an ErrEnvVarNotFound or an ErrParseEnvVar error.
-	EnvDuration = env.DurationMust
+	EnvDuration = env.DurationOrError
 )
