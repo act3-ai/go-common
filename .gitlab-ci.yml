@@ -1,6 +1,6 @@
 include:
   - project: devsecops/cicd/pipeline
-    ref: v18.0.7
+    ref: v18.0.16
     file: main.yml
 
 generate go package docs:
