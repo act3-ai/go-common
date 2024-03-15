@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/segmentio/ksuid"
 
 	"git.act3-ace.com/ace/go-common/pkg/logger"
@@ -85,8 +84,8 @@ func statusMiddleware(next http.Handler) http.Handler {
 */
 
 // HTTPDuration is prometheus histogram of the time for the server to handle a HTTP request
-// Users need to register this with prometheus.
-var HTTPDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+// Users need to register this with a prometheus.Registerer
+var HTTPDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Name:    "http_request_duration_seconds",
 	Help:    "Duration of HTTP requests in seconds.",
 	Buckets: []float64{0.1, .25, .5, 1, 2.5, 5, 10},
