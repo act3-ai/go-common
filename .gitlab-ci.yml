@@ -1,26 +1,26 @@
-include:
-  - project: devsecops/cicd/pipeline
-    ref: v18.0.16
-    file: main.yml
+# include:
+#   - project: devsecops/cicd/pipeline
+#     ref: v18.0.16
+#     file: main.yml
 
-generate go package docs:
-  extends: .generate_go_package_docs
+# generate go package docs:
+#   extends: .generate_go_package_docs
 
-pages:
-  stage: Deploy
-  needs:
-    - generate go package docs
-  rules:
-    # Skip release commits
-    - if: !reference [.release_commit_rule]
-      when: never
-    # Run for all commits to default branch
-    - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH && $DEP_CHECK != "true"'
-  image: cgr.dev/chainguard/wolfi-base
-  script:
-    - mkdir public
-    - cp -r docs/pkg public
-    - echo "Pages accessible through ${CI_PAGES_URL}/${PAGES_PREFIX}"
-  artifacts:
-    paths:
-      - public
+# pages:
+#   stage: Deploy
+#   needs:
+#     - generate go package docs
+#   rules:
+#     # Skip release commits
+#     - if: !reference [.release_commit_rule]
+#       when: never
+#     # Run for all commits to default branch
+#     - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH && $DEP_CHECK != "true"'
+#   image: cgr.dev/chainguard/wolfi-base
+#   script:
+#     - mkdir public
+#     - cp -r docs/pkg public
+#     - echo "Pages accessible through ${CI_PAGES_URL}/${PAGES_PREFIX}"
+#   artifacts:
+#     paths:
+#       - public
