@@ -55,9 +55,9 @@ type SchemaAssociation struct {
 //
 //	NewGenschemaCmd(schemaDefs, associations)
 //
-// [go-common/pkg/genschema]: https://git.act3-ace.com/ace/go-common/-/tree/main/pkg/genschema
+// [go-common/pkg/genschema]: https://gitlab.com/act3-ai/asce/go-common/-/tree/main/pkg/genschema
 func NewGenschemaCmd(schemaDefs fs.FS, associations []SchemaAssociation) *cobra.Command {
-	var schemaCmd = &cobra.Command{
+	schemaCmd := &cobra.Command{
 		Use:   "genschema <schema location>",
 		Short: "Outputs configuration file validators",
 		Long: `Outputs schema definitions for configuration files in JSON Schema format.

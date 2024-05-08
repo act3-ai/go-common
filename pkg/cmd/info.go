@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"git.act3-ace.com/ace/go-common/pkg/embedutil"
+	"gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
 )
 
 // NewInfoCmd creates an info command that allows the viewing of embedded documentation

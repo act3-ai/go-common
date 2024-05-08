@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"git.act3-ace.com/ace/go-common/pkg/config"
+	"gitlab.com/act3-ai/asce/go-common/pkg/config"
 )
 
 // SetupLoggingHandler configures a handler for logging.

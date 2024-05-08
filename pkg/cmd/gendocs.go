@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	embedutil "git.act3-ace.com/ace/go-common/pkg/embedutil"
+	embedutil "gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
 )
 
 // NewGendocsCmd creates a gendocs command group that allows tools to

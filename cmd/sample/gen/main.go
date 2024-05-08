@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"git.act3-ace.com/ace/go-common/pkg/genschema"
+	"gitlab.com/act3-ai/asce/go-common/pkg/genschema"
 )
 
 // Configuration for the sample CLI
@@ -26,7 +26,7 @@ func main() {
 		os.Args[1],
 		[]any{&Configuration{}},
 		"sample.act3-ace.io/v1alpha1",
-		"git.act3-ace.com/ace/go-common",
+		"gitlab.com/act3-ai/asce/go-common",
 	); err != nil {
 		log.Fatal(fmt.Errorf("JSON Schema generation failed: %w", err))
 	}

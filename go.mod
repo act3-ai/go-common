@@ -1,4 +1,4 @@
-module git.act3-ace.com/ace/go-common
+module gitlab.com/act3-ai/asce/go-common
 
 go 1.21
 

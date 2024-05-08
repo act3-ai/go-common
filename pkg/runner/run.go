@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"git.act3-ace.com/ace/go-common/pkg/logger"
+	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 )
 
 // RunWithContext will run the root level cobra command but first setup logging with Zap

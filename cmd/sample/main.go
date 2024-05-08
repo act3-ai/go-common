@@ -7,11 +7,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	commands "git.act3-ace.com/ace/go-common/pkg/cmd"
-	"git.act3-ace.com/ace/go-common/pkg/config"
-	"git.act3-ace.com/ace/go-common/pkg/embedutil"
-	"git.act3-ace.com/ace/go-common/pkg/runner"
-	vv "git.act3-ace.com/ace/go-common/pkg/version"
+	commands "gitlab.com/act3-ai/asce/go-common/pkg/cmd"
+	"gitlab.com/act3-ai/asce/go-common/pkg/config"
+	"gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
+	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
+	vv "gitlab.com/act3-ai/asce/go-common/pkg/version"
 )
 
 // manpages and schema definitions are embedded here for use in the gendocs and genschema commands

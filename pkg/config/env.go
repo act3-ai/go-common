@@ -1,7 +1,7 @@
 package config
 
 import (
-	"git.act3-ace.com/ace/go-common/pkg/config/env"
+	"gitlab.com/act3-ai/asce/go-common/pkg/config/env"
 )
 
 // define errors for config

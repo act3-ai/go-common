@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"git.act3-ace.com/ace/go-common/pkg/version"
+	"gitlab.com/act3-ai/asce/go-common/pkg/version"
 )
 
 // versionOptions is the options for the version
