@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"os"
+
+	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 
 	embedutil "gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
@@ -44,7 +47,8 @@ func newHTMLCmd(docs *embedutil.Documentation) *cobra.Command {
 			if len(args) > 0 {
 				dir = args[0]
 			}
-
+			os.Setenv("NO_COLOR", "1")
+			// disableTermenvColor() // avoid writing ANSI escape codes to files
 			return docs.Write(dir, opts)
 		},
 	}
@@ -83,6 +87,8 @@ func newMarkdownCmd(docs *embedutil.Documentation) *cobra.Command {
 			if len(args) > 0 {
 				dir = args[0]
 			}
+			os.Setenv("NO_COLOR", "1")
+			// disableTermenvColor() // avoid writing ANSI escape codes to files
 			return docs.Write(dir, opts)
 		},
 	}
@@ -116,9 +122,16 @@ func newManpageCmd(docs *embedutil.Documentation) *cobra.Command {
 			if len(args) > 0 {
 				dir = args[0]
 			}
+			os.Setenv("NO_COLOR", "1")
+			// disableTermenvColor() // avoid writing ANSI escape codes to files
 			return docs.Write(dir, opts)
 		},
 	}
 
 	return cmd
+}
+
+// avoid writing ANSI escape codes to files
+func disableTermenvColor() {
+	termenv.SetDefaultOutput(termenv.NewOutput(termenv.DefaultOutput(), termenv.WithProfile(termenv.Ascii)))
 }
