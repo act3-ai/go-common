@@ -45,7 +45,7 @@ func newHTMLCmd(docs *embedutil.Documentation) *cobra.Command {
 				dir = args[0]
 			}
 
-			return docs.Write(dir, opts)
+			return docs.Write(cmd.Context(), dir, opts)
 		},
 	}
 
@@ -83,7 +83,7 @@ func newMarkdownCmd(docs *embedutil.Documentation) *cobra.Command {
 			if len(args) > 0 {
 				dir = args[0]
 			}
-			return docs.Write(dir, opts)
+			return docs.Write(cmd.Context(), dir, opts)
 		},
 	}
 
@@ -116,7 +116,7 @@ func newManpageCmd(docs *embedutil.Documentation) *cobra.Command {
 			if len(args) > 0 {
 				dir = args[0]
 			}
-			return docs.Write(dir, opts)
+			return docs.Write(cmd.Context(), dir, opts)
 		},
 	}
 

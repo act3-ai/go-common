@@ -55,7 +55,7 @@ func newDocCmd(doc *embedutil.Document) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			contents, err := doc.Render(embedutil.Markdown)
 			if err != nil {
-				return err
+				return fmt.Errorf("rendering document: %w", err)
 			}
 
 			if writeDir != "" {

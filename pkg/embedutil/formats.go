@@ -83,6 +83,19 @@ var (
 		return data, nil
 	}
 
+	// supportedConversions = map[Encoding]map[Format]conversionFunc{
+	// 	EncodingMarkdown: {
+	// 		Markdown: noopConversion,
+	// 		Manpage:  formatManpage,
+	// 		HTML:     formatHTML,
+	// 	},
+	// 	EncodingJSONSchema: {
+	// 		Markdown: noopConversion,
+	// 		Manpage:  noopConversion,
+	// 		HTML:     noopConversion,
+	// 	},
+	// }
+
 	// Maps an input and output format to a conversion function
 	supportedConversions = map[conversion]conversionFunc{
 		{EncodingMarkdown, Markdown}:   noopConversion,

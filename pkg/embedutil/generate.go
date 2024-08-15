@@ -1,7 +1,9 @@
 package embedutil
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -18,7 +20,7 @@ type Options struct {
 }
 
 // Write outputs all embedded documentation in the outputDir
-func (docs *Documentation) Write(outputDir string, opts *Options) error {
+func (docs *Documentation) Write(ctx context.Context, outputDir string, opts *Options) error {
 	err := os.MkdirAll(outputDir, 0o775)
 	if err != nil {
 		return fmt.Errorf("writing documentation: %w", err)
@@ -65,10 +67,7 @@ func (docs *Documentation) Write(outputDir string, opts *Options) error {
 		}
 	}
 
-	_, err = fmt.Println("Generated documentation: " + outputDir)
-	if err != nil {
-		return err
-	}
+	slog.InfoContext(ctx, "Generated documentation", slog.String("dir", outputDir), slog.String("format", string(opts.Format)))
 
 	return docs.writeIndex(outputDir, opts)
 }
