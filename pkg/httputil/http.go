@@ -83,9 +83,16 @@ func FileServer(r chi.Router, path string, root fs.FS) {
 	path += "*"
 
 	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
-		rctx := chi.RouteContext(r.Context())
-		pathPrefix := strings.TrimSuffix(rctx.RoutePattern(), "/*")
+		pathPrefix := strings.TrimSuffix(RoutePattern(r), "/*")
 		fs := http.StripPrefix(pathPrefix, http.FileServer(http.FS(root)))
 		fs.ServeHTTP(w, r)
 	})
+}
+
+// RoutePattern retrieves the matches route pattern for a request. Supports both the standard library HTTP router or chi.
+func RoutePattern(r *http.Request) string {
+	if rctx := chi.RouteContext(r.Context()); rctx != nil {
+		return rctx.RoutePattern()
+	}
+	return r.Pattern
 }
