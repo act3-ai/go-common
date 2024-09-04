@@ -65,15 +65,18 @@ func generateSchema(r *jsonschema.Reflector, dir string, schemaType any) (string
 	// Create the JSON Schema
 	schema := r.Reflect(schemaType)
 
-	bts, err := json.MarshalIndent(schema, "", "  ")
+	data, err := json.MarshalIndent(schema, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("failed to create jsonschema: %w", err)
 	}
 
+	// Add newline
+	data = append(data, []byte("\n")...)
+
 	// Write JSON Schema definition to a file
 	// Derive file name from "schema.ID", format is Go type name in lowercase
 	schemaFile := filepath.Join(dir, filepath.Base(schema.ID.Base().String())+"-schema.json")
-	if err := os.WriteFile(schemaFile, bts, 0o666); err != nil {
+	if err := os.WriteFile(schemaFile, data, 0o666); err != nil {
 		return schemaFile, fmt.Errorf("failed to write jsonschema file: %w", err)
 	}
 
@@ -82,13 +85,16 @@ func generateSchema(r *jsonschema.Reflector, dir string, schemaType any) (string
 
 // WriteSchema marshals a JSONSchema definition to JSON and writes it to file
 func WriteSchema(schema *jsonschema.Schema, file string) error {
-	bts, err := json.Marshal(schema)
+	data, err := json.Marshal(schema)
 	if err != nil {
 		return fmt.Errorf("failed to create jsonschema: %w", err)
 	}
 
+	// Add newline
+	data = append(data, []byte("\n")...)
+
 	// Write JSON Schema definition to a file
-	if err := os.WriteFile(file, bts, 0o666); err != nil {
+	if err := os.WriteFile(file, data, 0o666); err != nil {
 		return fmt.Errorf("failed to write jsonschema file: %w", err)
 	}
 

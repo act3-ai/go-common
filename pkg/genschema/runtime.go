@@ -65,7 +65,7 @@ func ForAPIGroup(r *jsonschema.Reflector, scheme *runtime.Scheme, group string) 
 	groupSchema := &jsonschema.Schema{
 		Version:     jsonschema.Version,
 		ID:          jsonschema.ID("https://" + group),
-		Description: fmt.Sprintf("Definition of the API " + group),
+		Description: "Definition of the API " + group,
 		Definitions: make(jsonschema.Definitions),
 	}
 
