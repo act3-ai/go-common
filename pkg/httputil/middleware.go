@@ -97,8 +97,7 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 
 		// This must be done after calling next.ServeHTTP()
-		routePattern := RoutePattern(r)
-		HTTPDuration.WithLabelValues(r.Method, routePattern).Observe(time.Since(start).Seconds())
+		HTTPDuration.WithLabelValues(r.Method, r.Pattern).Observe(time.Since(start).Seconds())
 	})
 }
 

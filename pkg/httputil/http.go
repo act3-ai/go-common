@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
-
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 )
 
@@ -71,28 +69,20 @@ func WriteJSON(w http.ResponseWriter, obj any) error {
 
 // FileServer conveniently sets up a http.FileServer handler to serve
 // static files from a http.FileSystem.
-func FileServer(r chi.Router, path string, root fs.FS) {
+func FileServer(mux *http.ServeMux, path string, root fs.FS) {
 	if strings.ContainsAny(path, "{}*") {
 		panic("FileServer does not permit any URL parameters.")
 	}
 
 	if path != "/" && path[len(path)-1] != '/' {
-		r.Get(path, http.RedirectHandler(path+"/", http.StatusMovedPermanently).ServeHTTP)
+		mux.Handle("GET "+path, http.RedirectHandler(path+"/", http.StatusMovedPermanently))
 		path += "/"
 	}
 	path += "*"
 
-	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
-		pathPrefix := strings.TrimSuffix(RoutePattern(r), "/*")
+	mux.HandleFunc("GET "+path, func(w http.ResponseWriter, r *http.Request) {
+		pathPrefix := strings.TrimSuffix(r.Pattern, "/*")
 		fs := http.StripPrefix(pathPrefix, http.FileServer(http.FS(root)))
 		fs.ServeHTTP(w, r)
 	})
-}
-
-// RoutePattern retrieves the matches route pattern for a request. Supports both the standard library HTTP router or chi.
-func RoutePattern(r *http.Request) string {
-	if rctx := chi.RouteContext(r.Context()); rctx != nil {
-		return rctx.RoutePattern()
-	}
-	return r.Pattern
 }

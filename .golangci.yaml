@@ -48,8 +48,6 @@ linters-settings:
     default-signifies-exhaustive: true
 
   staticcheck:
-    # Select the Go version to target. The default is '1.13'.
-    go: "1.19"
     # https://staticcheck.io/docs/options#checks
     checks: ["all"]
 
@@ -149,7 +147,7 @@ linters-settings:
 
     # Enforce using methods that accept a context.
     # Default: false
-    context-only: true
+    context: "scope"
 
     # Enforce using static values for log messages.
     # Default: false
