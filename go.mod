@@ -1,6 +1,6 @@
 module gitlab.com/act3-ai/asce/go-common
 
-go 1.21
+go 1.23
 
 require (
 	github.com/MakeNowJust/heredoc/v2 v2.0.1

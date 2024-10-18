@@ -5,10 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/segmentio/ksuid"
 
@@ -99,11 +97,7 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 
 		// This must be done after calling next.ServeHTTP()
-		rctx := chi.RouteContext(r.Context())
-		routePattern := strings.Join(rctx.RoutePatterns, "")
-		routePattern = strings.ReplaceAll(routePattern, "/*/", "/")
-
-		HTTPDuration.WithLabelValues(r.Method, routePattern).Observe(time.Since(start).Seconds())
+		HTTPDuration.WithLabelValues(r.Method, r.Pattern).Observe(time.Since(start).Seconds())
 	})
 }
 
