@@ -40,15 +40,20 @@ func TracingMiddleware(next http.Handler) http.Handler {
 
 var _ middlewareFunc = TracingMiddleware
 
-// LoggingMiddleware injects a logger into the context
+// LoggingMiddleware injects a logger into the context.
+//
+// A previous implementation contained a memory leak because the tracing attributes were always appended to the given logger.
 func LoggingMiddleware(log *slog.Logger) middlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			path := r.URL.Path
 			id := InstanceFromContext(ctx)
-			log = log.With("path", path, "qs", r.URL.Query(), "instance", id.String())
-			ctx = logger.NewContext(ctx, log)
+			ctx = logger.NewContext(ctx, log.With(
+				slog.String("path", path),
+				slog.Any("qs", r.URL.Query()),
+				slog.String("instance", id.String()),
+			))
 			// Call the next handler
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
