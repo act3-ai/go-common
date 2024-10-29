@@ -49,8 +49,11 @@ func LoggingMiddleware(log *slog.Logger) middlewareFunc {
 			ctx := r.Context()
 			path := r.URL.Path
 			id := InstanceFromContext(ctx)
-			log = log.With("path", path, "qs", r.URL.Query(), "instance", id.String())
-			ctx = logger.NewContext(ctx, log)
+			ctx = logger.NewContext(ctx, log.With(
+				slog.String("path", path),
+				slog.Any("qs", r.URL.Query()),
+				slog.String("instance", id.String()),
+			))
 			// Call the next handler
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
