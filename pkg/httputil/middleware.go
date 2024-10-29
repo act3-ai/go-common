@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -102,7 +103,8 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 
 		// This must be done after calling next.ServeHTTP()
-		HTTPDuration.WithLabelValues(r.Method, r.Pattern).Observe(time.Since(start).Seconds())
+		pattern := strings.TrimPrefix(r.Pattern, r.Method+" ")
+		HTTPDuration.WithLabelValues(r.Method, pattern).Observe(time.Since(start).Seconds())
 	})
 }
 
