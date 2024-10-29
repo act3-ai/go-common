@@ -41,8 +41,6 @@ func TracingMiddleware(next http.Handler) http.Handler {
 var _ middlewareFunc = TracingMiddleware
 
 // LoggingMiddleware injects a logger into the context.
-//
-// A previous implementation contained a memory leak because the tracing attributes were always appended to the given logger.
 func LoggingMiddleware(log *slog.Logger) middlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
