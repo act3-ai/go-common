@@ -19,6 +19,9 @@ type LiveSpanProcessor struct {
 	sdktrace.SpanProcessor
 }
 
+// NewLiveSpanProcessor creates a span processor that exports spans on start and finish.
+// Due to the frequency of exports, it is not recommended to be used with an exporter that
+// sends spans to a remote collector.
 func NewLiveSpanProcessor(exp sdktrace.SpanExporter) *LiveSpanProcessor {
 	return &LiveSpanProcessor{
 		SpanProcessor: sdktrace.NewBatchSpanProcessor(

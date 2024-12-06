@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
@@ -26,14 +27,14 @@ type Config struct {
 	// SpanProcessors are processors to prepend to the telemetry pipeline.
 	SpanProcessors []sdktrace.SpanProcessor
 
-	// LiveTraceExporters are exporters that can receive updates for spans at runtime,
-	// rather than waiting until the span ends.
+	// LiveTraceExporters are exporters that can receive updates for spans at
+	// runtime, rather than waiting until the span ends.
 	//
 	// Example: TUI, Cloud
 	LiveTraceExporters []sdktrace.SpanExporter
 
-	// BatchedTraceExporters are exporters that receive spans in batches, after the
-	// spans have ended.
+	// BatchedTraceExporters are exporters that receive spans in batches, after
+	// the spans have ended.
 	//
 	// Example: Honeycomb, Jaeger, etc.
 	BatchedTraceExporters []sdktrace.SpanExporter
@@ -49,11 +50,12 @@ type Config struct {
 	Resource *resource.Resource
 
 	traceProvider *sdktrace.TracerProvider
+	propagator    propagation.TextMapPropagator
 }
 
 // LiveTracesEnabled indicates that the configured OTEL_* exporter should be
 // sent live span telemetry.
-var LiveTracesEnabled = os.Getenv("OTEL_EXPORTER_OTLP_TRACES_LIVE") != ""
+//var LiveTracesEnabled = os.Getenv("OTEL_EXPORTER_OTLP_TRACES_LIVE") != ""
 
 var Resource *resource.Resource
 var SpanProcessors = []sdktrace.SpanProcessor{}
@@ -65,13 +67,16 @@ var SpanProcessors = []sdktrace.SpanProcessor{}
 // someday metrics providers. It is called by the CLI, the engine, and the
 // container shim, so it needs to be versatile.
 func Init(ctx context.Context, cfg Config) (context.Context, error) {
-	// TODO: What is the propagator stuff?
-	// Set up a text map propagator so that things, well, propagate. The default
-	// is a noop.
-	// otel.SetTextMapPropagator(Propagator)
+	// Do not rely on otel.GetTextMapPropagator() - it's prone to change from a
+	// random import.
+	cfg.propagator = propagation.NewCompositeTextMapPropagator(
+		propagation.Baggage{},
+		propagation.TraceContext{},
+	)
+	otel.SetTextMapPropagator(cfg.propagator)
 
 	// Inherit trace context from env if present.
-	// ctx = Propagator.Extract(ctx, NewEnvCarrier(true))
+	ctx = cfg.propagator.Extract(ctx, NewEnvCarrier(true))
 
 	// Log to slog.
 	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
@@ -91,18 +96,18 @@ func Init(ctx context.Context, cfg Config) (context.Context, error) {
 		if err != nil {
 			return nil, fmt.Errorf("configuring span exporter from environment variables: %w", err)
 		}
-		if LiveTracesEnabled {
-			cfg.LiveTraceExporters = append(cfg.LiveTraceExporters, exp)
-		} else {
-			cfg.BatchedTraceExporters = append(cfg.BatchedTraceExporters,
-				// Filter out unfinished spans to avoid confusing external systems.
-				//
-				// Normally we avoid sending them here by virtue of putting this into
-				// BatchedTraceExporters, but that only applies to the local process.
-				// Unfinished spans may end up here if they're proxied out of the
-				// engine via Params.EngineTrace.
-				FilterLiveSpansExporter{exp})
-		}
+		// if LiveTracesEnabled {
+		// 	cfg.LiveTraceExporters = append(cfg.LiveTraceExporters, exp)
+		// } else {
+		cfg.BatchedTraceExporters = append(cfg.BatchedTraceExporters,
+			// Filter out unfinished spans to avoid confusing external systems.
+			//
+			// Normally we avoid sending them here by virtue of putting this into
+			// BatchedTraceExporters, but that only applies to the local process.
+			// Unfinished spans may end up here if they're proxied out of the
+			// engine via Params.EngineTrace.
+			FilterLiveSpansExporter{exp})
+		//}
 
 		// if exp, ok := ConfiguredLogExporter(ctx); ok {
 		// 	cfg.LiveLogExporters = append(cfg.LiveLogExporters, exp)
