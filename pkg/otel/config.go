@@ -71,7 +71,7 @@ var SpanProcessors = []sdktrace.SpanProcessor{}
 // Init sets up the global OpenTelemetry providers tracing, logging, and
 // someday metrics providers. It is called by the CLI, the engine, and the
 // container shim, so it needs to be versatile.
-func Init(ctx context.Context, cfg Config) (context.Context, error) {
+func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 	// Do not rely on otel.GetTextMapPropagator() - it's prone to change from a
 	// random import.
 	cfg.propagator = propagation.NewCompositeTextMapPropagator(
