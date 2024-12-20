@@ -17,8 +17,12 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"google.golang.org/grpc"
 )
+
+// TODO: Currently only supports trace exporters. Much of the plumbing
+// for logs and metrics remains, but commented out.
 
 type Config struct {
 	// Auto-detect exporters from OTEL_* env variables.
@@ -78,13 +82,12 @@ func Init(ctx context.Context, cfg Config) (context.Context, error) {
 	// Inherit trace context from env if present.
 	ctx = cfg.propagator.Extract(ctx, NewEnvCarrier(true))
 
-	// Log to slog.
 	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
 		logger.FromContext(ctx).ErrorContext(ctx, "failed to emit telemetry", "error", err)
 	}))
 
 	if cfg.Resource == nil {
-		cfg.Resource = defaultResource(ctx)
+		cfg.Resource = fallbackResource(ctx)
 	}
 
 	// Set up the global resource so we can pass it into dynamically allocated
@@ -96,18 +99,17 @@ func Init(ctx context.Context, cfg Config) (context.Context, error) {
 		if err != nil {
 			return nil, fmt.Errorf("configuring span exporter from environment variables: %w", err)
 		}
-		// if LiveTracesEnabled {
-		// 	cfg.LiveTraceExporters = append(cfg.LiveTraceExporters, exp)
-		// } else {
-		cfg.BatchedTraceExporters = append(cfg.BatchedTraceExporters,
-			// Filter out unfinished spans to avoid confusing external systems.
-			//
-			// Normally we avoid sending them here by virtue of putting this into
-			// BatchedTraceExporters, but that only applies to the local process.
-			// Unfinished spans may end up here if they're proxied out of the
-			// engine via Params.EngineTrace.
-			FilterLiveSpansExporter{exp})
-		//}
+
+		// dagger sets this env var to a global value, but this seems unnecessary to leave
+		// this in the heap
+		val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_TRACES_LIVE")
+		if exists && val != "" {
+			cfg.LiveTraceExporters = append(cfg.LiveTraceExporters, exp)
+		} else {
+			cfg.BatchedTraceExporters = append(cfg.BatchedTraceExporters,
+				// Filter out unfinished spans to avoid confusing external systems.
+				FilterLiveSpansExporter{exp})
+		}
 
 		// if exp, ok := ConfiguredLogExporter(ctx); ok {
 		// 	cfg.LiveLogExporters = append(cfg.LiveLogExporters, exp)
@@ -140,7 +142,7 @@ func Init(ctx context.Context, cfg Config) (context.Context, error) {
 	// Register our TracerProvider as the global so any imported instrumentation
 	// in the future will default to using it.
 	//
-	// NB: this is also necessary so that we can establish a root span, otherwise
+	// also necessary so that we can establish a root span, otherwise
 	// telemetry doesn't work.
 	otel.SetTracerProvider(cfg.traceProvider)
 
@@ -199,6 +201,7 @@ func Close(ctx context.Context, cfg Config) {
 	// }
 }
 
+// ConfiguredSpanExporter examines environment variables to build a sdktrace.SpanExporter.
 func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) {
 	// derived from https://github.com/dagger/dagger-go-sdk/blob/v0.14.0/telemetry/init.go#L35
 	ctx = context.WithoutCancel(ctx) // TODO: Why?
@@ -279,7 +282,8 @@ func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) 
 	return configuredSpanExporter, nil
 }
 
-func defaultResource(ctx context.Context) *resource.Resource {
+// fallbackResouce is used by Init() if one is not explcitly provided in the Config.
+func fallbackResource(ctx context.Context) *resource.Resource {
 	r, _ := resource.New(
 		ctx,
 		resource.WithFromEnv(),      // Discover and provide attributes from OTEL_RESOURCE_ATTRIBUTES and OTEL_SERVICE_NAME environment variables.
@@ -287,10 +291,10 @@ func defaultResource(ctx context.Context) *resource.Resource {
 		// resource.WithProcess(),      // Discover and provide process information.
 		resource.WithOS(), // Discover and provide OS information.
 		// resource.WithContainer(),    // Discover and provide container information.
-		resource.WithHost(), // Discover and provide host information.
-		// resource.WithAttributes(
-		// 	semconv.ServiceName("unknown_service"), // default value
-		// ),
+		// resource.WithHost(), // Discover and provide host information.
+		resource.WithAttributes(
+			semconv.ServiceName("ACT3-ASCE"), // default value is "unknown_service"
+		),
 	)
 	return r
 }
