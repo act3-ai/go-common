@@ -23,6 +23,7 @@ import (
 
 // TODO: Currently only supports trace exporters. Much of the plumbing
 // for logs and metrics remains, but commented out.
+// TODO: Why is dagger so willing to add globals?
 
 type Config struct {
 	// Auto-detect exporters from OTEL_* env variables.
@@ -293,7 +294,7 @@ func fallbackResource(ctx context.Context) *resource.Resource {
 		// resource.WithContainer(),    // Discover and provide container information.
 		// resource.WithHost(), // Discover and provide host information.
 		resource.WithAttributes(
-			semconv.ServiceName("ACT3-ASCE"), // default value is "unknown_service"
+			semconv.ServiceName("ACT3_ASCE"), // default value is "unknown_service"
 		),
 	)
 	return r
