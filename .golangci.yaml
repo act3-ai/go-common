@@ -131,7 +131,7 @@ linters-settings:
 
   gocognit:
     min-complexity: 35
-  
+
   sloglint:
     # Enforce not mixing key-value pairs and attributes.
     # Default: true
