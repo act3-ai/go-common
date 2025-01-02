@@ -11,9 +11,14 @@ import (
 type Format string
 
 const (
-	Markdown Format = "md"   // Markdown represents Markdown output
-	HTML     Format = "html" // HTML represents HTML output
-	Manpage  Format = "man"  // Manpage represents manpage output
+	// Markdown represents Markdown output
+	Markdown Format = "md"
+
+	// HTML represents HTML output
+	HTML Format = "html"
+
+	// Manpage represents manpage output
+	Manpage Format = "man"
 )
 
 // indexable checks if the output format is indexable

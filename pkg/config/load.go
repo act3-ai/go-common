@@ -24,7 +24,7 @@ func Load(log *slog.Logger, scheme *runtime.Scheme, conf runtime.Object, configF
 	for _, filename := range configFiles {
 		content, err := os.ReadFile(filename)
 		if err != nil {
-			log.Debug("Skipping config file", "path", filename, "reason", err) //nolint:sloglint
+			log.Debug("Skipping config file", "path", filename, "reason", err)
 			continue
 		}
 
@@ -34,7 +34,7 @@ func Load(log *slog.Logger, scheme *runtime.Scheme, conf runtime.Object, configF
 			return fmt.Errorf("loading configuration: %w", err)
 		}
 
-		log.Info("Using config file", "path", filename) //nolint:sloglint
+		log.Info("Using config file", "path", filename)
 		break
 	}
 

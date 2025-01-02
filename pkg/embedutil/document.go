@@ -11,10 +11,17 @@ import (
 type DocType string
 
 const (
-	TypeAll      DocType = "all"      // TypeAll represents all types
-	TypeGeneral  DocType = "general"  // TypeGeneral represents general documentation
-	TypeCommands DocType = "commands" // TypeCommands represents CLI command documentation
-	TypeSchemas  DocType = "schemas"  // TypeSchemas represents API schema documentation
+	// TypeAll represents all types
+	TypeAll DocType = "all"
+
+	// TypeGeneral represents general documentation
+	TypeGeneral DocType = "general"
+
+	// TypeCommands represents CLI command documentation
+	TypeCommands DocType = "commands"
+
+	// TypeSchemas represents API schema documentation
+	TypeSchemas DocType = "schemas"
 )
 
 // TypeRequested checks if a type was requested from the options
