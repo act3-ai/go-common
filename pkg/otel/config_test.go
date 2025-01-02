@@ -24,6 +24,10 @@ func TestExampleResource(t *testing.T) {
 	ExampleResource()
 }
 
+// ExampleResource demonstrates the minimum resouce configuration, while showing
+// optional resource information. Although a default may be used, it is recommended
+// to define a custom resource configuration to uniquely identify the service
+// being integrated with OpenTelemetry.
 func ExampleResource() {
 	ctx := context.Background()
 
