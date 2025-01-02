@@ -7,11 +7,14 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 )
 
+// EnvCarrier is used to inherit trace context from the environment.
 type EnvCarrier struct {
 	System bool
 	Env    []string
 }
 
+// NewEnvCarrier initializes an EnvCarrier, optionally fetching from
+// the system.
 func NewEnvCarrier(system bool) *EnvCarrier {
 	return &EnvCarrier{
 		System: system,
@@ -20,6 +23,7 @@ func NewEnvCarrier(system bool) *EnvCarrier {
 
 var _ propagation.TextMapCarrier = (*EnvCarrier)(nil)
 
+// Get returns the value for a key.
 func (c *EnvCarrier) Get(key string) string {
 	envName := strings.ToUpper(key)
 	for _, env := range c.Env {
@@ -36,10 +40,12 @@ func (c *EnvCarrier) Get(key string) string {
 	return ""
 }
 
+// Set adds a key value pair to the environment.
 func (c *EnvCarrier) Set(key, val string) {
 	c.Env = append(c.Env, strings.ToUpper(key)+"="+val)
 }
 
+// Keys returns all keys in the environment.
 func (c *EnvCarrier) Keys() []string {
 	keys := make([]string, 0, len(c.Env))
 	for _, env := range c.Env {

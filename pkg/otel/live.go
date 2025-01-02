@@ -38,7 +38,9 @@ func (p *LiveSpanProcessor) OnStart(ctx context.Context, span sdktrace.ReadWrite
 	// filtered out by FilterLiveSpansExporter. Otherwise the span can complete
 	// before being exported, resulting in two completed spans being sent, which
 	// will confuse traditional OpenTelemetry services.
-	p.SpanProcessor.OnEnd(span) // TODO: dagger does some transformation here instead of passing it directly
+	// TODO: dagger does some transformation here instead of passing it directly,
+	// which seemed expensive...
+	p.SpanProcessor.OnEnd(span)
 }
 
 // FilterLiveSpansExporter is a SpanExporter that filters out spans that are
@@ -53,13 +55,12 @@ type FilterLiveSpansExporter struct {
 func (exp FilterLiveSpansExporter) ExportSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan) error {
 	filtered := make([]sdktrace.ReadOnlySpan, 0, len(spans))
 	for _, span := range spans {
-		if span.StartTime().After(span.EndTime()) {
-		} else {
+		if span.StartTime().Before(span.EndTime()) { // endtime < starttime if not complete
 			filtered = append(filtered, span)
 		}
 	}
 	if len(filtered) == 0 {
 		return nil
 	}
-	return exp.SpanExporter.ExportSpans(ctx, filtered)
+	return exp.SpanExporter.ExportSpans(ctx, filtered) //nolint:wrapcheck
 }

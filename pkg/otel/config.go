@@ -3,14 +3,12 @@ package otel
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 
-	"git.act3-ace.com/ace/go-common/pkg/logger"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -19,12 +17,15 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"google.golang.org/grpc"
+
+	"git.act3-ace.com/ace/go-common/pkg/logger"
 )
 
 // TODO: Currently only supports trace exporters. Much of the plumbing
 // for logs and metrics remains, but commented out.
 // TODO: Why is dagger so willing to add globals?
 
+// Config configures the initialization of OpenTelemetry.
 type Config struct {
 	// Auto-detect exporters from OTEL_* env variables.
 	Detect bool
@@ -60,9 +61,14 @@ type Config struct {
 
 // LiveTracesEnabled indicates that the configured OTEL_* exporter should be
 // sent live span telemetry.
-//var LiveTracesEnabled = os.Getenv("OTEL_EXPORTER_OTLP_TRACES_LIVE") != ""
+// var LiveTracesEnabled = os.Getenv("OTEL_EXPORTER_OTLP_TRACES_LIVE") != ""
 
+// Resource is the globally configured resource, allowing it to be provided
+// to dynamically allocated log/trace providers at runtime.
 var Resource *resource.Resource
+
+// SpanProcessors is a set of global span processors used by the global
+// trace provider.
 var SpanProcessors = []sdktrace.SpanProcessor{}
 
 // var LogProcessors = []sdklog.Processor{}
@@ -187,12 +193,13 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 // Close shuts down the global OpenTelemetry providers, flushing any remaining
 // data to the configured exporters.
 func Close(ctx context.Context, cfg Config) {
+	log := logger.FromContext(ctx)
 	// ctx := closeCtx
 	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
 	if tracerProvider := otel.GetTracerProvider(); tracerProvider != nil {
 		if err := cfg.traceProvider.Shutdown(flushCtx); err != nil {
-			slog.Error("failed to shut down tracer provider", "error", err)
+			log.ErrorContext(ctx, "failed to shut down tracer provider", "error", err)
 		}
 	}
 	// if loggerProvider := LoggerProvider(ctx); loggerProvider != nil {
@@ -239,7 +246,6 @@ func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) 
 		return nil, nil
 	}
 
-	//nolint:dupl
 	switch proto {
 	case "http/protobuf", "http":
 		headers := map[string]string{}
