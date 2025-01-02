@@ -3,7 +3,6 @@ module gitlab.com/act3-ai/asce/go-common
 go 1.23
 
 require (
-	git.act3-ace.com/ace/go-common v0.0.0-20241029114748-ba3456041b7d
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/adrg/xdg v0.5.2
 	github.com/charmbracelet/x/ansi v0.7.0
