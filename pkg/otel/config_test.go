@@ -76,8 +76,9 @@ func ExampleConfig_simple() {
 	}
 
 	cfg := Config{
-		LiveTraceExporters: []sdktrace.SpanExporter{exp},
-		Resource:           rsrc,
+		// LiveTraceExporters: []sdktrace.SpanExporter{}, // export when spans start and finish
+		BatchedTraceExporters: []sdktrace.SpanExporter{exp}, // export wehn spans finish
+		Resource:              rsrc,
 	}
 
 	ctx, err = Init(ctx, &cfg)
