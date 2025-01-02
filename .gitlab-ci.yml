@@ -9,22 +9,26 @@
     DOCKER_CERT_PATH: '/certs/client'
     DOCKER_DRIVER: overlay2
     DOCKER_VERSION: '27.2.0'
+
 .dagger:
   extends:
     - .docker
   before_script:
     - apk add curl
     - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+
 test:
   extends:
     - .dagger
   script:
     - dagger call test
-
-build:
-  extends:
-    - .dagger
-  needs:
-    - test
-  script:
+    - dagger call lint
     - dagger call build
+
+# build:
+#   extends:
+#     - .dagger
+#   needs:
+#     - test
+#   script:
+#     - dagger call build

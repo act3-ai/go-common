@@ -17,6 +17,9 @@ package main
 import (
 	"context"
 	"dagger/go-common/internal/dagger"
+	"strings"
+
+	"github.com/sourcegraph/conc/pool"
 )
 
 type GoCommon struct {
@@ -32,6 +35,61 @@ func New(
 	return &GoCommon{
 		Source: src,
 	}
+}
+
+// Lint yaml files
+func (m *GoCommon) Yamllint(ctx context.Context,
+	// Source code directory
+	// +defaultPath="/"
+	src *dagger.Directory,
+) (string, error) {
+	return dag.Container().
+		From("docker.io/cytopia/yamllint:1").
+		WithWorkdir("/src").
+		WithDirectory("/src", src).
+		WithExec([]string{"yamllint", "."}).
+		Stdout(ctx)
+}
+
+// Lint markdown files
+func (m *GoCommon) Markdownlint(ctx context.Context,
+	// source code directory
+	// +defaultPath="/"
+	src *dagger.Directory,
+) (string, error) {
+	return dag.Container().
+		From("docker.io/davidanson/markdownlint-cli2:v0.14.0").
+		WithWorkdir("/src").
+		WithDirectory("/src", src).
+		WithExec([]string{"markdownlint-cli2", "."}).
+		Stdout(ctx)
+}
+
+// Lint all files
+func (m *GoCommon) Lint(ctx context.Context) (string, error) {
+	p := pool.NewWithResults[string]().WithContext(ctx)
+
+	p.Go(func(ctx context.Context) (string, error) {
+		ctx, span := Tracer().Start(ctx, "yamllint")
+		defer span.End()
+		return m.Yamllint(ctx, m.Source)
+	})
+
+	p.Go(func(ctx context.Context) (string, error) {
+		ctx, span := Tracer().Start(ctx, "markdownlint")
+		defer span.End()
+		return m.Markdownlint(ctx, m.Source)
+	})
+
+	p.Go(func(ctx context.Context) (string, error) {
+		ctx, span := Tracer().Start(ctx, "golangci-lint")
+		defer span.End()
+		return dag.GolangciLint().Run(m.Source).Stdout(ctx)
+	})
+
+	s, err := p.Wait()
+	// TODO maybe we should order the lint result strings
+	return strings.Join(s, "\n=====\n"), err
 }
 
 // Run all tests
