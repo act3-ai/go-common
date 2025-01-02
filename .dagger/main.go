@@ -113,5 +113,7 @@ func (m *GoCommon) Build(
 	return dag.Go().
 		WithSource(m.Source).
 		WithCgoDisabled().
-		Build()
+		Build(dagger.GoWithSourceBuildOpts{
+			Pkg: "./cmd/sample",
+		})
 }
