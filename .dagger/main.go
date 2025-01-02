@@ -84,7 +84,11 @@ func (m *GoCommon) Lint(ctx context.Context) (string, error) {
 	p.Go(func(ctx context.Context) (string, error) {
 		ctx, span := Tracer().Start(ctx, "golangci-lint")
 		defer span.End()
-		return dag.GolangciLint().Run(m.Source).Stdout(ctx)
+		return dag.GolangciLint().
+			Run(m.Source, dagger.GolangciLintRunOpts{
+				Timeout: "5m",
+			}).
+			Stdout(ctx)
 	})
 
 	s, err := p.Wait()
@@ -98,7 +102,8 @@ func (m *GoCommon) Test(
 ) (string, error) {
 	return dag.Go().
 		WithSource(m.Source).
-		Exec([]string{"test", "./..."}).Stdout(ctx)
+		Exec([]string{"test", "./..."}).
+		Stdout(ctx)
 }
 
 // Build the sample executable
