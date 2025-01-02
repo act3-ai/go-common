@@ -9,12 +9,23 @@ import (
 type Encoding string
 
 const (
-	EncodingMarkdown   Encoding = "md"         // EncodingMarkdown represents a Markdown-encoded document
-	EncodingManpage    Encoding = "man"        // EncodingManpage represents a manpage document
-	EncodingJSONSchema Encoding = "jsonschema" // EncodingJSONSchema represents a JSON-encoded JSON Schema definition
-	EncodingCRD        Encoding = "crd"        // EncodingCRD represents a YAML-encoded CustomResourceDefinition
-	EncodingHTML       Encoding = "html"       // EncodingHTML represents an HTML document
-	EncodingRaw        Encoding = "raw"        // EncodingRaw represents a raw document
+	// EncodingMarkdown represents a Markdown-encoded document
+	EncodingMarkdown Encoding = "md"
+
+	// EncodingManpage represents a manpage document
+	EncodingManpage Encoding = "man"
+
+	// EncodingJSONSchema represents a JSON-encoded JSON Schema definition
+	EncodingJSONSchema Encoding = "jsonschema"
+
+	// EncodingCRD represents a YAML-encoded CustomResourceDefinition
+	EncodingCRD Encoding = "crd"
+
+	// EncodingHTML represents an HTML document
+	EncodingHTML Encoding = "html"
+
+	// EncodingRaw represents a raw document
+	EncodingRaw Encoding = "raw"
 )
 
 // NewCategory initializes a new Category object
