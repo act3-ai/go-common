@@ -67,22 +67,35 @@ func WriteJSON(w http.ResponseWriter, obj any) error {
 	return json.NewEncoder(w).Encode(obj)
 }
 
+// Handler is provided by most http server implementations.
+type Handler interface {
+	// Handle registers the http.Handler for the given pattern.
+	Handle(pattern string, handler http.Handler)
+}
+
 // FileServer conveniently sets up a http.FileServer handler to serve
 // static files from a http.FileSystem.
-func FileServer(mux *http.ServeMux, path string, root fs.FS) {
+func FileServer(handler Handler, path string, root fs.FS) {
 	if strings.ContainsAny(path, "{}*") {
 		panic("FileServer does not permit any URL parameters.")
 	}
 
 	if path != "/" && path[len(path)-1] != '/' {
-		mux.Handle("GET "+path, http.RedirectHandler(path+"/", http.StatusMovedPermanently))
+		handler.Handle("GET "+path, http.RedirectHandler(path+"/", http.StatusMovedPermanently))
 		path += "/"
 	}
 	path += "*"
 
-	mux.HandleFunc("GET "+path, func(w http.ResponseWriter, r *http.Request) {
-		pathPrefix := strings.TrimSuffix(r.Pattern, "/*")
-		fs := http.StripPrefix(pathPrefix, http.FileServer(http.FS(root)))
-		fs.ServeHTTP(w, r)
-	})
+	handler.Handle("GET "+path, &serveFS{root})
+}
+
+// serveFS implements http.Handle().
+type serveFS struct {
+	root fs.FS
+}
+
+func (s *serveFS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	pathPrefix := strings.TrimSuffix(r.Pattern, "/*")
+	fs := http.StripPrefix(pathPrefix, http.FileServer(http.FS(s.root)))
+	fs.ServeHTTP(w, r)
 }
