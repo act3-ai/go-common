@@ -24,8 +24,8 @@ import (
 
 // Config configures the initialization of OpenTelemetry.
 type Config struct {
-	// Auto-detect exporters from OTEL_* env variables.
-	Detect bool
+	// Override auto-detect exporters from OTEL_* env variables.
+	DisableEnvConfiguration bool
 
 	// SpanProcessors are processors to prepend to the telemetry pipeline.
 	SpanProcessors []sdktrace.SpanProcessor
@@ -98,7 +98,7 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 	// log/trace providers at runtime.
 	Resource = cfg.Resource
 
-	if cfg.Detect {
+	if !cfg.DisableEnvConfiguration {
 		exp, err := ConfiguredSpanExporter(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("configuring span exporter from environment variables: %w", err)
