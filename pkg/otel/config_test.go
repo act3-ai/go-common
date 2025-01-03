@@ -51,18 +51,18 @@ func ExampleResource() {
 	fmt.Fprintf(os.Stderr, "%s\n", rsrc)
 }
 
-// TestExampleConfig_simple wraps ExampleConfig_simple as test func to simply display the
+// TestExampleConfig_spans wraps ExampleConfig_spans as test func to simply display the
 // output. Without this, we would need a deterministic output of the example func.
-func TestExampleConfig_simple(t *testing.T) {
+func TestExampleConfig_spans(t *testing.T) {
 	if !testing.Verbose() {
 		return
 	}
-	ExampleConfig_simple()
+	ExampleConfig_spans()
 }
 
 // ExampleConfig_simple demonstrates configuration setup for exporting telemetry
 // spans in batches when they finish.
-func ExampleConfig_simple() {
+func ExampleConfig_spans() {
 	ctx := context.Background()
 
 	rsrc, err := resource.New(ctx,
@@ -81,7 +81,7 @@ func ExampleConfig_simple() {
 
 	cfg := Config{
 		// LiveTraceExporters: []sdktrace.SpanExporter{}, // export when spans start and finish
-		BatchedTraceExporters: []sdktrace.SpanExporter{exp}, // export wehn spans finish
+		BatchedTraceExporters: []sdktrace.SpanExporter{exp}, // export when spans finish
 		Resource:              rsrc,
 	}
 
