@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
@@ -73,10 +73,10 @@ func ExampleConfig_spans() {
 		panic(fmt.Sprintf("insufficient resource information: error = %v", err))
 	}
 
-	// create an exporter of your choosing
-	exp, err := stdouttrace.New(stdouttrace.WithPrettyPrint(), stdouttrace.WithWriter(os.Stderr))
+	// add options here, else they will be discovered through env vars
+	exp, err := otlptracehttp.New(ctx)
 	if err != nil {
-		panic(fmt.Sprintf("initializing stdout exporter: error = %v", err))
+		panic(fmt.Sprintf("initializing trace exporter: error = %v", err))
 	}
 
 	cfg := Config{
