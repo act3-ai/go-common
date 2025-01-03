@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
@@ -20,7 +22,6 @@ import (
 
 // TODO: Currently only supports trace exporters. Much of the plumbing
 // for logs and metrics remains, but commented out.
-// TODO: Why is dagger so willing to add globals?
 
 // Config configures the initialization of OpenTelemetry.
 type Config struct {
@@ -30,20 +31,23 @@ type Config struct {
 	// SpanProcessors are processors to prepend to the telemetry pipeline.
 	SpanProcessors []sdktrace.SpanProcessor
 
-	// LiveTraceExporters are exporters that can receive updates for spans at
-	// runtime, rather than waiting until the span ends.
-	//
-	// Example: TUI, Cloud
-	LiveTraceExporters []sdktrace.SpanExporter
-
 	// BatchedTraceExporters are exporters that receive spans in batches, after
 	// the spans have ended.
-	//
-	// Example: Honeycomb, Jaeger, etc.
 	BatchedTraceExporters []sdktrace.SpanExporter
 
+	// LiveTraceExporters are exporters that can receive updates for spans at
+	// runtime, rather than waiting until the span ends.
+	LiveTraceExporters []sdktrace.SpanExporter
+
+	// LogProcessors are processors to prepend to the telemetry pipeline.
+	LogProcessors []sdklog.Processor
+
+	// BatchedLogExporters are exporters that receive logs in batches, after
+	// the logs have ended.
+	BatchedLogExporters []sdklog.Exporter
+
 	// LiveLogExporters are exporters that receive logs in batches of ~100ms.
-	// LiveLogExporters []sdklog.Exporter
+	LiveLogExporters []sdklog.Exporter
 
 	// LiveMetricExporters are exporters that receive metrics in batches of ~1s.
 	// LiveMetricExporters []sdkmetric.Exporter
@@ -56,17 +60,9 @@ type Config struct {
 	propagator    propagation.TextMapPropagator
 }
 
-// LiveTracesEnabled indicates that the configured OTEL_* exporter should be
-// sent live span telemetry.
-// var LiveTracesEnabled = os.Getenv("OTEL_EXPORTER_OTLP_TRACES_LIVE") != ""
-
 // Resource is the globally configured resource, allowing it to be provided
 // to dynamically allocated log/trace providers at runtime.
 var Resource *resource.Resource
-
-// SpanProcessors is a set of global span processors used by the global
-// trace provider.
-var SpanProcessors = []sdktrace.SpanProcessor{}
 
 // var LogProcessors = []sdklog.Processor{}
 // var MetricExporters = []sdkmetric.Exporter{}
@@ -99,25 +95,32 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 	Resource = cfg.Resource
 
 	if !cfg.DisableEnvConfiguration {
-		exp, err := ConfiguredSpanExporter(ctx)
+		spanExp, err := ConfiguredSpanExporter(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("configuring span exporter from environment variables: %w", err)
 		}
 
-		// dagger sets this env var to a global value, but this seems unnecessary to leave
-		// this in the heap
 		val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_TRACES_LIVE")
 		if exists && val != "" {
-			cfg.LiveTraceExporters = append(cfg.LiveTraceExporters, exp)
+			cfg.LiveTraceExporters = append(cfg.LiveTraceExporters, spanExp)
 		} else {
 			cfg.BatchedTraceExporters = append(cfg.BatchedTraceExporters,
 				// Filter out unfinished spans to avoid confusing external systems.
-				FilterLiveSpansExporter{exp})
+				FilterLiveSpansExporter{spanExp})
 		}
 
-		// if exp, ok := ConfiguredLogExporter(ctx); ok {
-		// 	cfg.LiveLogExporters = append(cfg.LiveLogExporters, exp)
-		// }
+		logExp, err := ConfiguredLogExporter(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("configuring log exporter from environment variables: %w", err)
+		}
+
+		val, exists = os.LookupEnv("OTEL_EXPORTER_OTLP_LOGS_LIVE")
+		if exists && val != "" {
+			cfg.LiveLogExporters = append(cfg.LiveLogExporters, logExp)
+		} else {
+			cfg.BatchedLogExporters = append(cfg.BatchedLogExporters, logExp)
+		}
+
 		// if exp, ok := ConfiguredMetricExporter(ctx); ok {
 		// 	cfg.LiveMetricExporters = append(cfg.LiveMetricExporters, exp)
 		// }
@@ -127,17 +130,15 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 		sdktrace.WithResource(cfg.Resource),
 	}
 
-	SpanProcessors = cfg.SpanProcessors
-
 	for _, exporter := range cfg.LiveTraceExporters {
 		processor := NewLiveSpanProcessor(exporter)
-		SpanProcessors = append(SpanProcessors, processor)
+		cfg.SpanProcessors = append(cfg.SpanProcessors, processor)
 	}
 	for _, exporter := range cfg.BatchedTraceExporters {
 		processor := sdktrace.NewBatchSpanProcessor(exporter)
-		SpanProcessors = append(SpanProcessors, processor)
+		cfg.SpanProcessors = append(cfg.SpanProcessors, processor)
 	}
-	for _, proc := range SpanProcessors {
+	for _, proc := range cfg.SpanProcessors {
 		traceOpts = append(traceOpts, sdktrace.WithSpanProcessor(proc))
 	}
 
@@ -151,18 +152,22 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 	otel.SetTracerProvider(cfg.traceProvider)
 
 	// Set up a log provider if configured.
-	// if len(cfg.LiveLogExporters) > 0 {
-	// 	logOpts := []sdklog.LoggerProviderOption{
-	// 		sdklog.WithResource(cfg.Resource),
-	// 	}
-	// 	for _, exp := range cfg.LiveLogExporters {
-	// 		processor := sdklog.NewBatchProcessor(exp,
-	// 			sdklog.WithExportInterval(NearlyImmediate))
-	// 		LogProcessors = append(LogProcessors, processor)
-	// 		logOpts = append(logOpts, sdklog.WithProcessor(processor))
-	// 	}
-	// 	ctx = WithLoggerProvider(ctx, sdklog.NewLoggerProvider(logOpts...))
-	// }
+	if len(cfg.LiveLogExporters) > 0 || len(cfg.BatchedLogExporters) > 0 {
+		logOpts := []sdklog.LoggerProviderOption{
+			sdklog.WithResource(cfg.Resource),
+		}
+		for _, exp := range cfg.LiveLogExporters {
+			processor := sdklog.NewBatchProcessor(exp,
+				sdklog.WithExportInterval(NearlyImmediate))
+			cfg.LogProcessors = append(cfg.LogProcessors, processor)
+			logOpts = append(logOpts, sdklog.WithProcessor(processor))
+		}
+		for _, exp := range cfg.BatchedLogExporters {
+			processor := sdklog.NewBatchProcessor(exp)
+			cfg.LogProcessors = append(cfg.LogProcessors, processor)
+		}
+		ctx = WithLoggerProvider(ctx, sdklog.NewLoggerProvider(logOpts...))
+	}
 
 	// Set up a metric provider if configured.
 	// if len(cfg.LiveMetricExporters) > 0 {
@@ -182,8 +187,6 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 	// 	ctx = WithMeterProvider(ctx, sdkmetric.NewMeterProvider(meterOpts...))
 	// }
 
-	// closeCtx = ctx
-
 	return ctx, nil
 }
 
@@ -191,7 +194,7 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 // data to the configured exporters.
 func Close(ctx context.Context, cfg Config) {
 	log := logger.FromContext(ctx)
-	// ctx := closeCtx
+
 	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
 	if tracerProvider := otel.GetTracerProvider(); tracerProvider != nil {
@@ -199,11 +202,11 @@ func Close(ctx context.Context, cfg Config) {
 			log.ErrorContext(ctx, "failed to shut down tracer provider", "error", err)
 		}
 	}
-	// if loggerProvider := LoggerProvider(ctx); loggerProvider != nil {
-	// 	if err := loggerProvider.Shutdown(flushCtx); err != nil {
-	// 		slog.Error("failed to shut down logger provider", "error", err)
-	// 	}
-	// }
+	if loggerProvider := LoggerProvider(ctx); loggerProvider != nil {
+		if err := loggerProvider.Shutdown(flushCtx); err != nil {
+			log.ErrorContext(ctx, "failed to shut down logger provider", "error", err)
+		}
+	}
 }
 
 // ConfiguredSpanExporter examines environment variables to build a sdktrace.SpanExporter.
@@ -221,7 +224,7 @@ func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) 
 	} else if v := os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL"); v != "" {
 		proto = v
 	} else {
-		// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.8.0/specification/protocol/exporter.md#specify-protocol
+		// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.33.0/specification/protocol/exporter.md#specify-protocol
 		proto = "http/protobuf"
 	}
 
@@ -232,13 +235,12 @@ func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) 
 		if proto == "http/protobuf" {
 			endpoint, err = url.JoinPath(v, "v1", "traces")
 			if err != nil {
-				return nil, fmt.Errorf("joining OTEL_EXPORTER_OTLP_ENDPOINT path: %w", err)
+				return nil, fmt.Errorf("joining OTEL_EXPORTER_OTLP_ENDPOINT traces path: %w", err)
 			}
 		} else {
 			endpoint = v
 		}
 	}
-
 	if endpoint == "" {
 		return nil, nil
 	}
@@ -256,7 +258,7 @@ func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) 
 			otlptracehttp.WithEndpointURL(endpoint),
 			otlptracehttp.WithHeaders(headers))
 		if err != nil {
-			return nil, fmt.Errorf("creating http/protobuf exporter: %w", err)
+			return nil, fmt.Errorf("creating http/protobuf span exporter: %w", err)
 		}
 	case "grpc":
 		return nil, fmt.Errorf("OTLP grpc protocol not supported")
@@ -265,6 +267,65 @@ func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) 
 	}
 
 	return configuredSpanExporter, nil
+}
+
+// ConfiguredSpanExporter examines environment variables to build a sdklog.Exporter.
+func ConfiguredLogExporter(ctx context.Context) (sdklog.Exporter, error) {
+	ctx = context.WithoutCancel(ctx)
+
+	var configuredLogExporter sdklog.Exporter
+	var err error
+
+	var proto string
+	if v := os.Getenv("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL"); v != "" {
+		proto = v
+	} else if v := os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL"); v != "" {
+		proto = v
+	} else {
+		// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.33.0/specification/protocol/exporter.md#specify-protocol
+		proto = "http/protobuf"
+	}
+
+	var endpoint string
+	if v := os.Getenv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT"); v != "" {
+		endpoint = v
+	} else if v := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"); v != "" {
+		if proto == "http/protobuf" {
+			endpoint, err = url.JoinPath(v, "v1", "logs")
+			if err != nil {
+				return nil, fmt.Errorf("joining OTEL_EXPORTER_OTLP_ENDPOINT logs path: %w", err)
+			}
+		} else {
+			endpoint = v
+		}
+	}
+	if endpoint == "" {
+		return nil, nil
+	}
+
+	switch proto {
+	case "http/protobuf", "http":
+		headers := map[string]string{}
+		if hs := os.Getenv("OTEL_EXPORTER_OTLP_HEADERS"); hs != "" {
+			for _, header := range strings.Split(hs, ",") {
+				name, value, _ := strings.Cut(header, "=")
+				headers[name] = value
+			}
+		}
+		configuredLogExporter, err = otlploghttp.New(ctx,
+			otlploghttp.WithEndpointURL(endpoint),
+			otlploghttp.WithHeaders(headers))
+		if err != nil {
+			return nil, fmt.Errorf("creating http/protobuf log exporter: %w", err)
+		}
+
+	case "grpc":
+		return nil, fmt.Errorf("OTLP grpc protocol not supported")
+	default:
+		return nil, fmt.Errorf("unknown OTLP protocol: %s", proto)
+	}
+
+	return configuredLogExporter, nil
 }
 
 // fallbackResouce is used by Init() if one is not explcitly provided in the Config.

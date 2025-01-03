@@ -80,14 +80,14 @@ func ExampleConfig_spans() {
 	}
 
 	cfg := Config{
-		// LiveTraceExporters: []sdktrace.SpanExporter{}, // export when spans start and finish
+		// LiveTraceExporters: []sdktrace.SpanExporter{exp}, // export when spans start and finish
 		BatchedTraceExporters: []sdktrace.SpanExporter{exp}, // export when spans finish
 		Resource:              rsrc,
 	}
 
 	ctx, err = Init(ctx, &cfg)
 	if err != nil {
-		panic(fmt.Sprintf("initializing global OpenTelemetry provider: error = %v", err))
+		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
 	}
 	defer Close(ctx, cfg) // ensure to shutdown, flushing remaining data to exporters
 
@@ -109,3 +109,40 @@ func ExampleConfig_spans() {
 
 	fn(ctx)
 }
+
+// ExampleConfig_logs demonstrates configuration setup for exporting logs,
+// bridged with slog, in batches.
+// func ExampleConfig_logs() {
+// 	ctx := context.Background()
+
+// 	rsrc, err := resource.New(ctx,
+// 		resource.WithTelemetrySDK(),
+// 		resource.WithAttributes(semconv.ServiceName("Example_Service")),
+// 	)
+// 	if err != nil {
+// 		panic(fmt.Sprintf("insufficient resource information: error = %v", err))
+// 	}
+
+// 	exp, err := otlploghttp.New(ctx)
+// 	if err != nil {
+// 		panic(fmt.Sprintf("initializing log exporter: error = %v", err))
+// 	}
+
+// 	cfg := Config{
+// 		// LiveLogExporters: []sdklog.Exporter{exp}, // export every 100ms.
+// 		BatchedLogExporters: []sdklog.Exporter{exp}, // export in batches.
+// 		Resource:            rsrc,
+// 	}
+
+// 	ctx, err = Init(ctx, &cfg)
+// 	if err != nil {
+// 		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
+// 	}
+// 	defer Close(ctx, cfg) // ensure to shutdown, flushing remaining data to exporters
+
+// 	// TODO: This is wrong as it attempts to get the logger set by logger.NewContext
+// 	// not what we setup with Init
+// 	// TODO: Can we build a custom handler to log to both stderr and otel?
+// 	log := logger.FromContext(ctx)
+// 	log.InfoContext(ctx, "logging...")
+// }
