@@ -3,20 +3,17 @@ package otel
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
-	"google.golang.org/grpc"
 
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 )
@@ -262,26 +259,7 @@ func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) 
 			return nil, fmt.Errorf("creating http/protobuf exporter: %w", err)
 		}
 	case "grpc":
-		var u *url.URL
-		u, err = url.Parse(endpoint)
-		if err != nil {
-			return nil, fmt.Errorf("parsing OTLP span endpoint '%s': %w", endpoint, err)
-		}
-		opts := []otlptracegrpc.Option{
-			otlptracegrpc.WithEndpointURL(endpoint),
-		}
-		if u.Scheme == "unix" {
-			dialer := func(ctx context.Context, addr string) (net.Conn, error) {
-				return net.Dial(u.Scheme, u.Path)
-			}
-			opts = append(opts,
-				otlptracegrpc.WithDialOption(grpc.WithContextDialer(dialer)),
-				otlptracegrpc.WithInsecure())
-		}
-		configuredSpanExporter, err = otlptracegrpc.New(ctx, opts...)
-		if err != nil {
-			return nil, fmt.Errorf("creating grpc exporter: %w", err)
-		}
+		return nil, fmt.Errorf("OTLP grpc protocol not supported")
 	default:
 		return nil, fmt.Errorf("unknown OTLP protocol: %s", proto)
 	}
