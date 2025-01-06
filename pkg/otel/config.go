@@ -59,6 +59,7 @@ type Config struct {
 	traceProvider *sdktrace.TracerProvider
 	logProvider   *sdklog.LoggerProvider
 	propagator    propagation.TextMapPropagator
+	closeCtx      context.Context
 }
 
 // Resource is the globally configured resource, allowing it to be provided
@@ -165,6 +166,7 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 	// 	ctx = WithMeterProvider(ctx, sdkmetric.NewMeterProvider(meterOpts...))
 	// }
 
+	cfg.closeCtx = ctx
 	return ctx, nil
 }
 
@@ -213,19 +215,19 @@ func (c *Config) configureFromEnvironment(ctx context.Context) error {
 
 // Close shuts down the global OpenTelemetry providers, flushing any remaining
 // data to the configured exporters.
-func Close(ctx context.Context, cfg Config) {
-	log := logger.FromContext(ctx)
+func Close(cfg Config) {
+	log := logger.FromContext(cfg.closeCtx)
 
-	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(cfg.closeCtx), 30*time.Second)
 	defer cancel()
 	if tracerProvider := otel.GetTracerProvider(); tracerProvider != nil {
 		if err := cfg.traceProvider.Shutdown(flushCtx); err != nil {
-			log.ErrorContext(ctx, "failed to shut down tracer provider", "error", err)
+			log.ErrorContext(flushCtx, "failed to shut down tracer provider", "error", err)
 		}
 	}
-	if loggerProvider := LoggerProvider(ctx); loggerProvider != nil {
+	if loggerProvider := LoggerProvider(cfg.closeCtx); loggerProvider != nil {
 		if err := loggerProvider.Shutdown(flushCtx); err != nil {
-			log.ErrorContext(ctx, "failed to shut down logger provider", "error", err)
+			log.ErrorContext(flushCtx, "failed to shut down logger provider", "error", err)
 		}
 	}
 }

@@ -16,8 +16,12 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
+
+	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
+	tlog "gitlab.com/act3-ai/asce/go-common/pkg/test"
 )
 
 // TestExampleResource wraps ExampleResource as test func to simply display the
@@ -94,7 +98,7 @@ func ExampleConfig_spans() {
 	if err != nil {
 		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
 	}
-	defer Close(ctx, cfg) // ensure to shutdown, flushing remaining data to exporters
+	defer Close(cfg) // ensure to shutdown, flushing remaining data to exporters
 
 	// start a tracer
 	t := otel.GetTracerProvider().Tracer("ExampleTracer")
@@ -152,7 +156,7 @@ func ExampleConfig_logs() {
 	if err != nil {
 		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
 	}
-	defer Close(ctx, cfg) // ensure to shutdown, flushing remaining data to exporters
+	defer Close(cfg) // ensure to shutdown, flushing remaining data to exporters
 
 	// Multi-logger setup is handled by otel.RunWithContext.
 	level := new(slog.LevelVar)
@@ -169,4 +173,58 @@ func ExampleConfig_logs() {
 		log.DebugContext(ctx, "Debug me please", "foo", "bar")
 	}
 	fn(ctx)
+}
+
+func TestSpans(t *testing.T) {
+	ctx := context.Background()
+	log := tlog.Logger(t, 0)
+	ctx = logger.NewContext(ctx, log)
+
+	rsrc, err := resource.New(ctx,
+		resource.WithTelemetrySDK(),
+		resource.WithAttributes(semconv.ServiceName("Example_Service")),
+	)
+	if err != nil {
+		t.Fatalf("insufficient resource information: error = %v", err)
+	}
+
+	exp := tracetest.NewInMemoryExporter()
+
+	cfg := Config{
+		// LiveTraceExporters: []sdktrace.SpanExporter{exp}, // export when spans start and finish
+		BatchedTraceExporters: []sdktrace.SpanExporter{exp}, // export when spans finish
+		Resource:              rsrc,
+	}
+
+	ctx, err = Init(ctx, &cfg)
+	if err != nil {
+		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
+	}
+	defer Close(cfg) // ensure to shutdown, flushing remaining data to exporters
+
+	// start a tracer
+	tp := otel.GetTracerProvider().Tracer("ExampleTracer")
+
+	fn := func(ctx context.Context) {
+		//	start spans at the beginning of a function...
+		_, span := tp.Start(ctx, "ExampleSpan", trace.WithAttributes(attribute.String("Key", "Value")))
+		defer span.End()
+
+		// doing calulations...
+
+		// something happened
+		span.AddEvent("ExampleEvent")
+
+		// ...
+	}
+	fn(ctx)
+
+	if err := cfg.traceProvider.ForceFlush(ctx); err != nil {
+		t.Fatalf("force flushing traces: error = %v", err)
+	}
+
+	spans := exp.GetSpans()
+	if len(spans) != 1 {
+		t.Fatalf("invalid span count: want %d, got %d", 1, len(spans))
+	}
 }
