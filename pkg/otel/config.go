@@ -109,23 +109,21 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 		}
 	}
 
-	traceOpts := []sdktrace.TracerProviderOption{
-		sdktrace.WithResource(c.Resource),
-	}
-
-	for _, exporter := range c.LiveTraceExporters {
-		processor := NewLiveSpanProcessor(exporter)
-		c.SpanProcessors = append(c.SpanProcessors, processor)
-	}
-	for _, exporter := range c.BatchedTraceExporters {
-		processor := sdktrace.NewBatchSpanProcessor(exporter)
-		c.SpanProcessors = append(c.SpanProcessors, processor)
-	}
-	for _, proc := range c.SpanProcessors {
-		traceOpts = append(traceOpts, sdktrace.WithSpanProcessor(proc))
-	}
-
-	if len(traceOpts) > 0 {
+	// Set up trace provider if configured.
+	if len(c.LiveTraceExporters) > 0 || len(c.BatchedTraceExporters) > 0 {
+		traceOpts := []sdktrace.TracerProviderOption{
+			sdktrace.WithResource(c.Resource),
+		}
+		for _, exporter := range c.LiveTraceExporters {
+			processor := NewLiveSpanProcessor(exporter)
+			c.SpanProcessors = append(c.SpanProcessors, processor)
+			traceOpts = append(traceOpts, sdktrace.WithSpanProcessor(processor))
+		}
+		for _, exporter := range c.BatchedTraceExporters {
+			processor := sdktrace.NewBatchSpanProcessor(exporter)
+			c.SpanProcessors = append(c.SpanProcessors, processor)
+			traceOpts = append(traceOpts, sdktrace.WithSpanProcessor(processor))
+		}
 		c.traceProvider = sdktrace.NewTracerProvider(traceOpts...)
 
 		// Register our TracerProvider as the global so any imported instrumentation
@@ -163,11 +161,15 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 		const metricsExportInterval = 1 * time.Second
 		const metricsExportTimeout = 1 * time.Second
 		for _, exp := range c.LiveMetricExporters {
-
 			reader := sdkmetric.NewPeriodicReader(exp,
 				sdkmetric.WithInterval(metricsExportInterval),
 				sdkmetric.WithTimeout(metricsExportTimeout),
 			)
+			c.MetricReaders = append(c.MetricReaders, reader)
+			meterOpts = append(meterOpts, sdkmetric.WithReader(reader))
+		}
+		for _, exp := range c.BatchedMetricExporters {
+			reader := sdkmetric.NewPeriodicReader(exp)
 			c.MetricReaders = append(c.MetricReaders, reader)
 			meterOpts = append(meterOpts, sdkmetric.WithReader(reader))
 		}
