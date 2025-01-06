@@ -24,7 +24,7 @@ func RunWithContext(ctx context.Context, cmd *cobra.Command, cfg *Config, verbos
 	if err != nil {
 		return fmt.Errorf("initializing OpenTelemetry: %w", err)
 	}
-	defer cfg.Close()
+	defer cfg.Shutdown()
 
 	handlers := []slog.Handler{runner.SetupLoggingHandler(cmd, verbosityEnvName)}
 	if cfg.logProvider != nil {

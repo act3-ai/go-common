@@ -181,9 +181,9 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 	return ctx, nil
 }
 
-// Close shuts down the global OpenTelemetry providers, flushing any remaining
+// Shutdown shuts down the global OpenTelemetry providers, flushing any remaining
 // data to the configured exporters.
-func (c *Config) Close() {
+func (c *Config) Shutdown() {
 	log := logger.FromContext(c.closeCtx)
 
 	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(c.closeCtx), 30*time.Second)
