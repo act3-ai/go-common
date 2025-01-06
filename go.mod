@@ -20,9 +20,10 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.32.0
-	go.opentelemetry.io/otel/sdk v1.34.0
+	go.opentelemetry.io/otel/sdk v1.33.0
+	go.opentelemetry.io/otel/sdk/metric v1.33.0
 	go.opentelemetry.io/otel/trace v1.34.0
-	golang.org/x/term v0.28.0
+	golang.org/x/term v0.27.0
 	k8s.io/apimachinery v0.31.2
 )
 
@@ -73,6 +74,7 @@ require (
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	go.opentelemetry.io/contrib/bridges/otelslog v0.8.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.9.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.33.0
 	go.opentelemetry.io/otel/sdk/log v0.9.0
 	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
