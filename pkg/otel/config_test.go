@@ -3,12 +3,17 @@ package otel
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"testing"
 
+	slogmulti "github.com/samber/slog-multi"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
@@ -51,8 +56,8 @@ func ExampleResource() {
 	fmt.Fprintf(os.Stderr, "%s\n", rsrc)
 }
 
-// TestExampleConfig_spans wraps ExampleConfig_spans as test func to simply display the
-// output. Without this, we would need a deterministic output of the example func.
+// TestExampleConfig_spans wraps ExampleConfig_spans as a test function since
+// our example isn't runnable without a deterministic output.
 func TestExampleConfig_spans(t *testing.T) {
 	if !testing.Verbose() {
 		return
@@ -110,39 +115,58 @@ func ExampleConfig_spans() {
 	fn(ctx)
 }
 
+// TestExampleConfig_logs wraps ExampleConfig_logs as a test function since
+// our example isn't runnable without a deterministic output.
+func TestExampleConfig_logs(t *testing.T) {
+	if !testing.Verbose() {
+		return
+	}
+	ExampleConfig_logs()
+}
+
 // ExampleConfig_logs demonstrates configuration setup for exporting logs,
 // bridged with slog, in batches.
-// func ExampleConfig_logs() {
-// 	ctx := context.Background()
+func ExampleConfig_logs() {
+	ctx := context.Background()
 
-// 	rsrc, err := resource.New(ctx,
-// 		resource.WithTelemetrySDK(),
-// 		resource.WithAttributes(semconv.ServiceName("Example_Service")),
-// 	)
-// 	if err != nil {
-// 		panic(fmt.Sprintf("insufficient resource information: error = %v", err))
-// 	}
+	rsrc, err := resource.New(ctx,
+		resource.WithTelemetrySDK(),
+		resource.WithAttributes(semconv.ServiceName("Example_Service")),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("insufficient resource information: error = %v", err))
+	}
 
-// 	exp, err := otlploghttp.New(ctx)
-// 	if err != nil {
-// 		panic(fmt.Sprintf("initializing log exporter: error = %v", err))
-// 	}
+	exp, err := otlploghttp.New(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("initializing log exporter: error = %v", err))
+	}
 
-// 	cfg := Config{
-// 		// LiveLogExporters: []sdklog.Exporter{exp}, // export every 100ms.
-// 		BatchedLogExporters: []sdklog.Exporter{exp}, // export in batches.
-// 		Resource:            rsrc,
-// 	}
+	cfg := Config{
+		// LiveLogExporters: []sdklog.Exporter{exp}, // export every 100ms.
+		BatchedLogExporters: []sdklog.Exporter{exp}, // export in batches.
+		Resource:            rsrc,
+	}
 
-// 	ctx, err = Init(ctx, &cfg)
-// 	if err != nil {
-// 		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
-// 	}
-// 	defer Close(ctx, cfg) // ensure to shutdown, flushing remaining data to exporters
+	ctx, err = Init(ctx, &cfg)
+	if err != nil {
+		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
+	}
+	defer Close(ctx, cfg) // ensure to shutdown, flushing remaining data to exporters
 
-// 	// TODO: This is wrong as it attempts to get the logger set by logger.NewContext
-// 	// not what we setup with Init
-// 	// TODO: Can we build a custom handler to log to both stderr and otel?
-// 	log := logger.FromContext(ctx)
-// 	log.InfoContext(ctx, "logging...")
-// }
+	// Multi-logger setup is handled by otel.RunWithContext.
+	level := new(slog.LevelVar)
+	level.Set(slog.LevelDebug)
+	stdErrHandler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+	otelHandler := otelslog.NewHandler("Example", otelslog.WithLoggerProvider(cfg.logProvider))
+	multiHandler := slogmulti.Fanout(stdErrHandler, otelHandler)
+	log := slog.New(multiHandler)
+
+	fn := func(ctx context.Context) {
+		// conventional logging sent to stderr as well as otel exporters
+		log.InfoContext(ctx, "Starting function")
+		log.ErrorContext(ctx, "Something bad has happened")
+		log.DebugContext(ctx, "Debug me please", "foo", "bar")
+	}
+	fn(ctx)
+}

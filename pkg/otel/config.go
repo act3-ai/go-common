@@ -57,6 +57,7 @@ type Config struct {
 	Resource *resource.Resource
 
 	traceProvider *sdktrace.TracerProvider
+	logProvider   *sdklog.LoggerProvider
 	propagator    propagation.TextMapPropagator
 }
 
@@ -116,14 +117,16 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 		traceOpts = append(traceOpts, sdktrace.WithSpanProcessor(proc))
 	}
 
-	cfg.traceProvider = sdktrace.NewTracerProvider(traceOpts...)
+	if len(traceOpts) > 0 {
+		cfg.traceProvider = sdktrace.NewTracerProvider(traceOpts...)
 
-	// Register our TracerProvider as the global so any imported instrumentation
-	// in the future will default to using it.
-	//
-	// also necessary so that we can establish a root span, otherwise
-	// telemetry doesn't work.
-	otel.SetTracerProvider(cfg.traceProvider)
+		// Register our TracerProvider as the global so any imported instrumentation
+		// in the future will default to using it.
+		//
+		// also necessary so that we can establish a root span, otherwise
+		// telemetry doesn't work.
+		otel.SetTracerProvider(cfg.traceProvider)
+	}
 
 	// Set up a log provider if configured.
 	if len(cfg.LiveLogExporters) > 0 || len(cfg.BatchedLogExporters) > 0 {
@@ -140,7 +143,8 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 			processor := sdklog.NewBatchProcessor(exp)
 			cfg.LogProcessors = append(cfg.LogProcessors, processor)
 		}
-		ctx = WithLoggerProvider(ctx, sdklog.NewLoggerProvider(logOpts...))
+		cfg.logProvider = sdklog.NewLoggerProvider(logOpts...)
+		ctx = WithLoggerProvider(ctx, cfg.logProvider)
 	}
 
 	// Set up a metric provider if configured.
