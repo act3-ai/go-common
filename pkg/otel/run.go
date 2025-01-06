@@ -16,6 +16,9 @@ import (
 // RunWithContext will run the root level cobra command, with the provided
 // OpenTelemetry configuration. It calls cfg.Init and cfg.Close appropriately.
 func RunWithContext(ctx context.Context, cmd *cobra.Command, cfg *Config, verbosityEnvName string) error {
+	if cfg == nil {
+		cfg = &Config{} // ensure to check for environment configuration
+	}
 	var err error
 	ctx, err = cfg.Init(ctx)
 	if err != nil {
