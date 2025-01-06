@@ -94,11 +94,11 @@ func ExampleConfig_spans() {
 		Resource:              rsrc,
 	}
 
-	ctx, err = Init(ctx, &cfg)
+	ctx, err = cfg.Init(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
 	}
-	defer Close(cfg) // ensure to shutdown, flushing remaining data to exporters
+	defer cfg.Close() // ensure to shutdown, flushing remaining data to exporters
 
 	// start a tracer
 	t := otel.GetTracerProvider().Tracer("ExampleTracer")
@@ -152,11 +152,11 @@ func ExampleConfig_logs() {
 		Resource:            rsrc,
 	}
 
-	ctx, err = Init(ctx, &cfg)
+	ctx, err = cfg.Init(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
 	}
-	defer Close(cfg) // ensure to shutdown, flushing remaining data to exporters
+	defer cfg.Close() // ensure to shutdown, flushing remaining data to exporters
 
 	// Multi-logger setup is handled by otel.RunWithContext.
 	level := new(slog.LevelVar)
@@ -196,11 +196,11 @@ func TestSpans(t *testing.T) {
 		Resource:              rsrc,
 	}
 
-	ctx, err = Init(ctx, &cfg)
+	ctx, err = cfg.Init(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("initializing OpenTelemetry: error = %v", err))
 	}
-	defer Close(cfg) // ensure to shutdown, flushing remaining data to exporters
+	defer cfg.Close() // ensure to shutdown, flushing remaining data to exporters
 
 	// start a tracer
 	tp := otel.GetTracerProvider().Tracer("ExampleTracer")
@@ -226,5 +226,21 @@ func TestSpans(t *testing.T) {
 	spans := exp.GetSpans()
 	if len(spans) != 1 {
 		t.Fatalf("invalid span count: want %d, got %d", 1, len(spans))
+	}
+}
+
+func TestEmpty(t *testing.T) {
+	ctx := context.Background()
+	cfg := Config{}
+	defer cfg.Close()
+
+	var err error
+	ctx, err = cfg.Init(ctx)
+	if err != nil {
+		t.Fatalf("initializing with empty configuration: error = %v", err)
+	}
+
+	if ctx == nil {
+		t.Fatalf("got nil context from empty configuration: error = %v", err)
 	}
 }

@@ -66,86 +66,85 @@ type Config struct {
 // to dynamically allocated log/trace providers at runtime.
 var Resource *resource.Resource
 
-// var LogProcessors = []sdklog.Processor{}
 // var MetricExporters = []sdkmetric.Exporter{}
 
 // Init sets up the global OpenTelemetry providers tracing, logging, and
 // someday metrics providers. It is called by the CLI, the engine, and the
 // container shim, so it needs to be versatile.
-func Init(ctx context.Context, cfg *Config) (context.Context, error) {
+func (c *Config) Init(ctx context.Context) (context.Context, error) {
 	// Do not rely on otel.GetTextMapPropagator() - it's prone to change from a
 	// random import.
-	cfg.propagator = propagation.NewCompositeTextMapPropagator(
+	c.propagator = propagation.NewCompositeTextMapPropagator(
 		propagation.Baggage{},
 		propagation.TraceContext{},
 	)
-	otel.SetTextMapPropagator(cfg.propagator)
+	otel.SetTextMapPropagator(c.propagator)
 
 	// Inherit trace context from env if present.
-	ctx = cfg.propagator.Extract(ctx, NewEnvCarrier(true))
+	ctx = c.propagator.Extract(ctx, NewEnvCarrier(true))
 
 	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
 		logger.FromContext(ctx).ErrorContext(ctx, "failed to emit telemetry", "error", err)
 	}))
 
-	if cfg.Resource == nil {
-		cfg.Resource = fallbackResource(ctx)
+	if c.Resource == nil {
+		c.Resource = fallbackResource(ctx)
 	}
 
 	// Set up the global resource so we can pass it into dynamically allocated
 	// log/trace providers at runtime.
-	Resource = cfg.Resource
+	Resource = c.Resource
 
-	if !cfg.DisableEnvConfiguration {
-		if err := cfg.configureFromEnvironment(ctx); err != nil {
+	if !c.DisableEnvConfiguration {
+		if err := c.configureFromEnvironment(ctx); err != nil {
 			return nil, fmt.Errorf("configuring exporters from environment: %w", err)
 		}
 	}
 
 	traceOpts := []sdktrace.TracerProviderOption{
-		sdktrace.WithResource(cfg.Resource),
+		sdktrace.WithResource(c.Resource),
 	}
 
-	for _, exporter := range cfg.LiveTraceExporters {
+	for _, exporter := range c.LiveTraceExporters {
 		processor := NewLiveSpanProcessor(exporter)
-		cfg.SpanProcessors = append(cfg.SpanProcessors, processor)
+		c.SpanProcessors = append(c.SpanProcessors, processor)
 	}
-	for _, exporter := range cfg.BatchedTraceExporters {
+	for _, exporter := range c.BatchedTraceExporters {
 		processor := sdktrace.NewBatchSpanProcessor(exporter)
-		cfg.SpanProcessors = append(cfg.SpanProcessors, processor)
+		c.SpanProcessors = append(c.SpanProcessors, processor)
 	}
-	for _, proc := range cfg.SpanProcessors {
+	for _, proc := range c.SpanProcessors {
 		traceOpts = append(traceOpts, sdktrace.WithSpanProcessor(proc))
 	}
 
 	if len(traceOpts) > 0 {
-		cfg.traceProvider = sdktrace.NewTracerProvider(traceOpts...)
+		c.traceProvider = sdktrace.NewTracerProvider(traceOpts...)
 
 		// Register our TracerProvider as the global so any imported instrumentation
 		// in the future will default to using it.
 		//
 		// also necessary so that we can establish a root span, otherwise
 		// telemetry doesn't work.
-		otel.SetTracerProvider(cfg.traceProvider)
+		otel.SetTracerProvider(c.traceProvider)
 	}
 
 	// Set up a log provider if configured.
-	if len(cfg.LiveLogExporters) > 0 || len(cfg.BatchedLogExporters) > 0 {
+	if len(c.LiveLogExporters) > 0 || len(c.BatchedLogExporters) > 0 {
 		logOpts := []sdklog.LoggerProviderOption{
-			sdklog.WithResource(cfg.Resource),
+			sdklog.WithResource(c.Resource),
 		}
-		for _, exp := range cfg.LiveLogExporters {
+		for _, exp := range c.LiveLogExporters {
 			processor := sdklog.NewBatchProcessor(exp,
 				sdklog.WithExportInterval(NearlyImmediate))
-			cfg.LogProcessors = append(cfg.LogProcessors, processor)
+			c.LogProcessors = append(c.LogProcessors, processor)
 			logOpts = append(logOpts, sdklog.WithProcessor(processor))
 		}
-		for _, exp := range cfg.BatchedLogExporters {
+		for _, exp := range c.BatchedLogExporters {
 			processor := sdklog.NewBatchProcessor(exp)
-			cfg.LogProcessors = append(cfg.LogProcessors, processor)
+			c.LogProcessors = append(c.LogProcessors, processor)
 		}
-		cfg.logProvider = sdklog.NewLoggerProvider(logOpts...)
-		ctx = WithLoggerProvider(ctx, cfg.logProvider)
+		c.logProvider = sdklog.NewLoggerProvider(logOpts...)
+		ctx = WithLoggerProvider(ctx, c.logProvider)
 	}
 
 	// Set up a metric provider if configured.
@@ -166,8 +165,27 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 	// 	ctx = WithMeterProvider(ctx, sdkmetric.NewMeterProvider(meterOpts...))
 	// }
 
-	cfg.closeCtx = ctx
+	c.closeCtx = ctx
 	return ctx, nil
+}
+
+// Close shuts down the global OpenTelemetry providers, flushing any remaining
+// data to the configured exporters.
+func (c *Config) Close() {
+	log := logger.FromContext(c.closeCtx)
+
+	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(c.closeCtx), 30*time.Second)
+	defer cancel()
+	if tracerProvider := otel.GetTracerProvider(); tracerProvider != nil {
+		if err := c.traceProvider.Shutdown(flushCtx); err != nil {
+			log.ErrorContext(flushCtx, "failed to shut down tracer provider", "error", err)
+		}
+	}
+	if loggerProvider := LoggerProvider(c.closeCtx); loggerProvider != nil {
+		if err := loggerProvider.Shutdown(flushCtx); err != nil {
+			log.ErrorContext(flushCtx, "failed to shut down logger provider", "error", err)
+		}
+	}
 }
 
 // configureFromEnvironment checks if we have the minimum env vars set to
@@ -211,25 +229,6 @@ func (c *Config) configureFromEnvironment(ctx context.Context) error {
 	// }
 
 	return nil
-}
-
-// Close shuts down the global OpenTelemetry providers, flushing any remaining
-// data to the configured exporters.
-func Close(cfg Config) {
-	log := logger.FromContext(cfg.closeCtx)
-
-	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(cfg.closeCtx), 30*time.Second)
-	defer cancel()
-	if tracerProvider := otel.GetTracerProvider(); tracerProvider != nil {
-		if err := cfg.traceProvider.Shutdown(flushCtx); err != nil {
-			log.ErrorContext(flushCtx, "failed to shut down tracer provider", "error", err)
-		}
-	}
-	if loggerProvider := LoggerProvider(cfg.closeCtx); loggerProvider != nil {
-		if err := loggerProvider.Shutdown(flushCtx); err != nil {
-			log.ErrorContext(flushCtx, "failed to shut down logger provider", "error", err)
-		}
-	}
 }
 
 // ConfiguredSpanExporter examines environment variables to build a sdktrace.SpanExporter.
