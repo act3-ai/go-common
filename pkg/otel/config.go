@@ -99,26 +99,28 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 		if err != nil {
 			return nil, fmt.Errorf("configuring span exporter from environment variables: %w", err)
 		}
-
-		val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_TRACES_LIVE")
-		if exists && val != "" {
-			cfg.LiveTraceExporters = append(cfg.LiveTraceExporters, spanExp)
-		} else {
-			cfg.BatchedTraceExporters = append(cfg.BatchedTraceExporters,
-				// Filter out unfinished spans to avoid confusing external systems.
-				FilterLiveSpansExporter{spanExp})
+		if spanExp != nil {
+			val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_TRACES_LIVE")
+			if exists && val != "" {
+				cfg.LiveTraceExporters = append(cfg.LiveTraceExporters, spanExp)
+			} else {
+				cfg.BatchedTraceExporters = append(cfg.BatchedTraceExporters,
+					// Filter out unfinished spans to avoid confusing external systems.
+					FilterLiveSpansExporter{spanExp})
+			}
 		}
 
 		logExp, err := ConfiguredLogExporter(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("configuring log exporter from environment variables: %w", err)
 		}
-
-		val, exists = os.LookupEnv("OTEL_EXPORTER_OTLP_LOGS_LIVE")
-		if exists && val != "" {
-			cfg.LiveLogExporters = append(cfg.LiveLogExporters, logExp)
-		} else {
-			cfg.BatchedLogExporters = append(cfg.BatchedLogExporters, logExp)
+		if logExp != nil {
+			val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_LOGS_LIVE")
+			if exists && val != "" {
+				cfg.LiveLogExporters = append(cfg.LiveLogExporters, logExp)
+			} else {
+				cfg.BatchedLogExporters = append(cfg.BatchedLogExporters, logExp)
+			}
 		}
 
 		// if exp, ok := ConfiguredMetricExporter(ctx); ok {
