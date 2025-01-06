@@ -233,7 +233,7 @@ func Close(cfg Config) {
 }
 
 // ConfiguredSpanExporter examines environment variables to build a sdktrace.SpanExporter.
-func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) {
+func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) { //nolint:dupl
 	// derived from https://github.com/dagger/dagger-go-sdk/blob/v0.14.0/telemetry/init.go#L35
 	ctx = context.WithoutCancel(ctx) // TODO: Why?
 
@@ -292,8 +292,8 @@ func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) 
 	return configuredSpanExporter, nil
 }
 
-// ConfiguredSpanExporter examines environment variables to build a sdklog.Exporter.
-func ConfiguredLogExporter(ctx context.Context) (sdklog.Exporter, error) {
+// ConfiguredLogExporter examines environment variables to build a sdklog.Exporter.
+func ConfiguredLogExporter(ctx context.Context) (sdklog.Exporter, error) { //nolint:dupl
 	ctx = context.WithoutCancel(ctx)
 
 	var configuredLogExporter sdklog.Exporter
