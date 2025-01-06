@@ -95,37 +95,9 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 	Resource = cfg.Resource
 
 	if !cfg.DisableEnvConfiguration {
-		spanExp, err := ConfiguredSpanExporter(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("configuring span exporter from environment variables: %w", err)
+		if err := cfg.configureFromEnvironment(ctx); err != nil {
+			return nil, fmt.Errorf("configuring exporters from environment: %w", err)
 		}
-		if spanExp != nil {
-			val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_TRACES_LIVE")
-			if exists && val != "" {
-				cfg.LiveTraceExporters = append(cfg.LiveTraceExporters, spanExp)
-			} else {
-				cfg.BatchedTraceExporters = append(cfg.BatchedTraceExporters,
-					// Filter out unfinished spans to avoid confusing external systems.
-					FilterLiveSpansExporter{spanExp})
-			}
-		}
-
-		logExp, err := ConfiguredLogExporter(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("configuring log exporter from environment variables: %w", err)
-		}
-		if logExp != nil {
-			val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_LOGS_LIVE")
-			if exists && val != "" {
-				cfg.LiveLogExporters = append(cfg.LiveLogExporters, logExp)
-			} else {
-				cfg.BatchedLogExporters = append(cfg.BatchedLogExporters, logExp)
-			}
-		}
-
-		// if exp, ok := ConfiguredMetricExporter(ctx); ok {
-		// 	cfg.LiveMetricExporters = append(cfg.LiveMetricExporters, exp)
-		// }
 	}
 
 	traceOpts := []sdktrace.TracerProviderOption{
@@ -190,6 +162,49 @@ func Init(ctx context.Context, cfg *Config) (context.Context, error) {
 	// }
 
 	return ctx, nil
+}
+
+// configureFromEnvironment checks if we have the minimum env vars set to
+// configure exporters, e.g. valid protocols and endpoints. The remaining env
+// vars are handled by otel sdks.
+func (c *Config) configureFromEnvironment(ctx context.Context) error {
+
+	// Spans
+	spanExp, err := ConfiguredSpanExporter(ctx)
+	if err != nil {
+		return fmt.Errorf("configuring span exporter from environment variables: %w", err)
+	}
+	if spanExp != nil {
+		val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_TRACES_LIVE")
+		if exists && val != "" {
+			c.LiveTraceExporters = append(c.LiveTraceExporters, spanExp)
+		} else {
+			c.BatchedTraceExporters = append(c.BatchedTraceExporters,
+				// Filter out unfinished spans to avoid confusing external systems.
+				FilterLiveSpansExporter{spanExp})
+		}
+	}
+
+	// Logs
+	logExp, err := ConfiguredLogExporter(ctx)
+	if err != nil {
+		return fmt.Errorf("configuring log exporter from environment variables: %w", err)
+	}
+	if logExp != nil {
+		val, exists := os.LookupEnv("OTEL_EXPORTER_OTLP_LOGS_LIVE")
+		if exists && val != "" {
+			c.LiveLogExporters = append(c.LiveLogExporters, logExp)
+		} else {
+			c.BatchedLogExporters = append(c.BatchedLogExporters, logExp)
+		}
+	}
+
+	// Metrics
+	// if exp, ok := ConfiguredMetricExporter(ctx); ok {
+	// 	cfg.LiveMetricExporters = append(cfg.LiveMetricExporters, exp)
+	// }
+
+	return nil
 }
 
 // Close shuts down the global OpenTelemetry providers, flushing any remaining
