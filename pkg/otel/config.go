@@ -371,8 +371,8 @@ func ConfiguredLogExporter(ctx context.Context) (sdklog.Exporter, error) { //nol
 	return configuredLogExporter, nil
 }
 
-// ConfiguredLogExporter examines environment variables to build a sdkmetric.Exporter.
-func ConfiguredMetricExporter(ctx context.Context) (sdkmetric.Exporter, error) { //nolint:dupl
+// ConfiguredMetricExporter examines environment variables to build a sdkmetric.Exporter.
+func ConfiguredMetricExporter(ctx context.Context) (sdkmetric.Exporter, error) {
 	ctx = context.WithoutCancel(ctx)
 
 	var configuredMetricExporter sdkmetric.Exporter
@@ -401,7 +401,6 @@ func ConfiguredMetricExporter(ctx context.Context) (sdkmetric.Exporter, error) {
 		return nil, nil
 	}
 
-	//nolint:dupl
 	switch proto {
 	case "http/protobuf", "http":
 		headers := map[string]string{}
@@ -414,6 +413,9 @@ func ConfiguredMetricExporter(ctx context.Context) (sdkmetric.Exporter, error) {
 		configuredMetricExporter, err = otlpmetrichttp.New(ctx,
 			otlpmetrichttp.WithEndpointURL(endpoint),
 			otlpmetrichttp.WithHeaders(headers))
+		if err != nil {
+			return nil, fmt.Errorf("creating http/protobuf metric exporter: %w", err)
+		}
 
 	case "grpc":
 		return nil, fmt.Errorf("OTLP grpc protocol not supported")
