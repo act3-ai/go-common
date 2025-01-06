@@ -150,7 +150,9 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 			c.LogProcessors = append(c.LogProcessors, processor)
 		}
 		c.logProvider = sdklog.NewLoggerProvider(logOpts...)
-		ctx = WithLoggerProvider(ctx, c.logProvider)
+		// unlike traces and metrics we don't need to set a global logger provider,
+		// not only is this not provided by otel but we use a slog bridge anyhow
+		// and we're still able to shut down properly.
 	}
 
 	// Set up a metric provider if configured.
@@ -174,7 +176,7 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 			meterOpts = append(meterOpts, sdkmetric.WithReader(reader))
 		}
 		c.meterProvider = sdkmetric.NewMeterProvider(meterOpts...)
-		ctx = WithMeterProvider(ctx, c.meterProvider)
+		otel.SetMeterProvider(c.meterProvider)
 	}
 
 	c.closeCtx = ctx
@@ -188,14 +190,19 @@ func (c *Config) Shutdown() {
 
 	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(c.closeCtx), 30*time.Second)
 	defer cancel()
-	if tracerProvider := otel.GetTracerProvider(); tracerProvider != nil {
+	if c.traceProvider != nil {
 		if err := c.traceProvider.Shutdown(flushCtx); err != nil {
 			log.ErrorContext(flushCtx, "failed to shut down tracer provider", "error", err)
 		}
 	}
-	if loggerProvider := LoggerProvider(c.closeCtx); loggerProvider != nil {
-		if err := loggerProvider.Shutdown(flushCtx); err != nil {
+	if c.logProvider != nil {
+		if err := c.logProvider.Shutdown(flushCtx); err != nil {
 			log.ErrorContext(flushCtx, "failed to shut down logger provider", "error", err)
+		}
+	}
+	if c.meterProvider != nil {
+		if err := c.meterProvider.Shutdown(flushCtx); err != nil {
+			log.ErrorContext(flushCtx, "failed to shut down meter provider", "error", err)
 		}
 	}
 }
