@@ -76,9 +76,9 @@ var Resource *resource.Resource
 
 // var MetricExporters = []sdkmetric.Exporter{}
 
-// Init sets up the global OpenTelemetry providers tracing, logging, and
-// someday metrics providers. It is called by the CLI, the engine, and the
-// container shim, so it needs to be versatile.
+// Init sets up the global OpenTelemetry providers for tracing, logging, and
+// metrics. It does not setup handling of telemetry errors, use otel.SetErrorHandler
+// to do so.
 func (c *Config) Init(ctx context.Context) (context.Context, error) {
 	// Do not rely on otel.GetTextMapPropagator() - it's prone to change from a
 	// random import.
@@ -90,10 +90,6 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 
 	// Inherit trace context from env if present.
 	ctx = c.propagator.Extract(ctx, NewEnvCarrier(true))
-
-	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
-		logger.FromContext(ctx).ErrorContext(ctx, "failed to emit telemetry", "error", err)
-	}))
 
 	if c.Resource == nil {
 		c.Resource = fallbackResource(ctx)
