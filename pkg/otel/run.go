@@ -29,11 +29,11 @@ func RunWithContext(ctx context.Context, cmd *cobra.Command, cfg *Config, verbos
 
 	// create a single logger with a handler for stderr and otel
 	slogRouter := slogmulti.Router()
-	slogRouter.Add(runner.SetupLoggingHandler(cmd, verbosityEnvName), allowAll())
+	slogRouter = slogRouter.Add(runner.SetupLoggingHandler(cmd, verbosityEnvName), allowAll())
 	if cfg.logProvider != nil {
 		// bridge slog to the log provider
 		otelHandler := otelslog.NewHandler(cmd.Name(), otelslog.WithLoggerProvider(cfg.logProvider))
-		slogRouter.Add(otelHandler, ignoreOtel())
+		slogRouter = slogRouter.Add(otelHandler, ignoreOtel())
 	}
 
 	log := slog.New(slogRouter.Handler())
