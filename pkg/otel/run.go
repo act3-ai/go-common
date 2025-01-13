@@ -41,7 +41,7 @@ func RunWithContext(ctx context.Context, cmd *cobra.Command, cfg *Config, verbos
 
 	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
 		// attribute tells slogRounter to not send these logs to telemetry, i.e. logged only locally
-		logger.FromContext(ctx).With(otelErrKey, "otel_emit_err").ErrorContext(ctx, "failed to emit telemetry", "error", err)
+		log.With(otelErrKey, "otel_emit_err").ErrorContext(ctx, "failed to emit telemetry", "error", err)
 	}))
 
 	return cmd.ExecuteContext(ctx)
