@@ -25,7 +25,6 @@ func RunWithContext(ctx context.Context, cmd *cobra.Command, cfg *Config, verbos
 	if err != nil {
 		return fmt.Errorf("initializing OpenTelemetry providers: %w", err)
 	}
-	defer cfg.Shutdown()
 
 	// create a single logger with a handler for stderr and otel
 	slogRouter := slogmulti.Router()
@@ -39,10 +38,17 @@ func RunWithContext(ctx context.Context, cmd *cobra.Command, cfg *Config, verbos
 	log := slog.New(slogRouter.Handler())
 	ctx = logger.NewContext(ctx, log)
 
+	// Any telemetry error is simply logged as it shouldn't be fatal.
+	// To avoid having multiple loggers in the context, we "fork" the logs to
+	// multiple handlers via slogRouter. As a result,  we end up not having
+	// access to a logger as early as we want. Thus, we wait to set the error
+	// handler and shutdown until after the logger is created; which required
+	// the telemetry logger provider to already be initialized.
 	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
 		// attribute tells slogRounter to not send these logs to telemetry, i.e. logged only locally
-		log.With(otelErrKey, "otel_emit_err").ErrorContext(ctx, "failed to emit telemetry", "error", err)
+		logger.FromContext(ctx).With(otelErrKey, "otel_emit_err").ErrorContext(ctx, "failed to emit telemetry", "error", err)
 	}))
+	defer cfg.Shutdown(ctx)
 
 	return cmd.ExecuteContext(ctx)
 }

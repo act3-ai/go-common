@@ -67,7 +67,6 @@ type Config struct {
 	logProvider   *sdklog.LoggerProvider
 	meterProvider *sdkmetric.MeterProvider
 	propagator    propagation.TextMapPropagator
-	closeCtx      context.Context
 }
 
 // Resource is the globally configured resource, allowing it to be provided
@@ -175,16 +174,15 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 		otel.SetMeterProvider(c.meterProvider)
 	}
 
-	c.closeCtx = ctx
 	return ctx, nil
 }
 
 // Shutdown shuts down the global OpenTelemetry providers, flushing any remaining
 // data to the configured exporters.
-func (c *Config) Shutdown() {
-	log := logger.FromContext(c.closeCtx)
+func (c *Config) Shutdown(ctx context.Context) {
+	log := logger.FromContext(ctx)
 
-	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(c.closeCtx), 30*time.Second)
+	flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
 	if c.traceProvider != nil {
 		if err := c.traceProvider.Shutdown(flushCtx); err != nil {
