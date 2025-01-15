@@ -143,6 +143,7 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 		for _, exp := range c.BatchedLogExporters {
 			processor := sdklog.NewBatchProcessor(exp)
 			c.LogProcessors = append(c.LogProcessors, processor)
+			logOpts = append(logOpts, sdklog.WithProcessor(processor))
 		}
 		c.logProvider = sdklog.NewLoggerProvider(logOpts...)
 		// unlike traces and metrics we don't need to set a global logger provider,
