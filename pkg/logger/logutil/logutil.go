@@ -16,7 +16,7 @@ func SetErrKey(key string) {
 	errKey = key
 }
 
-// ErrAttr produces a [log/slog.Attr] for errors.
-func ErrAttr(err error) slog.Attr {
+// Err produces a [log/slog.Attr] for errors.
+func Err(err error) slog.Attr {
 	return slog.Any(errKey, err)
 }
