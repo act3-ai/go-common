@@ -17,7 +17,6 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 )
@@ -438,9 +437,6 @@ func fallbackResource(ctx context.Context) *resource.Resource {
 		resource.WithOS(), // Discover and provide OS information.
 		// resource.WithContainer(),    // Discover and provide container information.
 		// resource.WithHost(), // Discover and provide host information.
-		resource.WithAttributes(
-			semconv.ServiceName("ACT3_ASCE"), // default value is "unknown_service"
-		),
 	)
 	return r
 }
