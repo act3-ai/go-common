@@ -6,6 +6,15 @@ import (
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 )
 
+// ParseEnvOverrides receives a flag set after it has been parsed and
+// sets the flag values to environment variables if the flag defines an
+// "env" annotation.
+//
+// Any parsing errors are logged at slog.LevelWarn and are discarded.
+func ParseEnvOverrides(flagSet *pflag.FlagSet) {
+	flagutil.ParseEnvOverrides(flagSet, envAnno)
+}
+
 // GroupFlags marks flags as part of a [Group].
 func GroupFlags(g *Group, flags ...*pflag.Flag) {
 	groupInfo := []string{g.Name, g.Description}
