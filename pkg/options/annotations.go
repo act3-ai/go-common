@@ -27,6 +27,50 @@ func GroupFlags(g *Group, flags ...*pflag.Flag) {
 	}
 }
 
+// getGroupFlags returns a list of flags in the flag set that are part of the named group.
+func getGroupFlags(flagSet *pflag.FlagSet, group *Group) []*pflag.Flag {
+	var flags []*pflag.Flag
+	flagSet.VisitAll(func(f *pflag.Flag) {
+		flagGroup, ok := flagutil.GetFirstAnnotation(f, groupAnno)
+		if ok && flagGroup == group.Name {
+			flags = append(flags, f)
+		}
+	})
+	return flags
+}
+
+// GetGroupFlagSet returns a filtered FlagSet only containing flags that are part of the named group.
+func GetGroupFlagSet(flagSet *pflag.FlagSet, group *Group) *pflag.FlagSet {
+	flags := getGroupFlags(flagSet, group)
+	out := pflag.NewFlagSet(group.Name, pflag.ContinueOnError)
+	for _, f := range flags {
+		out.AddFlag(f)
+	}
+	return out
+}
+
+// getNoGroupFlags returns a list of flags in the flag set that are not part of a group.
+func getNoGroupFlags(flagSet *pflag.FlagSet) []*pflag.Flag {
+	var flags []*pflag.Flag
+	flagSet.VisitAll(func(f *pflag.Flag) {
+		_, ok := flagutil.GetFirstAnnotation(f, groupAnno)
+		if !ok {
+			flags = append(flags, f)
+		}
+	})
+	return flags
+}
+
+// GetNoGroupFlagSet returns a filtered FlagSet only containing flags that are not part of a group.
+func GetNoGroupFlagSet(flagSet *pflag.FlagSet) *pflag.FlagSet {
+	flags := getNoGroupFlags(flagSet)
+	out := pflag.NewFlagSet("noGroup", pflag.ContinueOnError)
+	for _, f := range flags {
+		out.AddFlag(f)
+	}
+	return out
+}
+
 const (
 	typeAnno        = "type"    // annotation for options.Option.Type
 	defaultAnno     = "default" // annotation for options.Option.Default
