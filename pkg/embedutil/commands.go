@@ -1,6 +1,4 @@
 // Package embedutil defines utilities for embedded files
-//
-//nolint:revive
 package embedutil
 
 import (

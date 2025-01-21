@@ -11,6 +11,8 @@ import (
 )
 
 // SwaggerSpecWriter writes a Swagger UI HTML page for a raw OpenAPI specification.
+//
+// Deprecated: use github.com/swaggest/swgui instead.
 func SwaggerSpecWriter(loadSpec func() ([]byte, error), w io.Writer) error {
 	spec, err := loadSpec()
 	if err != nil {
@@ -49,6 +51,8 @@ func SwaggerSpecWriter(loadSpec func() ([]byte, error), w io.Writer) error {
 }
 
 // SwaggerSpecHandler creates an [http.Handler] to serve the Swagger UI for a raw OpenAPI specification.
+//
+// Deprecated: use github.com/swaggest/swgui instead.
 func SwaggerSpecHandler(loadSpec func() ([]byte, error)) http.Handler {
 	return httputil.RootHandler(func(w http.ResponseWriter, r *http.Request) error {
 		return SwaggerSpecWriter(loadSpec, w)
@@ -56,6 +60,8 @@ func SwaggerSpecHandler(loadSpec func() ([]byte, error)) http.Handler {
 }
 
 // SwaggerURLHandler creates an [http.Handler] to serve the Swagger UI for a OpenAPI specification referenced by URL.
+//
+// Deprecated: use github.com/swaggest/swgui instead.
 func SwaggerURLHandler(specPath string) http.Handler {
 	return httputil.RootHandler(func(w http.ResponseWriter, r *http.Request) error {
 		specURL := r.URL.Host + specPath
