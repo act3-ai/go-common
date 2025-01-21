@@ -5,11 +5,14 @@ import (
 	"embed"
 	"os"
 
+	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/spf13/cobra"
 
 	commands "gitlab.com/act3-ai/asce/go-common/pkg/cmd"
 	"gitlab.com/act3-ai/asce/go-common/pkg/config"
 	"gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
 	vv "gitlab.com/act3-ai/asce/go-common/pkg/version"
 )
@@ -37,9 +40,31 @@ func getVersionInfo() vv.Info {
 func main() {
 	info := getVersionInfo()
 
+	var name string
+
 	// NOTE Often the main command is created elsewhere and imported
 	root := &cobra.Command{
 		Use: "sample",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Println("Hello " + name)
+		},
+	}
+
+	nameFlag := options.StringVar(root.Flags(), &name, "",
+		&options.Option{
+			Type:          options.String,
+			Default:       "",
+			Path:          "name",
+			Env:           "ACE_SAMPLE_NAME",
+			Flag:          "name",
+			FlagShorthand: "n",
+			Short:         "Your name.",
+			Long: heredoc.Doc(`
+				Name of the sample CLI's user.`),
+		})
+
+	root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		name = flagutil.ValueOr(nameFlag, name, "Sample User")
 	}
 
 	schemaAssociations := []commands.SchemaAssociation{

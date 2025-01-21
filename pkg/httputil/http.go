@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -32,11 +33,11 @@ func (fn RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var clientError ClientError
 	if !errors.As(err, &clientError) {
 		// If the error is not ClientError, assume that it is a ServerError.
-		log.ErrorContext(ctx, "Internal error", "error", err)
+		log.ErrorContext(ctx, "Internal error", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		// dump the instance out in the body as a field in JSON so the user can use it in reporting the error (so we can correlate it with the log on the server-side)
 		if err := WriteJSON(w, map[string]any{"instance": uid, "statusCode": http.StatusInternalServerError}); err != nil {
-			log.ErrorContext(ctx, "Failed to write error body", "error", err)
+			log.ErrorContext(ctx, "Failed to write error body", slog.Any("error", err))
 		}
 		return
 	}
@@ -47,7 +48,7 @@ func (fn RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Provide the error to the client
 	body, err := clientError.ResponseBody()
 	if err != nil {
-		log.ErrorContext(ctx, "Failed to get the response body", "error", err)
+		log.ErrorContext(ctx, "Failed to get the response body", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -57,7 +58,7 @@ func (fn RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(status)
 	if _, err := w.Write(body); err != nil {
-		log.ErrorContext(ctx, "Failed to write error body", "error", err)
+		log.ErrorContext(ctx, "Failed to write error body", slog.Any("error", err))
 	}
 }
 
