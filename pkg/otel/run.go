@@ -30,7 +30,7 @@ func RunWithContext(ctx context.Context, cmd *cobra.Command, cfg *Config, verbos
 	slogRouter := slogmulti.Router()
 	slogRouter = slogRouter.Add(runner.SetupLoggingHandler(cmd, verbosityEnvName), allowAll())
 	if cfg.logProvider != nil {
-		// bridge slog to the log provider
+		// bridge slog to the log provider, which adds traceid and spanid's to the log
 		otelHandler := otelslog.NewHandler(cmd.Name(), otelslog.WithLoggerProvider(cfg.logProvider))
 		slogRouter = slogRouter.Add(otelHandler, ignoreOtel())
 	}
