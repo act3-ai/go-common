@@ -69,6 +69,11 @@ linters-settings:
       #   severity: warning
       #   arguments: [120]
       - name: unhandled-error
+        arguments:
+          - "bytes.Buffer.Write"
+          - "bytes.Buffer.WriteString"
+          - "bytes.Buffer.WriteByte"
+          - "bytes.Buffer.WriteRune"
       - name: blank-imports
       - name: context-as-argument
       - name: context-keys-type
@@ -143,7 +148,7 @@ linters-settings:
 
     # Enforce using attributes only (overrides no-mixed-args, incompatible with kv-only).
     # Default: false
-    # attr-only: true
+    attr-only: true
 
     # Enforce using methods that accept a context.
     # Default: false
