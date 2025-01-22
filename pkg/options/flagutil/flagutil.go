@@ -15,6 +15,18 @@ func StringVarP(f *pflag.FlagSet, p *string, name string, shorthand string, valu
 	return f.Lookup(name)
 }
 
+// CountVar creates a [pflag.Flag].
+func CountVar(f *pflag.FlagSet, p *int, name string, usage string) *pflag.Flag {
+	f.CountVar(p, name, usage)
+	return f.Lookup(name)
+}
+
+// CountVarP creates a [pflag.Flag].
+func CountVarP(f *pflag.FlagSet, p *int, name string, shorthand string, usage string) *pflag.Flag {
+	f.CountVarP(p, name, shorthand, usage)
+	return f.Lookup(name)
+}
+
 // IntVar creates a [pflag.Flag].
 func IntVar(f *pflag.FlagSet, p *int, name string, value int, usage string) *pflag.Flag {
 	f.IntVar(p, name, value, usage)

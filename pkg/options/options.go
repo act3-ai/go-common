@@ -71,6 +71,7 @@ type Option struct {
 	Flag            string // Flag name
 	FlagShorthand   string // Flag shorthand
 	FlagUsage       string // Flag usage (if different than the short description)
+	FlagType        string // Flag type description
 	Short           string // Short description
 	Long            string // Long description
 	// Examples    []*Example // Usage examples for this option
@@ -78,16 +79,14 @@ type Option struct {
 
 // formattedFlagUsage produces a flag usage string for the option.
 func (o *Option) formattedFlagUsage() string {
-	usage := ""
-	if o.FlagUsage != "" {
-		usage += o.FlagUsage
-	} else if o.Short != "" {
-		usage += o.Short
+	switch {
+	case o.FlagUsage != "":
+		return o.FlagUsage
+	case o.Short != "":
+		return o.Short
+	default:
+		return ""
 	}
-	if o.Env != "" {
-		usage += " (env: " + o.Env + ")"
-	}
-	return usage
 }
 
 // type ExampleType string

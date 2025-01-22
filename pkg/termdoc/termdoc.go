@@ -5,7 +5,21 @@ import (
 	"strings"
 
 	"github.com/muesli/termenv"
+	"golang.org/x/term"
 )
+
+// TerminalWidth returns the width of the terminal, using fallback if it can't determine width.
+func TerminalWidth(fallback int) int {
+	tty := termenv.DefaultOutput().TTY()
+	if tty == nil {
+		return fallback
+	}
+	width, _, err := term.GetSize(int(tty.Fd()))
+	if err != nil {
+		return fallback
+	}
+	return width
+}
 
 // noColor reports whether color output is enabled.
 func noColor() bool {

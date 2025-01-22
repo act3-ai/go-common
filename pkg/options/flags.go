@@ -18,6 +18,18 @@ func StringVar(f *pflag.FlagSet, p *string, value string, opts *Option) *pflag.F
 	return flag
 }
 
+// CountVar creates a flag for the option.
+func CountVar(f *pflag.FlagSet, p *int, opts *Option) *pflag.Flag {
+	var flag *pflag.Flag
+	if opts.FlagShorthand == "" {
+		flag = flagutil.CountVar(f, p, opts.Flag, opts.formattedFlagUsage())
+	} else {
+		flag = flagutil.CountVarP(f, p, opts.Flag, opts.FlagShorthand, opts.formattedFlagUsage())
+	}
+	withOptionConfig(flag, opts)
+	return flag
+}
+
 // IntVar creates a flag for the option.
 func IntVar(f *pflag.FlagSet, p *int, value int, opts *Option) *pflag.Flag {
 	var flag *pflag.Flag

@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 )
 
 // adapted from: https://gitlab.com/gitlab-org/cli/-/blob/main/cmd/gen-docs/docs.go
@@ -160,64 +160,36 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer) error {
 	return nil
 }
 
-func printOptions(buf *bytes.Buffer, cmd *cobra.Command) {
-	flags := cmd.LocalFlags()
-	flags.SetOutput(buf)
-	if flags.HasAvailableFlags() {
-		buf.WriteString("\n## Options\n\n```plaintext\n")
-		flags.PrintDefaults()
-		buf.WriteString("```\n")
-		// TODO: use new flagusages func
-		// buf.WriteString("\n## Options\n\n")
-		// buf.WriteString("| Flag | Default | Usage |\n")
-		// buf.WriteString("| ---- | ------- | ----- |\n")
-		// buf.WriteString(flagutil.FlagUsages(flags, flagutil.UsageFormatOptions{LineFunc: flagLineFunc}))
-		// buf.WriteString("\n")
-	}
-
-	parentFlags := cmd.InheritedFlags()
-	parentFlags.SetOutput(buf)
-	if parentFlags.HasAvailableFlags() {
-		buf.WriteString("\n## Options inherited from parent commands\n\n```plaintext\n")
-		parentFlags.PrintDefaults()
-		buf.WriteString("```\n")
-		// TODO: use new flagusages func
-		// buf.WriteString("\n## Options inherited from parent commands\n\n")
-		// buf.WriteString("| Flag | Default | Usage |\n")
-		// buf.WriteString("| ---- | ------- | ----- |\n")
-		// buf.WriteString(flagutil.FlagUsages(parentFlags, flagutil.UsageFormatOptions{LineFunc: flagLineFunc}))
-		// buf.WriteString("\n")
-	}
+var defaultUsageFormat = cobrautil.UsageFormatOptions{
+	Format:      cobrautil.Formatter{},
+	FlagOptions: flagutil.UsageFormatOptions{},
+	LocalFlags: cobrautil.FlagGroupingOptions{
+		GroupFlags:      true,
+		UngroupedHeader: cobrautil.DefaultLocalFlagHeader,
+	},
+	InheritedFlags: cobrautil.FlagGroupingOptions{
+		GroupFlags:      true,
+		UngroupedHeader: cobrautil.DefaultGlobalFlagHeader,
+	},
 }
 
-func flagLineFunc(flag *pflag.Flag) (line string, skip bool) { //nolint:unused
-	if flag.Hidden {
-		return "", true
+// SetUsageFormat sets common formatting for usage documentation.
+func SetUsageFormat(opts cobrautil.UsageFormatOptions) {
+	defaultUsageFormat = opts
+}
+
+func printOptions(buf *bytes.Buffer, cmd *cobra.Command) {
+	if localFlags := cmd.LocalFlags(); localFlags.HasAvailableFlags() {
+		buf.WriteString("\n## Options\n\n")
+		buf.WriteString("```plaintext\n")
+		buf.WriteString(cobrautil.LocalFlagUsages(cmd, defaultUsageFormat))
+		buf.WriteString("```\n")
 	}
 
-	name := "`--" + flag.Name + "`"
-	if flag.Shorthand != "" && flag.ShorthandDeprecated == "" {
-		name += ", `-" + flag.Shorthand + "`"
+	if parentFlags := cmd.InheritedFlags(); parentFlags.HasAvailableFlags() {
+		buf.WriteString("\n## Options inherited from parent commands\n\n")
+		buf.WriteString("```plaintext\n")
+		buf.WriteString(cobrautil.InheritedFlagUsages(cmd, defaultUsageFormat))
+		buf.WriteString("```\n")
 	}
-
-	name += " (" + flag.Value.Type() + ")"
-
-	opt := options.FromFlag(flag)
-
-	usage := opt.FlagUsage
-	if usage == "" {
-		usage = opt.Short
-	}
-	if opt.Env != "" {
-		if usage != "" {
-			usage += "<br />"
-		}
-		usage += "Env: `" + opt.Env + "`"
-	}
-
-	return fmt.Sprintf("| %s | %s | %s |",
-		name,
-		flag.DefValue,
-		strings.ReplaceAll(usage, "\n", "<br />"),
-	), false
 }

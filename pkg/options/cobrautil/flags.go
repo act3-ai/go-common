@@ -108,3 +108,20 @@ func MarkFlagsMutuallyExclusive(cmd *cobra.Command, flags ...*pflag.Flag) {
 	}
 	cmd.MarkFlagsMutuallyExclusive(names...)
 }
+
+// FlagCompletionFunc defines a shell completion function for a flag, used by cobra commands.
+type FlagCompletionFunc = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective)
+
+// RegisterFlagCompletionFunc should be called to register a function to provide completion for a flag.
+//
+// Wrapper for cobra.Command.RegisterFlagCompletionFunc accepting a flag object instead of its name.
+func RegisterFlagCompletionFunc(cmd *cobra.Command, flag *pflag.Flag, f FlagCompletionFunc) error {
+	return cmd.RegisterFlagCompletionFunc(flag.Name, f) //nolint:wrapcheck
+}
+
+// GetFlagCompletionFunc returns the completion function for the given flag of the command, if available.
+//
+// Wrapper for cobra.Command.GetFlagCompletionFunc accepting a flag object instead of its name.
+func GetFlagCompletionFunc(cmd *cobra.Command, flag *pflag.Flag) (FlagCompletionFunc, bool) {
+	return cmd.GetFlagCompletionFunc(flag.Name)
+}

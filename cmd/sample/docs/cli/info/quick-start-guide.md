@@ -26,13 +26,15 @@ sample info quick-start-guide [flags]
 ## Options
 
 ```plaintext
-  -h, --help                 help for quick-start-guide
-  -w, --write string[="."]   write the document to a Markdown file (optionally specify a target directory)
+OPTIONS:
+  -h, --help                help for quick-start-guide
+  -w, --write string[="."]  write the document to a Markdown file (optionally specify a target directory)
 ```
 
 ## Options inherited from parent commands
 
 ```plaintext
-  -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
-                                   Aliases: error=0, warn=4, info=8, debug=12 (default [error])
+GLOBAL OPTIONS:
+  -v, --verbosity strings[=warn]  Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
+                                  Aliases: error=0, warn=4, info=8, debug=12 (default [error])
 ```

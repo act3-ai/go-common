@@ -16,14 +16,16 @@ Generate documentation for the tool in various formats
 ## Options
 
 ```plaintext
-  -h, --help   help for gendocs
+OPTIONS:
+  -h, --help  help for gendocs
 ```
 
 ## Options inherited from parent commands
 
 ```plaintext
-  -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
-                                   Aliases: error=0, warn=4, info=8, debug=12 (default [error])
+GLOBAL OPTIONS:
+  -v, --verbosity strings[=warn]  Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
+                                  Aliases: error=0, warn=4, info=8, debug=12 (default [error])
 ```
 
 ## Subcommands

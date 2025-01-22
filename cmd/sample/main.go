@@ -48,14 +48,28 @@ func main() {
 	// NOTE Often the main command is created elsewhere and imported
 	root := &cobra.Command{
 		Use: "sample",
+		Example: heredoc.Doc(`
+			# Run sample:
+			sample
+			
+			# Run sample with name flag:
+			sample --name "Foo"`),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Println("Hello " + name)
 		},
 	}
 
-	cobrautil.WithCustomUsage(root, cobrautil.UsageFormatOptions{
-		// Format headers as uppercase.
-		FormatHeader: strings.ToUpper,
+	// Disable flag sorting
+	cobrautil.WalkCommands(root, func(cmd *cobra.Command) {
+		cmd.Flags().SortFlags = false
+	})
+
+	// Formatting options to style the help command text.
+	formatOptions := cobrautil.UsageFormatOptions{
+		Format: cobrautil.Formatter{
+			// Format headers as uppercase.
+			Header: strings.ToUpper,
+		},
 		// Options for the display of flag usages.
 		FlagOptions: flagutil.UsageFormatOptions{
 			FormatType: func(flag *pflag.Flag, typeName string) string {
@@ -66,7 +80,13 @@ func main() {
 		LocalFlags: cobrautil.FlagGroupingOptions{
 			GroupFlags: true,
 		},
-	})
+	}
+
+	// Set custom usage function.
+	cobrautil.WithCustomUsage(root, formatOptions)
+
+	// Set custom formatting for the gendocs command.
+	embedutil.SetUsageFormat(formatOptions)
 
 	nameFlag := options.StringVar(root.Flags(), &name, "",
 		&options.Option{
@@ -80,6 +100,14 @@ func main() {
 			Long: heredoc.Doc(`
 				Name of the sample CLI's user.`),
 		})
+
+	options.GroupFlags(
+		&options.Group{
+			Name:        "example",
+			Description: "Example options",
+		},
+		nameFlag,
+	)
 
 	root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		name = flagutil.ValueOr(nameFlag, name, "Sample User")
