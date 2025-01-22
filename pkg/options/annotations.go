@@ -42,6 +42,9 @@ func getGroupFlags(flagSet *pflag.FlagSet, group *Group) []*pflag.Flag {
 // GetGroupFlagSet returns a filtered FlagSet only containing flags that are part of the named group.
 func GetGroupFlagSet(flagSet *pflag.FlagSet, group *Group) *pflag.FlagSet {
 	flags := getGroupFlags(flagSet, group)
+	if len(flags) == 0 {
+		return nil
+	}
 	out := pflag.NewFlagSet(group.Name, pflag.ContinueOnError)
 	for _, f := range flags {
 		out.AddFlag(f)
@@ -64,6 +67,9 @@ func getNoGroupFlags(flagSet *pflag.FlagSet) []*pflag.Flag {
 // GetNoGroupFlagSet returns a filtered FlagSet only containing flags that are not part of a group.
 func GetNoGroupFlagSet(flagSet *pflag.FlagSet) *pflag.FlagSet {
 	flags := getNoGroupFlags(flagSet)
+	if len(flags) == 0 {
+		return nil
+	}
 	out := pflag.NewFlagSet("noGroup", pflag.ContinueOnError)
 	for _, f := range flags {
 		out.AddFlag(f)

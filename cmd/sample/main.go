@@ -4,14 +4,17 @@ package main
 import (
 	"embed"
 	"os"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	commands "gitlab.com/act3-ai/asce/go-common/pkg/cmd"
 	"gitlab.com/act3-ai/asce/go-common/pkg/config"
 	"gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
 	vv "gitlab.com/act3-ai/asce/go-common/pkg/version"
@@ -49,6 +52,21 @@ func main() {
 			cmd.Println("Hello " + name)
 		},
 	}
+
+	cobrautil.WithCustomUsage(root, cobrautil.UsageFormatOptions{
+		// Format headers as uppercase.
+		FormatHeader: strings.ToUpper,
+		// Options for the display of flag usages.
+		FlagOptions: flagutil.UsageFormatOptions{
+			FormatType: func(flag *pflag.Flag, typeName string) string {
+				return strings.ToLower(typeName)
+			},
+		},
+		// Set local flags to be separated by grouping.
+		LocalFlags: cobrautil.FlagGroupingOptions{
+			GroupFlags: true,
+		},
+	})
 
 	nameFlag := options.StringVar(root.Flags(), &name, "",
 		&options.Option{
