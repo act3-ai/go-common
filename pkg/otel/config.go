@@ -22,9 +22,6 @@ import (
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 )
 
-// TODO: Currently only supports trace exporters. Much of the plumbing
-// for logs and metrics remains, but commented out.
-
 // Config configures the initialization of OpenTelemetry.
 type Config struct {
 	// Override auto-detect exporters from OTEL_* env variables.
@@ -72,8 +69,6 @@ type Config struct {
 // Resource is the globally configured resource, allowing it to be provided
 // to dynamically allocated log/trace providers at runtime.
 var Resource *resource.Resource
-
-// var MetricExporters = []sdkmetric.Exporter{}
 
 // Init sets up the global OpenTelemetry providers for tracing, logging, and
 // metrics. It does not setup handling of telemetry errors, use otel.SetErrorHandler
