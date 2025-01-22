@@ -27,6 +27,34 @@ func GroupFlags(g *Group, flags ...*pflag.Flag) {
 	}
 }
 
+// ToGroupFlagSets produces a list of groups, corresponding list of flag sets, and a remainder set of ungrouped flags.
+func ToGroupFlagSets(flagSet *pflag.FlagSet) (groups []*Group, flagSets []*pflag.FlagSet, ungrouped *pflag.FlagSet) {
+	setMap := map[string]*pflag.FlagSet{}
+	ungrouped = pflag.NewFlagSet("flags", pflag.ContinueOnError)
+	flagSet.VisitAll(func(f *pflag.Flag) {
+		groupName, ok := flagutil.GetFirstAnnotation(f, groupAnno)
+		switch {
+		// The flag is not part of a group
+		case !ok:
+			ungrouped.AddFlag(f)
+		// This is the first option found from this group
+		case setMap[groupName] == nil:
+			group := &Group{Name: groupName}
+			if len(f.Annotations[groupAnno]) > 1 {
+				group.Description = f.Annotations[groupAnno][1]
+			}
+			setMap[groupName] = pflag.NewFlagSet(groupName, pflag.ContinueOnError)
+			groups = append(groups, group)
+			flagSets = append(flagSets, setMap[groupName])
+			fallthrough
+		// This is not the first option found from this group
+		default:
+			setMap[groupName].AddFlag(f)
+		}
+	})
+	return groups, flagSets, ungrouped
+}
+
 // getGroupFlags returns a list of flags in the flag set that are part of the named group.
 func getGroupFlags(flagSet *pflag.FlagSet, group *Group) []*pflag.Flag {
 	var flags []*pflag.Flag
@@ -78,14 +106,15 @@ func GetNoGroupFlagSet(flagSet *pflag.FlagSet) *pflag.FlagSet {
 }
 
 const (
-	typeAnno        = "type"    // annotation for options.Option.Type
-	defaultAnno     = "default" // annotation for options.Option.Default
-	jsonAnno        = "json"    // annotation for options.Option.Path
-	envAnno         = "env"     // annotation for options.Option.Env
-	shortAnno       = "short"   // annotation for options.Option.Short
-	longAnno        = "long"    // annotation for options.Option.Long
-	targetGroupAnno = "target"  // annotation for options.Option.TargetGroupName
-	groupAnno       = "group"   // used to group flags
+	typeAnno        = "type"      // annotation for options.Option.Type
+	defaultAnno     = "default"   // annotation for options.Option.Default
+	jsonAnno        = "json"      // annotation for options.Option.Path
+	envAnno         = "env"       // annotation for options.Option.Env
+	shortAnno       = "short"     // annotation for options.Option.Short
+	flagUsageAnno   = "flagUsage" // annotation for options.Option.FlagUsage
+	longAnno        = "long"      // annotation for options.Option.Long
+	targetGroupAnno = "target"    // annotation for options.Option.TargetGroupName
+	groupAnno       = "group"     // used to group flags
 )
 
 // withOptionConfig adds sets annotations on the flag from the option definition.
@@ -108,6 +137,9 @@ func withOptionConfig(f *pflag.Flag, opts *Option) {
 	if opts.Short != "" {
 		flagutil.SetAnnotation(f, shortAnno, opts.Short)
 	}
+	if opts.FlagUsage != "" {
+		flagutil.SetAnnotation(f, flagUsageAnno, opts.FlagUsage)
+	}
 	if opts.Long != "" {
 		flagutil.SetAnnotation(f, longAnno, opts.Long)
 	}
@@ -118,7 +150,7 @@ func ToGroups(flagSet *pflag.FlagSet) (groups []*Group, ungrouped []*Option) {
 	groups = []*Group{}
 	groupMap := map[string]*Group{}
 	flagSet.VisitAll(func(f *pflag.Flag) {
-		opt := toOption(f)
+		opt := FromFlag(f)
 		groupName, ok := flagutil.GetFirstAnnotation(f, groupAnno)
 		switch {
 		// The flag is not part of a group
@@ -144,31 +176,19 @@ func ToGroups(flagSet *pflag.FlagSet) (groups []*Group, ungrouped []*Option) {
 	return groups, ungrouped
 }
 
-// Converts all flags in the flag set into a flat list of options.
-// func toOptions(flagSet *pflag.FlagSet) []*Option {
-// 	opts := make([]*Option, 0, flagSet.NFlag())
-// 	flagSet.VisitAll(func(f *pflag.Flag) {
-// 		opts = append(opts, toOption(f))
-// 	})
-// 	return opts
-// }
-
-func toOption(f *pflag.Flag) *Option {
-	o := &Option{
+// FromFlag produces an Option from annotations on a flag.
+func FromFlag(f *pflag.Flag) *Option {
+	opt := &Option{
 		Type:            Type(flagutil.GetFirstAnnotationOr(f, typeAnno, "")),
 		TargetGroupName: flagutil.GetFirstAnnotationOr(f, targetGroupAnno, ""),
 		Default:         flagutil.GetFirstAnnotationOr(f, defaultAnno, ""),
 		Path:            flagutil.GetFirstAnnotationOr(f, jsonAnno, ""),
+		Env:             flagutil.GetFirstAnnotationOr(f, envAnno, ""),
 		Flag:            f.Name,
 		FlagShorthand:   f.Shorthand,
+		FlagUsage:       flagutil.GetFirstAnnotationOr(f, flagUsageAnno, ""),
 		Short:           flagutil.GetFirstAnnotationOr(f, shortAnno, ""),
 		Long:            flagutil.GetFirstAnnotationOr(f, longAnno, ""),
 	}
-	// Set short description from annotation if it is different than the flag usage string
-	short, ok := flagutil.GetFirstAnnotation(f, shortAnno)
-	if ok {
-		o.flagUsage = f.Usage
-		o.Short = short
-	}
-	return o
+	return opt
 }

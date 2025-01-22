@@ -1,4 +1,3 @@
-// Package embedutil defines utilities for embedded files
 package embedutil
 
 import (
@@ -10,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options"
 )
 
 // adapted from: https://gitlab.com/gitlab-org/cli/-/blob/main/cmd/gen-docs/docs.go
@@ -160,12 +161,18 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer) error {
 }
 
 func printOptions(buf *bytes.Buffer, cmd *cobra.Command) {
-	flags := cmd.NonInheritedFlags()
+	flags := cmd.LocalFlags()
 	flags.SetOutput(buf)
 	if flags.HasAvailableFlags() {
 		buf.WriteString("\n## Options\n\n```plaintext\n")
 		flags.PrintDefaults()
 		buf.WriteString("```\n")
+		// TODO: use new flagusages func
+		// buf.WriteString("\n## Options\n\n")
+		// buf.WriteString("| Flag | Default | Usage |\n")
+		// buf.WriteString("| ---- | ------- | ----- |\n")
+		// buf.WriteString(flagutil.FlagUsages(flags, flagutil.UsageFormatOptions{LineFunc: flagLineFunc}))
+		// buf.WriteString("\n")
 	}
 
 	parentFlags := cmd.InheritedFlags()
@@ -174,5 +181,43 @@ func printOptions(buf *bytes.Buffer, cmd *cobra.Command) {
 		buf.WriteString("\n## Options inherited from parent commands\n\n```plaintext\n")
 		parentFlags.PrintDefaults()
 		buf.WriteString("```\n")
+		// TODO: use new flagusages func
+		// buf.WriteString("\n## Options inherited from parent commands\n\n")
+		// buf.WriteString("| Flag | Default | Usage |\n")
+		// buf.WriteString("| ---- | ------- | ----- |\n")
+		// buf.WriteString(flagutil.FlagUsages(parentFlags, flagutil.UsageFormatOptions{LineFunc: flagLineFunc}))
+		// buf.WriteString("\n")
 	}
+}
+
+func flagLineFunc(flag *pflag.Flag) (line string, skip bool) { //nolint:unused
+	if flag.Hidden {
+		return "", true
+	}
+
+	name := "`--" + flag.Name + "`"
+	if flag.Shorthand != "" && flag.ShorthandDeprecated == "" {
+		name += ", `-" + flag.Shorthand + "`"
+	}
+
+	name += " (" + flag.Value.Type() + ")"
+
+	opt := options.FromFlag(flag)
+
+	usage := opt.FlagUsage
+	if usage == "" {
+		usage = opt.Short
+	}
+	if opt.Env != "" {
+		if usage != "" {
+			usage += "<br />"
+		}
+		usage += "Env: `" + opt.Env + "`"
+	}
+
+	return fmt.Sprintf("| %s | %s | %s |",
+		name,
+		flag.DefValue,
+		strings.ReplaceAll(usage, "\n", "<br />"),
+	), false
 }

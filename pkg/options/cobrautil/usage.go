@@ -8,10 +8,10 @@ import (
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 )
 
-// flagUsages returns a string containing the usage information
+// FlagUsages returns a string containing the usage information
 // for all flags in the FlagSet. Wrapped to `cols` columns (0 for no
 // wrapping)
-func flagUsages(f *pflag.FlagSet, gopts FlagGroupingOptions, opts UsageFormatOptions) string {
+func FlagUsages(f *pflag.FlagSet, gopts FlagGroupingOptions, opts UsageFormatOptions) string {
 	buf := new(strings.Builder)
 
 	if !gopts.GroupFlags {

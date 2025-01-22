@@ -38,10 +38,10 @@ func WithCustomUsage(cmd *cobra.Command, opts UsageFormatOptions) {
 	}
 	cobra.AddTemplateFuncs(template.FuncMap{
 		"localFlagUsages": func(f *pflag.FlagSet) string {
-			return flagUsages(f, opts.LocalFlags, opts)
+			return FlagUsages(f, opts.LocalFlags, opts)
 		},
 		"inheritedFlagUsages": func(f *pflag.FlagSet) string {
-			return flagUsages(f, opts.InheritedFlags, opts)
+			return FlagUsages(f, opts.InheritedFlags, opts)
 		},
 		"formatHeader": func(s string) string {
 			if opts.FormatHeader != nil {
