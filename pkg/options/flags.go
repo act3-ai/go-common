@@ -10,9 +10,21 @@ import (
 func StringVar(f *pflag.FlagSet, p *string, value string, opts *Option) *pflag.Flag {
 	var flag *pflag.Flag
 	if opts.FlagShorthand == "" {
-		flag = flagutil.StringVar(f, p, opts.Flag, value, opts.FlagUsage())
+		flag = flagutil.StringVar(f, p, opts.Flag, value, opts.formattedFlagUsage())
 	} else {
-		flag = flagutil.StringVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.FlagUsage())
+		flag = flagutil.StringVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.formattedFlagUsage())
+	}
+	withOptionConfig(flag, opts)
+	return flag
+}
+
+// CountVar creates a flag for the option.
+func CountVar(f *pflag.FlagSet, p *int, opts *Option) *pflag.Flag {
+	var flag *pflag.Flag
+	if opts.FlagShorthand == "" {
+		flag = flagutil.CountVar(f, p, opts.Flag, opts.formattedFlagUsage())
+	} else {
+		flag = flagutil.CountVarP(f, p, opts.Flag, opts.FlagShorthand, opts.formattedFlagUsage())
 	}
 	withOptionConfig(flag, opts)
 	return flag
@@ -22,9 +34,9 @@ func StringVar(f *pflag.FlagSet, p *string, value string, opts *Option) *pflag.F
 func IntVar(f *pflag.FlagSet, p *int, value int, opts *Option) *pflag.Flag {
 	var flag *pflag.Flag
 	if opts.FlagShorthand == "" {
-		flag = flagutil.IntVar(f, p, opts.Flag, value, opts.FlagUsage())
+		flag = flagutil.IntVar(f, p, opts.Flag, value, opts.formattedFlagUsage())
 	} else {
-		flag = flagutil.IntVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.FlagUsage())
+		flag = flagutil.IntVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.formattedFlagUsage())
 	}
 	withOptionConfig(flag, opts)
 	return flag
@@ -34,9 +46,9 @@ func IntVar(f *pflag.FlagSet, p *int, value int, opts *Option) *pflag.Flag {
 func Int64Var(f *pflag.FlagSet, p *int64, value int64, opts *Option) *pflag.Flag {
 	var flag *pflag.Flag
 	if opts.FlagShorthand == "" {
-		flag = flagutil.Int64Var(f, p, opts.Flag, value, opts.FlagUsage())
+		flag = flagutil.Int64Var(f, p, opts.Flag, value, opts.formattedFlagUsage())
 	} else {
-		flag = flagutil.Int64VarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.FlagUsage())
+		flag = flagutil.Int64VarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.formattedFlagUsage())
 	}
 	withOptionConfig(flag, opts)
 	return flag
@@ -46,9 +58,9 @@ func Int64Var(f *pflag.FlagSet, p *int64, value int64, opts *Option) *pflag.Flag
 func BoolVar(f *pflag.FlagSet, p *bool, value bool, opts *Option) *pflag.Flag {
 	var flag *pflag.Flag
 	if opts.FlagShorthand == "" {
-		flag = flagutil.BoolVar(f, p, opts.Flag, value, opts.FlagUsage())
+		flag = flagutil.BoolVar(f, p, opts.Flag, value, opts.formattedFlagUsage())
 	} else {
-		flag = flagutil.BoolVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.FlagUsage())
+		flag = flagutil.BoolVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.formattedFlagUsage())
 	}
 	withOptionConfig(flag, opts)
 	return flag
@@ -58,9 +70,9 @@ func BoolVar(f *pflag.FlagSet, p *bool, value bool, opts *Option) *pflag.Flag {
 func StringSliceVar(f *pflag.FlagSet, p *[]string, value []string, opts *Option) *pflag.Flag {
 	var flag *pflag.Flag
 	if opts.FlagShorthand == "" {
-		flag = flagutil.StringSliceVar(f, p, opts.Flag, value, opts.FlagUsage())
+		flag = flagutil.StringSliceVar(f, p, opts.Flag, value, opts.formattedFlagUsage())
 	} else {
-		flag = flagutil.StringSliceVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.FlagUsage())
+		flag = flagutil.StringSliceVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.formattedFlagUsage())
 	}
 	withOptionConfig(flag, opts)
 	return flag
@@ -70,9 +82,9 @@ func StringSliceVar(f *pflag.FlagSet, p *[]string, value []string, opts *Option)
 func StringToIntVar(f *pflag.FlagSet, p *map[string]int, value map[string]int, opts *Option) *pflag.Flag {
 	var flag *pflag.Flag
 	if opts.FlagShorthand == "" {
-		flag = flagutil.StringToIntVar(f, p, opts.Flag, value, opts.FlagUsage())
+		flag = flagutil.StringToIntVar(f, p, opts.Flag, value, opts.formattedFlagUsage())
 	} else {
-		flag = flagutil.StringToIntVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.FlagUsage())
+		flag = flagutil.StringToIntVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.formattedFlagUsage())
 	}
 	withOptionConfig(flag, opts)
 	return flag
@@ -82,9 +94,9 @@ func StringToIntVar(f *pflag.FlagSet, p *map[string]int, value map[string]int, o
 func StringToBoolVar(f *pflag.FlagSet, p *map[string]bool, value map[string]bool, opts *Option) *pflag.Flag {
 	var flag *pflag.Flag
 	if opts.FlagShorthand == "" {
-		flag = flagutil.StringToBoolVar(f, p, opts.Flag, value, opts.FlagUsage())
+		flag = flagutil.StringToBoolVar(f, p, opts.Flag, value, opts.formattedFlagUsage())
 	} else {
-		flag = flagutil.StringToBoolVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.FlagUsage())
+		flag = flagutil.StringToBoolVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.formattedFlagUsage())
 	}
 	withOptionConfig(flag, opts)
 	return flag
@@ -94,9 +106,9 @@ func StringToBoolVar(f *pflag.FlagSet, p *map[string]bool, value map[string]bool
 func StringToOptStringVar(f *pflag.FlagSet, p *map[string]*string, value map[string]*string, opts *Option) *pflag.Flag {
 	var flag *pflag.Flag
 	if opts.FlagShorthand == "" {
-		flag = flagutil.StringToOptStringVar(f, p, opts.Flag, value, opts.FlagUsage())
+		flag = flagutil.StringToOptStringVar(f, p, opts.Flag, value, opts.formattedFlagUsage())
 	} else {
-		flag = flagutil.StringToOptStringVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.FlagUsage())
+		flag = flagutil.StringToOptStringVarP(f, p, opts.Flag, opts.FlagShorthand, value, opts.formattedFlagUsage())
 	}
 	withOptionConfig(flag, opts)
 	return flag

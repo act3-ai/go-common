@@ -4,14 +4,17 @@ package main
 import (
 	"embed"
 	"os"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	commands "gitlab.com/act3-ai/asce/go-common/pkg/cmd"
 	"gitlab.com/act3-ai/asce/go-common/pkg/config"
 	"gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
 	vv "gitlab.com/act3-ai/asce/go-common/pkg/version"
@@ -45,10 +48,45 @@ func main() {
 	// NOTE Often the main command is created elsewhere and imported
 	root := &cobra.Command{
 		Use: "sample",
+		Example: heredoc.Doc(`
+			# Run sample:
+			sample
+			
+			# Run sample with name flag:
+			sample --name "Foo"`),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Println("Hello " + name)
 		},
 	}
+
+	// Disable flag sorting
+	cobrautil.WalkCommands(root, func(cmd *cobra.Command) {
+		cmd.Flags().SortFlags = false
+	})
+
+	// Formatting options to style the help command text.
+	formatOptions := cobrautil.UsageFormatOptions{
+		Format: cobrautil.Formatter{
+			// Format headers as uppercase.
+			Header: strings.ToUpper,
+		},
+		// Options for the display of flag usages.
+		FlagOptions: flagutil.UsageFormatOptions{
+			FormatType: func(flag *pflag.Flag, typeName string) string {
+				return strings.ToLower(typeName)
+			},
+		},
+		// Set local flags to be separated by grouping.
+		LocalFlags: cobrautil.FlagGroupingOptions{
+			GroupFlags: true,
+		},
+	}
+
+	// Set custom usage function.
+	cobrautil.WithCustomUsage(root, formatOptions)
+
+	// Set custom formatting for the gendocs command.
+	embedutil.SetUsageFormat(formatOptions)
 
 	nameFlag := options.StringVar(root.Flags(), &name, "",
 		&options.Option{
@@ -62,6 +100,14 @@ func main() {
 			Long: heredoc.Doc(`
 				Name of the sample CLI's user.`),
 		})
+
+	options.GroupFlags(
+		&options.Group{
+			Name:        "example",
+			Description: "Example options",
+		},
+		nameFlag,
+	)
 
 	root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		name = flagutil.ValueOr(nameFlag, name, "Sample User")
