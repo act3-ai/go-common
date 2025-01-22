@@ -30,13 +30,13 @@ sample gendocs manpages
 
 ```plaintext
 OPTIONS:
-  -h, --help  help for man
+  -h, --help   help for man
 ```
 
 ## Options inherited from parent commands
 
 ```plaintext
 GLOBAL OPTIONS:
-  -v, --verbosity strings[=warn]  Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
-                                  Aliases: error=0, warn=4, info=8, debug=12 (default [error])
+  -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
+                                   Aliases: error=0, warn=4, info=8, debug=12 (default [error])
 ```

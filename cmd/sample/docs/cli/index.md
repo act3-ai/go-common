@@ -31,12 +31,12 @@ sample --name "Foo"
 
 ```plaintext
 OPTIONS:
-  -v, --verbosity strings[=warn]  Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
-                                  Aliases: error=0, warn=4, info=8, debug=12 (default [error])
-  -h, --help                      help for sample
+  -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
+                                   Aliases: error=0, warn=4, info=8, debug=12 (default [error])
+  -h, --help                       help for sample
 
 EXAMPLE OPTIONS:
-  -n, --name string  Your name.
+  -n, --name string   Your name.
 ```
 
 ## Subcommands
