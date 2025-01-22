@@ -9,7 +9,6 @@ OpenTelemetry offers a wide range of configuration options that may burden the n
 * Logged OTel errors are only sent to stderr, not to the OTel logging endpoint(s).
 * If an error occurs during initialization or if an OTel endpoint is not configured, all signal intrumentation is a noop.
 
-
 ## Quick-Start
 
 The minimum steps to add OTel instumentation are based on existing `go-common` practices or projects initialized with the [act3-project-tool](https://gitlab.com/act3-ai/asce/pt#act3-project-tool).
@@ -24,43 +23,43 @@ import (
 )
 
 func main() {
-    info := getVersionInfo()
-	root := cli.NewCLI(info.Version)
-	root.SilenceUsage = true
+   info := getVersionInfo()
+   root := cli.NewCLI(info.Version)
+   root.SilenceUsage = true
 
-    // Define custom resource. Order matters, by defining service name before WithFromEnv()
-    // we can use "my_service_name" as the default while allowing users to override via
-    // OTEL_SERVICE_NAME.
-	r, err := resource.New(
-		root.Context(),
-        resource.WithAttributes(
-			semconv.ServiceName("my_service_name"),
-		),
-		resource.WithFromEnv(),
-		resource.WithTelemetrySDK(),
-		resource.WithOS(),
-	)
-    if err != nil {
-        panic(fmt.Sprintf("insufficient resource information: error = %w", err))
-    }
+   // Define custom resource. Order matters, by defining service name before WithFromEnv()
+   // we can use "my_service_name" as the default while allowing users to override via
+   // OTEL_SERVICE_NAME.
+   r, err := resource.New(
+      root.Context(),
+      resource.WithAttributes(
+         semconv.ServiceName("my_service_name"),
+   ),
+   resource.WithFromEnv(),
+   resource.WithTelemetrySDK(),
+   resource.WithOS(),
+)
+if err != nil {
+   panic(fmt.Sprintf("insufficient resource information: error = %w", err))
+}
 
-    // Add resource to config
-	otelCfg := otel.Config{
-		Resource: r,
-		// Hardcoded exporters may be added here...
-	}
+// Add resource to config
+otelCfg := otel.Config{
+   Resource: r,
+   // Hardcoded exporters may be added here...
+}
 
-    // ...
+// ...
 
-    // Run root command with OTel, replaces runner.RunWithContext().
-    // Initializes OTel providers and shuts them down appropriately.
-    if err := otel.RunWithContext(context.Background(), root, &otelCfg, "MY_SERVICE_VERBOSITY"); err != nil {
-		os.Exit(1)
-	}
+// Run root command with OTel, replaces runner.RunWithContext().
+// Initializes OTel providers and shuts them down appropriately.
+if err := otel.RunWithContext(context.Background(), root, &otelCfg, "MY_SERVICE_VERBOSITY"); err != nil {
+   os.Exit(1)
+}
 }
 ```
 
-### Instrument OTel Signals.
+### Instrument OTel Signals
 
 Documentation on OTel naming conventions are available on [github](https://github.com/open-telemetry/opentelemetry-specification/blob/v1.39.0/specification/glossary.md#instrumentation-library). In summary, it is advised to use names that identify the instrumentation scope or library.
 
@@ -74,10 +73,10 @@ Any instrumentation for traces or metrics need access to a `trace.Tracer` or `me
 
 ```go
 import (
-    "go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/trace"
+   "go.opentelemetry.io/otel"
+   "go.opentelemetry.io/otel/attribute"
+   "go.opentelemetry.io/otel/metric"
+   "go.opentelemetry.io/otel/trace"
 )
 
 // Tracer and Meter must be available to scopes being instrumented.
@@ -85,68 +84,68 @@ var Tracer trace.Tracer
 var Meter metric.Meter
 
 func (action *Hello) Run(ctx context.Context) error {
-    // logs before starting a root span will not include a traceid or spanid.
-    // it will not be directly correlated to a trace or span when exported, but
-    // be present in the log itself.
-	log := logger.FromContext(ctx)
-    log.InfoContext(ctx, "This log will write to stderr and export to OTel endpoint but without trace-identifying metadata.")
+   // logs before starting a root span will not include a traceid or spanid.
+   // it will not be directly correlated to a trace or span when exported, but
+   // be present in the log itself.
+   log := logger.FromContext(ctx)
+   log.InfoContext(ctx, "This log will write to stderr and export to OTel endpoint but without trace-identifying metadata.")
 
-    // alternatively, the tracer and meter may be set elsewhere; such as in cobra command's cmd.PersistentPreRun
-	tracer = otel.GetTracerProvider().Tracer("act3.asce.otel-demo.hello")
-	meter = otel.GetMeterProvider().Meter("act3.asce.otel-demo.hello")
+   // alternatively, the tracer and meter may be set elsewhere; such as in cobra command's cmd.PersistentPreRun
+   tracer = otel.GetTracerProvider().Tracer("act3.asce.otel-demo.hello")
+   meter = otel.GetMeterProvider().Meter("act3.asce.otel-demo.hello")
 
-    // the first tracer.Start() creates a root span
-	ctx, span := tracer.Start(ctx, "RootSpanName")
-	defer span.End() // always end the span to release resources
+   // the first tracer.Start() creates a root span
+   ctx, span := tracer.Start(ctx, "RootSpanName")
+   defer span.End() // always end the span to release resources
 
-    // correlated log
-    log.InfoContext(ctx, "This log will include a traceid and spanid for exported logs only, logs to stderr will not include these values.")
+   // correlated log
+   log.InfoContext(ctx, "This log will include a traceid and spanid for exported logs only, logs to stderr will not include these values.")
 
-    // events indicate something has occurred within a span that is not have 
-	span.AddEvent("Something has happened.")
-	
-    // create child span, the typical use case
-    nestedSpans(ctx)
+   // events indicate something has occurred within a span that is not have
+   span.AddEvent("Something has happened.")
 
-    // inherit the span created above
-    nonNestedSpans(ctx)
+   // create child span, the typical use case
+   nestedSpans(ctx)
 
-    // create a new root span
-    newRootSpan(ctx)
+   // inherit the span created above
+   nonNestedSpans(ctx)
 
-    // different types of metric data may be collected, use "Observable" versions for async instrumentation.
-    // see https://pkg.go.dev/go.opentelemetry.io/otel/metric@v1.33.0#Meter
-    counter, err := meter.Float64Counter("ExampleCounter", metric.WithDescription("We're counting something."), metric.WithUnit("ExampleUnit"))
-	if err != nil {
-		log.ErrorContext(ctx, "initializing counter metric", "error", err)
-	}
+   // create a new root span
+   newRootSpan(ctx)
 
-    for i := range 5 {
-        counter.Add(ctx, 1, metric.WithAttributes(attribute.String("foo", "bar")))
-    }
+   // different types of metric data may be collected, use "Observable" versions for async instrumentation.
+   // see https://pkg.go.dev/go.opentelemetry.io/otel/metric@v1.33.0#Meter
+   counter, err := meter.Float64Counter("ExampleCounter", metric.WithDescription("We're counting something."), metric.WithUnit("ExampleUnit"))
+   if err != nil {
+      log.ErrorContext(ctx, "initializing counter metric", "error", err)
+   }
 
-	return nil
+   for i := range 5 {
+      counter.Add(ctx, 1, metric.WithAttributes(attribute.String("foo", "bar")))
+   }
+
+   return nil
 }
 
 func nestedSpans(ctx context.Context) {
-    // subsequent calls to tracer.Start() create a child span.
-	ctx, span := tracer.Start(ctx, "NestedSpan", trace.WithAttributes(attribute.String("foo", "bar")))
-	defer span.End() // always end the span to release resources
+   // subsequent calls to tracer.Start() create a child span.
+   ctx, span := tracer.Start(ctx, "NestedSpan", trace.WithAttributes(attribute.String("foo", "bar")))
+   defer span.End() // always end the span to release resources
 
-	log := logger.FromContext(ctx)
-	log.InfoContext(ctx, "Again, this log will write to stderr and export to OTel endpoint.")
+   log := logger.FromContext(ctx)
+   log.InfoContext(ctx, "Again, this log will write to stderr and export to OTel endpoint.")
 }
 
 func nonNestedSpans(ctx context.Context) {
-    // inherit an existing span from the context, does not create a child span
-    span := trace.SpanFromContext(ctx)
-    // for clarity, don't end the span here in favor of keeping it paired with the span creator.
+   // inherit an existing span from the context, does not create a child span
+   span := trace.SpanFromContext(ctx)
+   // for clarity, don't end the span here in favor of keeping it paired with the span creator.
 }
 
 func newRootSpan(ctx context.Context) {
-    // root spans do not have a parent span
-    ctx, span := tracer.Start(ctx, "SecondRootSpan", trace.WithNewRoot())
-    defer span.End()
+   // root spans do not have a parent span
+   ctx, span := tracer.Start(ctx, "SecondRootSpan", trace.WithNewRoot())
+   defer span.End()
 }
 ```
 
@@ -155,17 +154,18 @@ func newRootSpan(ctx context.Context) {
 Without a hardcoded configuration, the default behavior of an OTel-instrumented application is *opt-in*. As such, users must define a receiver endpoint to send OTel signals to. It is important to note that the value of receiver related environment variables is dependent on the deployment of the receiver(s). Intuitively, the "blanket" approach is the lowest barrier for users to opt-in by requiring a single environment variable to be set.
 
 A "blanket" approach:
+
 * User sets a single endpoint `OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"`
 * Traces are sent to `http://localhost:4318/v1/traces`
 * Logs are sent to `http://localhost:4318/v1/logs`
 * Metrics are sent to `http://localhost:4318/v1/metrics`
 
 A "fine-grained" approach:
+
 * User sets a custom endpoint for each signal, which are used directly without extra path joining
   * `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://localhost:4318/trace/endpoint"`
   * `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT="http://localhost:4318/logs/endpoint"`
   * `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL="http://localhost:4318/metrics/endpoint"`
-
 
 Advanced configuration may be done through environment variables standardized across implementations. They include export timings, queue sizes, attribute limits, and more. See [OpenTelemetry docs](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/) for more information.
 
@@ -187,4 +187,3 @@ While live traces and logs use a 100ms export interval, metrics uses a 1s interv
 ## Hardcoded
 
 TODO
-
