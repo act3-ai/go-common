@@ -3,6 +3,7 @@ package otel
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"strings"
@@ -186,17 +187,17 @@ func (c *Config) Shutdown(ctx context.Context) {
 	defer cancel()
 	if c.traceProvider != nil {
 		if err := c.traceProvider.Shutdown(flushCtx); err != nil {
-			log.ErrorContext(flushCtx, "failed to shut down tracer provider", "error", err)
+			log.ErrorContext(flushCtx, "failed to shut down tracer provider", slog.Any("error", err))
 		}
 	}
 	if c.logProvider != nil {
 		if err := c.logProvider.Shutdown(flushCtx); err != nil {
-			log.ErrorContext(flushCtx, "failed to shut down logger provider", "error", err)
+			log.ErrorContext(flushCtx, "failed to shut down logger provider", slog.Any("error", err))
 		}
 	}
 	if c.meterProvider != nil {
 		if err := c.meterProvider.Shutdown(flushCtx); err != nil {
-			log.ErrorContext(flushCtx, "failed to shut down meter provider", "error", err)
+			log.ErrorContext(flushCtx, "failed to shut down meter provider", slog.Any("error", err))
 		}
 	}
 }
