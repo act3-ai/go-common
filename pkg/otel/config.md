@@ -34,28 +34,28 @@ func main() {
       root.Context(),
       resource.WithAttributes(
          semconv.ServiceName("my_service_name"),
-   ),
-   resource.WithFromEnv(),
-   resource.WithTelemetrySDK(),
-   resource.WithOS(),
-)
-if err != nil {
-   panic(fmt.Sprintf("insufficient resource information: error = %w", err))
-}
+      ),
+      resource.WithFromEnv(),
+      resource.WithTelemetrySDK(),
+      resource.WithOS(),
+   )
+   if err != nil {
+      panic(fmt.Sprintf("insufficient resource information: error = %w", err))
+   }
 
-// Add resource to config
-otelCfg := otel.Config{
-   Resource: r,
-   // Hardcoded exporters may be added here...
-}
+   // Add resource to config
+   otelCfg := otel.Config{
+      Resource: r,
+      // Hardcoded exporters may be added here...
+   }
 
-// ...
+   // ...
 
-// Run root command with OTel, replaces runner.RunWithContext().
-// Initializes OTel providers and shuts them down appropriately.
-if err := otel.RunWithContext(context.Background(), root, &otelCfg, "MY_SERVICE_VERBOSITY"); err != nil {
-   os.Exit(1)
-}
+   // Run root command with OTel, replaces runner.RunWithContext().
+   // Initializes OTel providers and shuts them down appropriately.
+   if err := otel.RunWithContext(context.Background(), root, &otelCfg, "MY_SERVICE_VERBOSITY"); err != nil {
+      os.Exit(1)
+   }
 }
 ```
 
