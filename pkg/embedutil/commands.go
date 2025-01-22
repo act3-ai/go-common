@@ -1,4 +1,3 @@
-// Package embedutil defines utilities for embedded files
 package embedutil
 
 import (
@@ -10,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 )
 
 // adapted from: https://gitlab.com/gitlab-org/cli/-/blob/main/cmd/gen-docs/docs.go
@@ -159,20 +160,36 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer) error {
 	return nil
 }
 
+var defaultUsageFormat = cobrautil.UsageFormatOptions{
+	Format:      cobrautil.Formatter{},
+	FlagOptions: flagutil.UsageFormatOptions{},
+	LocalFlags: cobrautil.FlagGroupingOptions{
+		GroupFlags:      true,
+		UngroupedHeader: cobrautil.DefaultLocalFlagHeader,
+	},
+	InheritedFlags: cobrautil.FlagGroupingOptions{
+		GroupFlags:      true,
+		UngroupedHeader: cobrautil.DefaultGlobalFlagHeader,
+	},
+}
+
+// SetUsageFormat sets common formatting for usage documentation.
+func SetUsageFormat(opts cobrautil.UsageFormatOptions) {
+	defaultUsageFormat = opts
+}
+
 func printOptions(buf *bytes.Buffer, cmd *cobra.Command) {
-	flags := cmd.NonInheritedFlags()
-	flags.SetOutput(buf)
-	if flags.HasAvailableFlags() {
-		buf.WriteString("\n## Options\n\n```plaintext\n")
-		flags.PrintDefaults()
+	if localFlags := cmd.LocalFlags(); localFlags.HasAvailableFlags() {
+		buf.WriteString("\n## Options\n\n")
+		buf.WriteString("```plaintext\n")
+		buf.WriteString(cobrautil.LocalFlagUsages(cmd, defaultUsageFormat))
 		buf.WriteString("```\n")
 	}
 
-	parentFlags := cmd.InheritedFlags()
-	parentFlags.SetOutput(buf)
-	if parentFlags.HasAvailableFlags() {
-		buf.WriteString("\n## Options inherited from parent commands\n\n```plaintext\n")
-		parentFlags.PrintDefaults()
+	if parentFlags := cmd.InheritedFlags(); parentFlags.HasAvailableFlags() {
+		buf.WriteString("\n## Options inherited from parent commands\n\n")
+		buf.WriteString("```plaintext\n")
+		buf.WriteString(cobrautil.InheritedFlagUsages(cmd, defaultUsageFormat))
 		buf.WriteString("```\n")
 	}
 }

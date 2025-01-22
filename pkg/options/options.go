@@ -70,28 +70,23 @@ type Option struct {
 	Env             string // Environment variable name
 	Flag            string // Flag name
 	FlagShorthand   string // Flag shorthand
-	flagUsage       string // Flag usage (if different than the short description)
+	FlagUsage       string // Flag usage (if different than the short description)
+	FlagType        string // Flag type description
 	Short           string // Short description
 	Long            string // Long description
 	// Examples    []*Example // Usage examples for this option
 }
 
-// WithFlagUsage sets a different usage string for the flag version of this option.
-func (o *Option) WithFlagUsage(usage string) *Option {
-	o.flagUsage = usage
-	return o
-}
-
-// FlagUsage produces a flag usage string for the option.
-func (o *Option) FlagUsage() string {
-	usage := o.Short
-	if o.flagUsage != "" {
-		usage = o.flagUsage
+// formattedFlagUsage produces a flag usage string for the option.
+func (o *Option) formattedFlagUsage() string {
+	switch {
+	case o.FlagUsage != "":
+		return o.FlagUsage
+	case o.Short != "":
+		return o.Short
+	default:
+		return ""
 	}
-	if o.Env != "" {
-		usage += " (env: " + o.Env + ")"
-	}
-	return usage
 }
 
 // type ExampleType string
@@ -186,8 +181,8 @@ func (o Option) ShortDescription() string {
 	switch {
 	case o.Short != "":
 		return o.Short
-	case o.flagUsage != "":
-		return o.flagUsage
+	case o.FlagUsage != "":
+		return o.FlagUsage
 	default:
 		return ""
 	}

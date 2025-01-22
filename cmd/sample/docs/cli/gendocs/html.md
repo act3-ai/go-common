@@ -29,6 +29,7 @@ sample gendocs webpage
 ## Options
 
 ```plaintext
+OPTIONS:
   -f, --flat    generate docs in a flat directory structure
   -h, --help    help for html
   -i, --index   generate an index.html index file (default true)
@@ -37,6 +38,7 @@ sample gendocs webpage
 ## Options inherited from parent commands
 
 ```plaintext
+GLOBAL OPTIONS:
   -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
                                    Aliases: error=0, warn=4, info=8, debug=12 (default [error])
 ```

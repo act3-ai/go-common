@@ -48,6 +48,7 @@ sample completion zsh [flags]
 ## Options
 
 ```plaintext
+OPTIONS:
   -h, --help              help for zsh
       --no-descriptions   disable completion descriptions
 ```
@@ -55,6 +56,7 @@ sample completion zsh [flags]
 ## Options inherited from parent commands
 
 ```plaintext
+GLOBAL OPTIONS:
   -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
                                    Aliases: error=0, warn=4, info=8, debug=12 (default [error])
 ```

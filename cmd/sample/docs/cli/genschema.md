@@ -27,12 +27,14 @@ sample genschema <schema location> [flags]
 ## Options
 
 ```plaintext
+OPTIONS:
   -h, --help   help for genschema
 ```
 
 ## Options inherited from parent commands
 
 ```plaintext
+GLOBAL OPTIONS:
   -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
                                    Aliases: error=0, warn=4, info=8, debug=12 (default [error])
 ```
