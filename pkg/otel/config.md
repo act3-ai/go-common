@@ -23,10 +23,10 @@ Third-party packages may also aid in adding instrumentation, refer to the [OTel 
 
 ## OpenTelemetry Export Errors
 
-* Any errors encountered when initializing components, exporting signals, and shutting down processors are never fatal, and logged at the error level.
-  * It is recommended for custom OTel configurations to adhere to this non-fatal error handling practice, e.g. when creating exporters or resources.
-* Logged OTel errors are only sent to stderr, not to the OTel logging endpoint(s).
-* If an error occurs during initialization or if an OTel endpoint is not configured, all signal intrumentation is a noop.
+- Any errors encountered when initializing components, exporting signals, and shutting down processors are never fatal, and logged at the error level.
+  - It is recommended for custom OTel configurations to adhere to this non-fatal error handling practice, e.g. when creating exporters or resources.
+- Logged OTel errors are only sent to stderr, not to the OTel logging endpoint(s).
+- If an error occurs during initialization or if an OTel endpoint is not configured, all signal intrumentation is a noop.
 
 ## Quick-Start
 
@@ -36,10 +36,10 @@ The minimum steps to add OTel instumentation are based on existing `go-common` p
 
 More configuration examples are available in [config_test.go](./config_test.go) or in the [go pkg registry](https://pkg.go.dev/go.opentelemetry.io/otel/sdk@v1.33.0/resource#example-New). However, the following provides insight on where to place the configuration in the context of a project structured with `go-common` practices or created with the [act3-project-tool](https://gitlab.com/act3-ai/asce/pt#act3-project-tool).
 
-* In `main.go` add a custom resource, which provides identifying information added to OTel signals; e.g. which service generated the signals.
-  * See [OTel Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/resource/#service) for service naming best practices.
-* Any errors encountered during OTel configuration should be logged within `root.PersistentPreRun`, see [OTel Export Errors](#opentelemetry-export-errors) for more info.
-* Replace `runner.RunWithContext()` with `otel.RunWithContext()`, and add the `otel.Config` as an argument.
+- In `main.go` add a custom resource, which provides identifying information added to OTel signals; e.g. which service generated the signals.
+  - See [OTel Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/resource/#service) for service naming best practices.
+- Any errors encountered during OTel configuration should be logged within `root.PersistentPreRun`, see [OTel Export Errors](#opentelemetry-export-errors) for more info.
+- Replace `runner.RunWithContext()` with `otel.RunWithContext()`, and add the `otel.Config` as an argument.
 
 ```go
 import (
@@ -196,8 +196,8 @@ Before:
 ```go
 func example() {
    &http.Client{
-		Transport: http.DefaultTransport,
-	}
+      Transport: http.DefaultTransport,
+   }
 }
 ```
 
@@ -206,8 +206,8 @@ After:
 ```go
 func example() {
    &http.Client{
-		Transport: otelhttp.NewTransport(http.DefaultTransport),
-	}
+      Transport: otelhttp.NewTransport(http.DefaultTransport),
+   }
 }
 ```
 
@@ -219,13 +219,13 @@ Before:
 
 ```go
 type Serve struct {
-	*Tool
-	Listen string // port
+   *Tool
+   Listen string // port
 }
 
 func (action *Serve) Run(ctx context.Context) {
-	servMux := http.NewServeMux()
-	servMux.HandleFunc("/hello", handleHello)
+   servMux := http.NewServeMux()
+   servMux.HandleFunc("/hello", handleHello)
 
    // ...
 
@@ -235,15 +235,15 @@ func (action *Serve) Run(ctx context.Context) {
 func (action *Serve) handleHello(w http.ResponseWriter, r *http.Request) {
    defer r.Body.Close()
 
-	log := logger.FromContext(r.Context())
-	log.InfoContext(r.Context(), "received hello request")
+   log := logger.FromContext(r.Context())
+   log.InfoContext(r.Context(), "received hello request")
 
    // ...
 
-	_, err := io.WriteString(w, "Hello, from otel-demo-server!\n")
-	if err != nil {
-		panic(fmt.Sprintf("writing response: error = %v", err))
-	}
+   _, err := io.WriteString(w, "Hello, from otel-demo-server!\n")
+   if err != nil {
+      panic(fmt.Sprintf("writing response: error = %v", err))
+   }
 }
 ```
 
@@ -251,28 +251,28 @@ After:
 
 ```go
 type Serve struct {
-	*Tool
-	Listen string
+   *Tool
+   Listen string
 
-	requestDurHistogram metric.Float64Histogram // http request duration
+   requestDurHistogram metric.Float64Histogram // http request duration
 }
 
 func (action *Serve) Run(ctx context.Context) error {
-	servMux := http.NewServeMux()
-	servMux.Handle("/hello",
+   servMux := http.NewServeMux()
+   servMux.Handle("/hello",
       otelhttp.NewHandler(http.HandlerFunc(action.getHello), "HelloResponse"),
    )
 
    // Initialize meters, making them available to handlers
    meter := otel.GetMeterProvider().Meter("otel-server-meter")
-	action.requestDurHistogram, err = meter.Float64Histogram(
-		"http.request.duration", // meter name
-		metric.WithDescription("The duration of an HTTP request."),
-		metric.WithUnit("s"),
-	)
-	if err != nil {
-		return fmt.Errorf("initializing request duration histogram: %w", err)
-	}
+   action.requestDurHistogram, err = meter.Float64Histogram(
+      "http.request.duration", // meter name
+      metric.WithDescription("The duration of an HTTP request."),
+      metric.WithUnit("s"),
+   )
+   if err != nil {
+      return fmt.Errorf("initializing request duration histogram: %w", err)
+   }
 
    // Run server
 }
@@ -280,30 +280,28 @@ func (action *Serve) Run(ctx context.Context) error {
 func (action *Serve) handleHello(w http.ResponseWriter, r *http.Request) {
    defer r.Body.Close()
 
-	// Use request context to inherit the trace and span, if propagated.
-	span := trace.SpanFromContext(r.Context())
-	defer span.End()
+   // Use request context to inherit the trace and span, if propagated.
+   span := trace.SpanFromContext(r.Context())
+   defer span.End()
 
    // log after span is created, ensuring to correlate logs to the trace
-	log := logger.FromContext(r.Context())
-	log.InfoContext(r.Context(), "received hello request")
+   log := logger.FromContext(r.Context())
+   log.InfoContext(r.Context(), "received hello request")
 
-	start := time.Now() // start timing request duration
-	
+   start := time.Now() // start timing request duration
+
    // things are happening
-	span.AddEvent("Found one o in foo.", trace.WithTimestamp(time.Now()))
-	span.AddEvent("Found two o's in foo.", trace.WithTimestamp(time.Now()))
+   span.AddEvent("Found one o in foo.", trace.WithTimestamp(time.Now()))
+   span.AddEvent("Found two o's in foo.", trace.WithTimestamp(time.Now()))
 
    // record request duration
-	action.requestDurHistogram.Record(r.Context(), time.Since(start).Seconds())
-	_, err := io.WriteString(w, "Hello, from otel-demo-server!\n")
-	if err != nil {
-		panic(fmt.Sprintf("writing response: error = %v", err))
-	}
+   action.requestDurHistogram.Record(r.Context(), time.Since(start).Seconds())
+   _, err := io.WriteString(w, "Hello, from otel-demo-server!\n")
+   if err != nil {
+   panic(fmt.Sprintf("writing response: error = %v", err))
+   }
 }
 ```
-
-
 
 ## Configuration Through Environment Variables
 
@@ -311,17 +309,17 @@ Without a hardcoded configuration, the default behavior of an OTel-instrumented 
 
 A "blanket" approach:
 
-* User sets a single endpoint `OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"`
-* Traces are sent to `http://localhost:4318/v1/traces`
-* Logs are sent to `http://localhost:4318/v1/logs`
-* Metrics are sent to `http://localhost:4318/v1/metrics`
+- User sets a single endpoint `OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"`
+- Traces are sent to `http://localhost:4318/v1/traces`
+- Logs are sent to `http://localhost:4318/v1/logs`
+- Metrics are sent to `http://localhost:4318/v1/metrics`
 
 A "fine-grained" approach:
 
-* User sets a custom endpoint for each signal, which are used directly without extra path joining
-  * `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://localhost:4318/trace/endpoint"`
-  * `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT="http://localhost:4318/logs/endpoint"`
-  * `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL="http://localhost:4318/metrics/endpoint"`
+- User sets a custom endpoint for each signal, which are used directly without extra path joining
+  - `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://localhost:4318/trace/endpoint"`
+  - `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT="http://localhost:4318/logs/endpoint"`
+  - `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL="http://localhost:4318/metrics/endpoint"`
 
 Advanced configuration may be done through environment variables standardized across implementations. They include export timings, queue sizes, attribute limits, and more. See [OpenTelemetry docs](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/) for more information.
 
@@ -333,12 +331,12 @@ Live exporting may be enabled for traces, logs, and metrics independently; throu
 
 While live traces and logs use a 100ms export interval, metrics uses a 1s interval to limit the impact of the exports on the metrics themselves.
 
-* `OTEL_EXPORTER_OTLP_TRACES_LIVE`
-  * Export interval: 100ms.
-* `OTEL_EXPORTER_OTLP_LOGS_LIVE`
-  * Export interval: 100ms.
-* `OTEL_EXPORTER_OTLP_METRICS_LIVE`
-  * Export interval: 1s.
+- `OTEL_EXPORTER_OTLP_TRACES_LIVE`
+  - Export interval: 100ms.
+- `OTEL_EXPORTER_OTLP_LOGS_LIVE`
+  - Export interval: 100ms.
+- `OTEL_EXPORTER_OTLP_METRICS_LIVE`
+  - Export interval: 1s.
   
 ## Hardcoded
 
