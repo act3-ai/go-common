@@ -19,7 +19,8 @@ In `main.go` add a custom resource, which serves to provide identifying informat
 
 ```go
 import (
-    "gitlab.com/act3-ai/asce/go-common/pkg/otel"
+   "go.opentelemetry.io/otel/sdk/resource"
+   "gitlab.com/act3-ai/asce/go-common/pkg/otel"
 )
 
 func main() {
@@ -39,8 +40,14 @@ func main() {
       resource.WithTelemetrySDK(),
       resource.WithOS(),
    )
-   if err != nil {
-      panic(fmt.Sprintf("insufficient resource information: error = %w", err))
+
+   root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+      // OTel errors should not be fatal, but we must wait for the logger to be
+      // initialized in otel.RunWithContext(); a convention of pkg runner
+      log := logger.FromContext(ctx)
+      if err != nil {
+         log.ErrorContext(ctx, "insufficient resource information", "error", err)
+      }
    }
 
    // Add resource to config
