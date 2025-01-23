@@ -2,6 +2,25 @@
 
 OpenTelemetry offers a wide range of configuration options that may burden the new developer when instrumenting OTel signals into their application. The `otel` package is intended to reduce this initial cognitive burden, while supporting more advanced use cases as needed.
 
+Third-party packages may also aid in adding instrumentation, refer to the [OTel Registry](https://opentelemetry.io/ecosystem/registry/).
+
+## Table of Contents
+
+- [Configuring OpenTelemetry Signal Processing](#configuring-opentelemetry-signal-processing)
+  - [Table of Contents](#table-of-contents)
+  - [OpenTelemetry Export Errors](#opentelemetry-export-errors)
+  - [Quick-Start](#quick-start)
+    - [Add Default Configuration](#add-default-configuration)
+    - [Instrument OTel Signals](#instrument-otel-signals)
+      - [Logs](#logs)
+      - [Traces and Metrics](#traces-and-metrics)
+      - [HTTP Clients and Servers](#http-clients-and-servers)
+        - [Clients](#clients)
+        - [Servers](#servers)
+  - [Configuration Through Environment Variables](#configuration-through-environment-variables)
+  - [Live Exporting](#live-exporting)
+  - [Hardcoded](#hardcoded)
+
 ## OpenTelemetry Export Errors
 
 * Any errors encountered when initializing components, exporting signals, and shutting down processors are never fatal, and logged at the error level.
@@ -163,6 +182,128 @@ func newRootSpan(ctx context.Context) {
    defer span.End()
 }
 ```
+
+#### HTTP Clients and Servers
+
+Clients and Servers may use the `otelhttp` [package](https://pkg.go.dev/go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@v0.58.0#section-documentation), developed by OTel maintainers, or third-party packages available in the [OTel Registry](https://opentelemetry.io/ecosystem/registry/).
+
+##### Clients
+
+Client instrumentation wraps an existing `http.RoundTripper`, starting a span for each outbound request. The span context is propagated through HTTP headers, which may be inherited by the server.
+
+Before:
+
+```go
+func example() {
+   &http.Client{
+		Transport: http.DefaultTransport,
+	}
+}
+```
+
+After:
+
+```go
+func example() {
+   &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
+}
+```
+
+##### Servers
+
+Server instrumentation wraps existing handlers with a named span. Optionally add [filters](https://pkg.go.dev/go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@v0.58.0#WithFilter) to exclude span creation based on information available in an `http.Request`.
+
+Before:
+
+```go
+type Serve struct {
+	*Tool
+	Listen string // port
+}
+
+func (action *Serve) Run(ctx context.Context) {
+	servMux := http.NewServeMux()
+	servMux.HandleFunc("/hello", handleHello)
+
+   // ...
+
+   // Run server
+}
+
+func (action *Serve) handleHello(w http.ResponseWriter, r *http.Request) {
+   defer r.Body.Close()
+
+	log := logger.FromContext(r.Context())
+	log.InfoContext(r.Context(), "received hello request")
+
+   // ...
+
+	_, err := io.WriteString(w, "Hello, from otel-demo-server!\n")
+	if err != nil {
+		panic(fmt.Sprintf("writing response: error = %v", err))
+	}
+}
+```
+
+After:
+
+```go
+type Serve struct {
+	*Tool
+	Listen string
+
+	requestDurHistogram metric.Float64Histogram // http request duration
+}
+
+func (action *Serve) Run(ctx context.Context) error {
+	servMux := http.NewServeMux()
+	servMux.Handle("/hello",
+      otelhttp.NewHandler(http.HandlerFunc(action.getHello), "HelloResponse"),
+   )
+
+   // Initialize meters, making them available to handlers
+   meter := otel.GetMeterProvider().Meter("otel-server-meter")
+	action.requestDurHistogram, err = meter.Float64Histogram(
+		"http.request.duration", // meter name
+		metric.WithDescription("The duration of an HTTP request."),
+		metric.WithUnit("s"),
+	)
+	if err != nil {
+		return fmt.Errorf("initializing request duration histogram: %w", err)
+	}
+
+   // Run server
+}
+
+func (action *Serve) handleHello(w http.ResponseWriter, r *http.Request) {
+   defer r.Body.Close()
+
+	// Use request context to inherit the trace and span, if propagated.
+	span := trace.SpanFromContext(r.Context())
+	defer span.End()
+
+   // log after span is created, ensuring to correlate logs to the trace
+	log := logger.FromContext(r.Context())
+	log.InfoContext(r.Context(), "received hello request")
+
+	start := time.Now() // start timing request duration
+	
+   // things are happening
+	span.AddEvent("Found one o in foo.", trace.WithTimestamp(time.Now()))
+	span.AddEvent("Found two o's in foo.", trace.WithTimestamp(time.Now()))
+
+   // record request duration
+	action.requestDurHistogram.Record(r.Context(), time.Since(start).Seconds())
+	_, err := io.WriteString(w, "Hello, from otel-demo-server!\n")
+	if err != nil {
+		panic(fmt.Sprintf("writing response: error = %v", err))
+	}
+}
+```
+
+
 
 ## Configuration Through Environment Variables
 
