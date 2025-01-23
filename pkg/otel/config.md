@@ -17,10 +17,10 @@ The minimum steps to add OTel instumentation are based on existing `go-common` p
 
 More configuration examples are available in [config_test.go](./config_test.go) or in the [go pkg registry](https://pkg.go.dev/go.opentelemetry.io/otel/sdk@v1.33.0/resource#example-New). However, the following provides insight on where to place the configuration in the context of a project structured with `go-common` practices or created with the [act3-project-tool](https://gitlab.com/act3-ai/asce/pt#act3-project-tool).
 
-- In `main.go` add a custom resource, which provides identifying information added to OTel signals; e.g. which service generated the signals.
-  - See [OTel Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/resource/#service) for service naming best practices.
-- Any errors encountered during OTel configuration should be logged within `root.PersistentPreRun`, see [OTel Export Errors](#opentelemetry-export-errors) for more info.
-- Replace `runner.RunWithContext()` with `otel.RunWithContext()`, and add the `otel.Config` as an argument.
+* In `main.go` add a custom resource, which provides identifying information added to OTel signals; e.g. which service generated the signals.
+  * See [OTel Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/resource/#service) for service naming best practices.
+* Any errors encountered during OTel configuration should be logged within `root.PersistentPreRun`, see [OTel Export Errors](#opentelemetry-export-errors) for more info.
+* Replace `runner.RunWithContext()` with `otel.RunWithContext()`, and add the `otel.Config` as an argument.
 
 ```go
 import (
