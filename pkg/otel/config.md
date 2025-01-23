@@ -43,8 +43,14 @@ More configuration examples are available in [config_test.go](./config_test.go) 
 
 ```go
 import (
+   "context"
+	"log/slog"
+
    "go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+
    "gitlab.com/act3-ai/asce/go-common/pkg/otel"
+   "gitlab.com/act3-ai/asce/go-common/pkg/logger"
 )
 
 func main() {
@@ -52,11 +58,13 @@ func main() {
    root := cli.NewCLI(info.Version)
    root.SilenceUsage = true
 
+   ctx := context.Background()
+
    // Define custom resource. Order matters, by defining a service name before WithFromEnv()
    // we can use "my.service.name" as the default while allowing users to override via
    // OTEL_SERVICE_NAME.
    r, err := resource.New(
-      root.Context(),
+      ctx,
       resource.WithAttributes(
          semconv.ServiceName("my.service.name"),
          semconv.ServiceVersion(info.Version),
@@ -75,6 +83,7 @@ func main() {
    }
 
    root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+      ctx := cmd.Context()
       // OTel errors should not be fatal, but we must wait for the logger to be
       // initialized in otel.RunWithContext(); a convention established by pkg runner.RunWithContext()
       log := logger.FromContext(ctx)
@@ -87,7 +96,7 @@ func main() {
 
    // Run root command with OTel, replaces runner.RunWithContext().
    // Initializes OTel providers and shuts them down appropriately.
-   if err := otel.RunWithContext(context.Background(), root, &otelCfg, "MY_SERVICE_VERBOSITY"); err != nil {
+   if err := otel.RunWithContext(ctx, root, &otelCfg, "MY_SERVICE_VERBOSITY"); err != nil {
       os.Exit(1)
    }
 }
