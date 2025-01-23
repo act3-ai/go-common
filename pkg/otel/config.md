@@ -15,7 +15,12 @@ The minimum steps to add OTel instumentation are based on existing `go-common` p
 
 ### Add Default Configuration
 
-In `main.go` add a custom resource, which serves to provide identifying information added to OTel signals. More examples are available in [config_test.go](./config_test.go) or in the [go pkg registry](https://pkg.go.dev/go.opentelemetry.io/otel/sdk@v1.33.0/resource#example-New).
+More configuration examples are available in [config_test.go](./config_test.go) or in the [go pkg registry](https://pkg.go.dev/go.opentelemetry.io/otel/sdk@v1.33.0/resource#example-New). However, the following provides insight on where to place the configuration in the context of a project structured with `go-common` practices or created with the [act3-project-tool](https://gitlab.com/act3-ai/asce/pt#act3-project-tool).
+
+- In `main.go` add a custom resource, which provides identifying information added to OTel signals; e.g. which service generated the signals.
+  - See [OTel Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/resource/#service) for service naming best practices.
+- Any errors encountered during OTel configuration should be logged within `root.PersistentPreRun`, see [OTel Export Errors](#opentelemetry-export-errors) for more info.
+- Replace `runner.RunWithContext()` with `otel.RunWithContext()`, and add the `otel.Config` as an argument.
 
 ```go
 import (
@@ -28,32 +33,35 @@ func main() {
    root := cli.NewCLI(info.Version)
    root.SilenceUsage = true
 
-   // Define custom resource. Order matters, by defining service name before WithFromEnv()
-   // we can use "my_service_name" as the default while allowing users to override via
+   // Define custom resource. Order matters, by defining a service name before WithFromEnv()
+   // we can use "my.service.name" as the default while allowing users to override via
    // OTEL_SERVICE_NAME.
    r, err := resource.New(
       root.Context(),
       resource.WithAttributes(
-         semconv.ServiceName("my_service_name"),
+         semconv.ServiceName("my.service.name"),
+         semconv.ServiceVersion(info.Version),
       ),
       resource.WithFromEnv(),
       resource.WithTelemetrySDK(),
       resource.WithOS(),
    )
 
-   root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-      // OTel errors should not be fatal, but we must wait for the logger to be
-      // initialized in otel.RunWithContext(); a convention of pkg runner
-      log := logger.FromContext(ctx)
-      if err != nil {
-         log.ErrorContext(ctx, "insufficient resource information", "error", err)
-      }
-   }
+   // Optionally, create hardcoded exporters here with errors logged within root.PersistentPreRun
 
    // Add resource to config
    otelCfg := otel.Config{
       Resource: r,
       // Hardcoded exporters may be added here...
+   }
+
+   root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+      // OTel errors should not be fatal, but we must wait for the logger to be
+      // initialized in otel.RunWithContext(); a convention established by pkg runner.RunWithContext()
+      log := logger.FromContext(ctx)
+      if err != nil {
+         log.ErrorContext(ctx, "insufficient resource information", "error", err)
+      }
    }
 
    // ...
@@ -98,11 +106,11 @@ func (action *Hello) Run(ctx context.Context) error {
    log.InfoContext(ctx, "This log will write to stderr and export to OTel endpoint but without trace-identifying metadata.")
 
    // alternatively, the tracer and meter may be set elsewhere; such as in cobra command's cmd.PersistentPreRun
-   tracer = otel.GetTracerProvider().Tracer("act3.asce.otel-demo.hello")
-   meter = otel.GetMeterProvider().Meter("act3.asce.otel-demo.hello")
+   Tracer = otel.GetTracerProvider().Tracer("act3.asce.otel-demo.hello")
+   Meter = otel.GetMeterProvider().Meter("act3.asce.otel-demo.hello")
 
    // the first tracer.Start() creates a root span
-   ctx, span := tracer.Start(ctx, "RootSpanName")
+   ctx, span := Tracer.Start(ctx, "RootSpanName")
    defer span.End() // always end the span to release resources
 
    // correlated log
@@ -122,7 +130,7 @@ func (action *Hello) Run(ctx context.Context) error {
 
    // different types of metric data may be collected, use "Observable" versions for async instrumentation.
    // see https://pkg.go.dev/go.opentelemetry.io/otel/metric@v1.33.0#Meter
-   counter, err := meter.Float64Counter("ExampleCounter", metric.WithDescription("We're counting something."), metric.WithUnit("ExampleUnit"))
+   counter, err := Meter.Float64Counter("ExampleCounter", metric.WithDescription("We're counting something."), metric.WithUnit("ExampleUnit"))
    if err != nil {
       log.ErrorContext(ctx, "initializing counter metric", "error", err)
    }
@@ -136,7 +144,7 @@ func (action *Hello) Run(ctx context.Context) error {
 
 func nestedSpans(ctx context.Context) {
    // subsequent calls to tracer.Start() create a child span.
-   ctx, span := tracer.Start(ctx, "NestedSpan", trace.WithAttributes(attribute.String("foo", "bar")))
+   ctx, span := Tracer.Start(ctx, "NestedSpan", trace.WithAttributes(attribute.String("foo", "bar")))
    defer span.End() // always end the span to release resources
 
    log := logger.FromContext(ctx)
@@ -151,7 +159,7 @@ func nonNestedSpans(ctx context.Context) {
 
 func newRootSpan(ctx context.Context) {
    // root spans do not have a parent span
-   ctx, span := tracer.Start(ctx, "SecondRootSpan", trace.WithNewRoot())
+   ctx, span := Tracer.Start(ctx, "SecondRootSpan", trace.WithNewRoot())
    defer span.End()
 }
 ```

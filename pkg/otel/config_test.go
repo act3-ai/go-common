@@ -43,7 +43,8 @@ func ExampleResource() {
 	rsrc, err := resource.New(ctx,
 		resource.WithAttributes(
 			// if no service name is provided, OpenTelemetry will default to ("unknown_service"), defining a custom service before WithFromEnv() allows users to overwrite it.
-			semconv.ServiceName("Example_Service"),
+			semconv.ServiceName("example.service"),
+			semconv.ServiceVersion(fmt.Sprintf("%d.%d.%d", 0, 0, 1)),
 		),
 		resource.WithFromEnv(),      // Discover and provide attributes from OTEL_RESOURCE_ATTRIBUTES and OTEL_SERVICE_NAME environment variables.
 		resource.WithTelemetrySDK(), // Discover and provide information about the OpenTelemetry SDK used.
@@ -76,7 +77,10 @@ func ExampleConfig_spans() {
 
 	rsrc, err := resource.New(ctx,
 		resource.WithTelemetrySDK(),
-		resource.WithAttributes(semconv.ServiceName("Example_Service")),
+		resource.WithAttributes(
+			semconv.ServiceName("example.service"),
+			semconv.ServiceVersion(fmt.Sprintf("%d.%d.%d", 0, 0, 1)),
+		),
 	)
 	if err != nil {
 		panic(fmt.Sprintf("insufficient resource information: error = %v", err))
@@ -135,7 +139,10 @@ func ExampleConfig_logs() {
 
 	rsrc, err := resource.New(ctx,
 		resource.WithTelemetrySDK(),
-		resource.WithAttributes(semconv.ServiceName("Example_Service")),
+		resource.WithAttributes(
+			semconv.ServiceName("example.service"),
+			semconv.ServiceVersion(fmt.Sprintf("%d.%d.%d", 0, 0, 1)),
+		),
 	)
 	if err != nil {
 		panic(fmt.Sprintf("insufficient resource information: error = %v", err))
@@ -182,7 +189,10 @@ func TestSpans(t *testing.T) {
 
 	rsrc, err := resource.New(ctx,
 		resource.WithTelemetrySDK(),
-		resource.WithAttributes(semconv.ServiceName("Example_Service")),
+		resource.WithAttributes(
+			semconv.ServiceName("example.service"),
+			semconv.ServiceVersion(fmt.Sprintf("%d.%d.%d", 0, 0, 1)),
+		),
 	)
 	if err != nil {
 		t.Fatalf("insufficient resource information: error = %v", err)
@@ -219,6 +229,10 @@ func TestSpans(t *testing.T) {
 	}
 	fn(ctx)
 
+	// typically a force flush is not necessary as shutdown, or if earlier contitions
+	// such as timeout or queue limts are met, kicks off the telemetry pipeline.
+	// However, doing so would not allow us to ensure the exporter recieved
+	// what we expected it to.
 	if err := cfg.traceProvider.ForceFlush(ctx); err != nil {
 		t.Fatalf("force flushing traces: error = %v", err)
 	}
