@@ -44,10 +44,10 @@ More configuration examples are available in [config_test.go](./config_test.go) 
 ```go
 import (
    "context"
-	"log/slog"
+   "log/slog"
 
    "go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+   semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 
    "gitlab.com/act3-ai/asce/go-common/pkg/otel"
    "gitlab.com/act3-ai/asce/go-common/pkg/logger"
