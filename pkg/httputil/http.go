@@ -79,10 +79,9 @@ func FileServer(mux *http.ServeMux, path string, root fs.FS) {
 		mux.Handle("GET "+path, http.RedirectHandler(path+"/", http.StatusMovedPermanently))
 		path += "/"
 	}
-	path += "*"
 
 	mux.HandleFunc("GET "+path, func(w http.ResponseWriter, r *http.Request) {
-		pathPrefix := strings.TrimSuffix(r.Pattern, "/*")
+		pathPrefix := strings.TrimSuffix(r.URL.Path, "/")
 		fs := http.StripPrefix(pathPrefix, http.FileServer(http.FS(root)))
 		fs.ServeHTTP(w, r)
 	})
