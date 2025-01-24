@@ -7,7 +7,6 @@ require (
 	github.com/adrg/xdg v0.5.2
 	github.com/charmbracelet/x/ansi v0.7.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.5
-	github.com/go-chi/chi/v5 v5.1.0
 	github.com/gomarkdown/markdown v0.0.0-20240930133441-72d49d9543d8
 	github.com/iancoleman/strcase v0.3.0
 	github.com/invopop/jsonschema v0.12.0
