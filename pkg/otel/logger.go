@@ -25,10 +25,7 @@ func (cfg *Config) WrapHandler(name string, base slog.Handler) slog.Handler {
 	}
 
 	// create a single logger with a handler for base and otel
-	slogRouter := slogmulti.Router()
-	// add default slog logger
-	slogRouter = slogRouter.Add(base)
-	slogRouter = slogRouter.Add(otelHandler)
+	slogRouter := slogmulti.Router().Add(base).Add(otelHandler)
 
 	// Any telemetry error is simply logged as it shouldn't be fatal.
 	// To avoid having multiple loggers in the context, we "fork" the logs to
