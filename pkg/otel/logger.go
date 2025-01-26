@@ -8,9 +8,9 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-// WrapHandler produces a slog.Handler that writes logs to OpenTelemetry and the base slog.Handler.
+// WrapSlogHandler produces a slog.Handler that writes logs to OpenTelemetry and the base slog.Handler.
 // Base handler is optional.
-func (cfg *Config) WrapHandler(name string, base slog.Handler) slog.Handler {
+func (cfg *Config) WrapSlogHandler(name string, base slog.Handler) slog.Handler {
 	if cfg.logProvider == nil {
 		// Return unmodified base handler.
 		return base

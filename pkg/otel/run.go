@@ -26,7 +26,7 @@ func RunWithContext(ctx context.Context, cmd *cobra.Command, cfg *Config, verbos
 
 	// create a single log handler with a handler for stderr and otel
 	stderrHandler := runner.SetupLoggingHandler(cmd, verbosityEnvName)
-	otelWrappedHandler := cfg.WrapHandler(cmd.Name(), stderrHandler)
+	otelWrappedHandler := cfg.WrapSlogHandler(cmd.Name(), stderrHandler)
 
 	log := slog.New(otelWrappedHandler)
 	ctx = logger.NewContext(ctx, log)
