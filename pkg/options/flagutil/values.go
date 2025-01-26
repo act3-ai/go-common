@@ -15,8 +15,9 @@ func ValueOr[T any](f *pflag.Flag, flagValue T, def T) T {
 	if !f.Changed {
 		return def
 	}
-	slog.Info("overriding config with flag value",
-		slog.String("flag", f.Name),
+	src := valueSource(f)
+	slog.Info("overriding config with "+src.Key+" value", //nolint:sloglint
+		src,
 		slog.Any("value", flagValue),
 	)
 	return flagValue
@@ -27,17 +28,18 @@ func DurationOr(f *pflag.Flag, flagValue string, def *metav1.Duration) *metav1.D
 	if !f.Changed {
 		return def
 	}
+	src := valueSource(f)
 	pd, err := time.ParseDuration(flagValue)
 	if err != nil {
-		slog.Error("parsing duration flag value",
+		slog.Error("parsing duration "+src.Key+" value", //nolint:sloglint
 			slog.Any("err", err),
-			slog.String("flag", f.Name),
+			src,
 			slog.String("value", flagValue),
 		)
 		return def
 	}
-	slog.Info("overriding config with flag value",
-		slog.String("flag", f.Name),
+	slog.Info("overriding config with "+src.Key+" value", //nolint:sloglint
+		src,
 		slog.String("value", flagValue),
 	)
 	return &metav1.Duration{Duration: pd}
@@ -52,8 +54,9 @@ func SetMapKeysOr[T any](f *pflag.Flag, flagValue []string, in map[string]T) map
 	if !f.Changed {
 		return in
 	}
-	slog.Info("overriding config with flag value",
-		slog.String("flag", f.Name),
+	src := valueSource(f)
+	slog.Info("overriding config with "+src.Key+" value", //nolint:sloglint
+		src,
 		slog.Any("value", flagValue),
 	)
 	return setMapKeys(flagValue, in)
@@ -81,8 +84,9 @@ func SetMapValuesOr[M1 ~map[K]V1, M2 ~map[K]V2, K comparable, V1, V2 any](
 	if !f.Changed {
 		return in
 	}
-	slog.Info("overriding config with flag value",
-		slog.String("flag", f.Name),
+	src := valueSource(f)
+	slog.Info("overriding config with "+src.Key+" value", //nolint:sloglint
+		src,
 		slog.Any("value", flagValues),
 	)
 	return setMapValues(flagValues, in, setter)
@@ -106,4 +110,13 @@ func setMapValues[M1 ~map[K]V1, M2 ~map[K]V2, K comparable, V1, V2 any](
 		}
 	}
 	return out
+}
+
+// valueSource produces the source of the flag's value.
+func valueSource(f *pflag.Flag) slog.Attr {
+	envName, ok := GetFirstAnnotation(f, envOverrideAnno)
+	if ok {
+		return slog.String("env", envName)
+	}
+	return slog.String("flag", f.Name)
 }

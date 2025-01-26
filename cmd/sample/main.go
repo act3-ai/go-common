@@ -53,7 +53,18 @@ func main() {
 			sample
 			
 			# Run sample with name flag:
-			sample --name "Foo"`),
+			sample --name "Foo"
+			
+			# Run sample with name environment variable:
+			ACE_SAMPLE_NAME="Foo" sample`),
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			err := flagutil.ParseEnvOverrides(cmd.Flags())
+			if err != nil {
+				// Print error but do not fail.
+				cmd.PrintErrln("Loading environment variables:\n" + err.Error())
+			}
+			return nil
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Println("Hello " + name)
 		},
@@ -108,10 +119,6 @@ func main() {
 		},
 		nameFlag,
 	)
-
-	root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		name = flagutil.ValueOr(nameFlag, name, "Sample User")
-	}
 
 	schemaAssociations := []commands.SchemaAssociation{
 		{

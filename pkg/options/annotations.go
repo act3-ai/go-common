@@ -13,7 +13,7 @@ func FromFlag(f *pflag.Flag) *Option {
 		TargetGroupName: flagutil.GetFirstAnnotationOr(f, targetGroupAnno, ""),
 		Default:         flagutil.GetFirstAnnotationOr(f, defaultAnno, ""),
 		Path:            flagutil.GetFirstAnnotationOr(f, jsonAnno, ""),
-		Env:             flagutil.GetFirstAnnotationOr(f, envAnno, ""),
+		Env:             flagutil.GetEnvName(f),
 		Flag:            f.Name,
 		FlagShorthand:   f.Shorthand,
 		FlagUsage:       flagutil.GetFirstAnnotationOr(f, flagUsageAnno, ""),
@@ -24,20 +24,10 @@ func FromFlag(f *pflag.Flag) *Option {
 	return opt
 }
 
-// ParseEnvOverrides receives a flag set after it has been parsed and
-// sets the flag values to environment variables if the flag defines an
-// "env" annotation.
-//
-// Any parsing errors are logged at slog.LevelWarn and are discarded.
-func ParseEnvOverrides(flagSet *pflag.FlagSet) {
-	flagutil.ParseEnvOverrides(flagSet, envAnno)
-}
-
 const (
 	typeAnno        = "type"      // annotation for options.Option.Type
 	defaultAnno     = "default"   // annotation for options.Option.Default
 	jsonAnno        = "json"      // annotation for options.Option.Path
-	envAnno         = "env"       // annotation for options.Option.Env
 	flagUsageAnno   = "flagUsage" // annotation for options.Option.FlagUsage
 	flagTypeAnno    = "flagType"  // annotation for options.Option.FlagType
 	shortAnno       = "short"     // annotation for options.Option.Short
@@ -71,7 +61,7 @@ func withOptionConfig(f *pflag.Flag, opt *Option) {
 		flagutil.SetAnnotation(f, jsonAnno, opt.Path)
 	}
 	if opt.Env != "" {
-		flagutil.SetAnnotation(f, envAnno, opt.Env)
+		flagutil.SetEnvName(f, opt.Env)
 	}
 	if opt.FlagUsage != "" {
 		flagutil.SetAnnotation(f, flagUsageAnno, opt.FlagUsage)
