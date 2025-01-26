@@ -48,7 +48,6 @@ type UsageFormatOptions struct {
 // FlagGroupingOptions is used to group flags.
 type FlagGroupingOptions struct {
 	GroupFlags      bool   // Set true to organize flags by group.
-	SortFlags       bool   // Set true to sort flags alphabetically.
 	UngroupedHeader string // Header for section of flags without group.
 }
 
