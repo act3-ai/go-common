@@ -3,7 +3,10 @@ package httputil
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
+
+	"gitlab.com/act3-ai/asce/go-common/pkg/logger/logutil"
 )
 
 const (
@@ -73,9 +76,27 @@ func (e *HTTPError) ResponseHeaders() (int, map[string]string) {
 	}
 }
 
+// LogValue implements [log/slog.LogValuer].
+func (e *HTTPError) LogValue() slog.Value {
+	// Use slog.Group to produce key/value pairs for the any-typed arguments.
+	args := slog.Group("args", e.ErrorArgs()...).Value.Group()
+	// Produce a group value for the error string and the additional arguments
+	return slog.GroupValue(
+		append(
+			// Begin with the error attribute
+			[]slog.Attr{slog.String(logutil.ErrKey(), e.Error())},
+			// Append attributes for additional arguments
+			args...,
+		)...,
+	)
+	// Previous use within other functions:
+	// append([]any{"error", clientError.Error()}, clientError.ErrorArgs()...)
+}
+
 // ensure HTTPError implements ClientError
 var _ error = &HTTPError{}
 var _ ClientError = &HTTPError{}
+var _ slog.LogValuer = &HTTPError{}
 
 // NewHTTPError returns a new error
 func NewHTTPError(err error, statusCode int, detail string, extraKV ...any) *HTTPError {
