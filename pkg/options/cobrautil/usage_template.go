@@ -70,12 +70,6 @@ func WithCustomUsage(cmd *cobra.Command, opts UsageFormatOptions) {
 		"flagUsages": func(cmd *cobra.Command) string {
 			return CommandFlagUsages(cmd, opts)
 		},
-		// "localFlagUsages": func(f *pflag.FlagSet) string {
-		// 	return GroupedFlagUsages(f, opts.LocalFlags, opts.Format, opts.FlagOptions)
-		// },
-		// "inheritedFlagUsages": func(f *pflag.FlagSet) string {
-		// 	return GroupedFlagUsages(f, opts.InheritedFlags, opts.Format, opts.FlagOptions)
-		// },
 		"formatHeader": func(s string) string {
 			return opts.Format.Header(s)
 		},
@@ -131,7 +125,7 @@ var groupedFlagsUsageTemplate = `{{formatHeader "Usage:"}}{{if .Runnable}}
   {{.NameAndAliases}}{{end}}{{if .HasExample}}
 
 {{formatHeader "Examples:"}}
-{{formatExample (.Example | indent 2)}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
+{{formatExample .Example | indent 2}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
 
 {{formatHeader "Available Commands:"}}{{range $cmds}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
   {{formatCommand (rpad .Name .NamePadding) }} {{.Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
