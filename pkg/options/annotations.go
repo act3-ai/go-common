@@ -24,16 +24,18 @@ func FromFlag(f *pflag.Flag) *Option {
 	return opt
 }
 
+// Defined annotations used to store [Option] fields in [pflag.Flag] annotations.
+// Used to round-trip an Option through a [pflag.Flag].
 const (
-	typeAnno        = "type"      // annotation for options.Option.Type
-	defaultAnno     = "default"   // annotation for options.Option.Default
-	jsonAnno        = "json"      // annotation for options.Option.Path
-	flagUsageAnno   = "flagUsage" // annotation for options.Option.FlagUsage
-	flagTypeAnno    = "flagType"  // annotation for options.Option.FlagType
-	shortAnno       = "short"     // annotation for options.Option.Short
-	longAnno        = "long"      // annotation for options.Option.Long
-	targetGroupAnno = "target"    // annotation for options.Option.TargetGroupName
-	groupAnno       = "group"     // used to group flags
+	defaultAnno     = "options_option_default"   // annotation for options.Option.Default
+	typeAnno        = "options_option_type"      // annotation for options.Option.Type
+	jsonAnno        = "options_option_json"      // annotation for options.Option.Path
+	flagUsageAnno   = "options_option_flagUsage" // annotation for options.Option.FlagUsage
+	flagTypeAnno    = "options_option_flagType"  // annotation for options.Option.FlagType
+	shortAnno       = "options_option_short"     // annotation for options.Option.Short
+	longAnno        = "options_option_long"      // annotation for options.Option.Long
+	targetGroupAnno = "options_option_target"    // annotation for options.Option.TargetGroupName
+	groupAnno       = "options_option_group"     // used to group flags
 )
 
 // withOptionConfig adds sets annotations on the flag from the option definition.
@@ -44,6 +46,7 @@ func withOptionConfig(f *pflag.Flag, opt *Option) {
 	}
 	if opt.FlagType == "" {
 		// Use UnqouteUsage function to derive type name from usage string
+		// or from the flag value if not found in usage.
 		if varname, _ := pflag.UnquoteUsage(f); varname != "" {
 			opt.FlagType = varname
 		}
