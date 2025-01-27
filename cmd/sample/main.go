@@ -3,6 +3,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"os"
 	"strings"
 
@@ -41,84 +42,8 @@ func getVersionInfo() vv.Info {
 }
 
 func main() {
-	info := getVersionInfo()
-
-	var name string
-
-	// NOTE Often the main command is created elsewhere and imported
-	root := &cobra.Command{
-		Use: "sample",
-		Example: heredoc.Doc(`
-			# Run sample:
-			sample
-			
-			# Run sample with name flag:
-			sample --name "Foo"
-			
-			# Run sample with name environment variable:
-			ACE_SAMPLE_NAME="Foo" sample`),
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := flagutil.ParseEnvOverrides(cmd.Flags())
-			if err != nil {
-				// Print error but do not fail.
-				cmd.PrintErrln("Loading environment variables:\n" + err.Error())
-			}
-			return nil
-		},
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Println("Hello " + name)
-		},
-	}
-
-	// Disable flag sorting
-	cobrautil.WalkCommands(root, func(cmd *cobra.Command) {
-		cmd.Flags().SortFlags = false
-	})
-
-	// Formatting options to style the help command text.
-	formatOptions := cobrautil.UsageFormatOptions{
-		Format: cobrautil.Formatter{
-			// Format headers as uppercase.
-			Header: strings.ToUpper,
-		},
-		// Options for the display of flag usages.
-		FlagOptions: flagutil.UsageFormatOptions{
-			FormatType: func(flag *pflag.Flag, typeName string) string {
-				return strings.ToLower(typeName)
-			},
-		},
-		// Set local flags to be separated by grouping.
-		LocalFlags: cobrautil.FlagGroupingOptions{
-			GroupFlags: true,
-		},
-	}
-
-	// Set custom usage function.
-	cobrautil.WithCustomUsage(root, formatOptions)
-
-	// Set custom formatting for the gendocs command.
-	embedutil.SetUsageFormat(formatOptions)
-
-	nameFlag := options.StringVar(root.Flags(), &name, "",
-		&options.Option{
-			Type:          options.String,
-			Default:       "",
-			Path:          "name",
-			Env:           "ACE_SAMPLE_NAME",
-			Flag:          "name",
-			FlagShorthand: "n",
-			Short:         "Your name.",
-			Long: heredoc.Doc(`
-				Name of the sample CLI's user.`),
-		})
-
-	options.GroupFlags(
-		&options.Group{
-			Name:        "example",
-			Description: "Example options",
-		},
-		nameFlag,
-	)
+	info := getVersionInfo()        // Load the version info from the build
+	root := newSample(info.Version) // Create the root command
 
 	schemaAssociations := []commands.SchemaAssociation{
 		{
@@ -150,7 +75,154 @@ func main() {
 	)
 
 	if err := runner.Run(root, "ACE_SAMPLE_VERBOSITY"); err != nil {
-		// fmt.Fprintln(os.Stderr, "Error occurred", err)
 		os.Exit(1)
 	}
+}
+
+// NOTE Often the main command is created in another package and imported
+func newSample(version string) *cobra.Command {
+	// Flag variable declaractions.
+	var (
+		greeting string
+		name     string
+		count    int
+		excited  bool
+	)
+
+	root := &cobra.Command{
+		Use: "sample",
+		Example: heredoc.Doc(`
+			# Run sample:
+			sample
+			
+			# Run sample with name set by flag:
+			sample --name "Foo"
+			
+			# Run sample with name set by environment variable:
+			ACE_SAMPLE_NAME="Foo" sample`),
+		Version: version,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// Parse environment variables to set the value of flags,
+			// if they have an environment variable defined.
+			// Environment variables can be set with flagutil.SetEnvName.
+			// The flag creation functions in pkg/options/flags.go set an
+			// environment variable for the flag if Option.Env is set.
+			return cobrautil.ParseEnvOverrides(cmd)
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			if name == "" {
+				name = "world"
+			}
+			suffix := ""
+			if excited {
+				suffix = "!"
+			}
+			for range count {
+				cmd.Println(greeting + " " + name + suffix)
+			}
+		},
+	}
+
+	// Add flags to the command.
+	nameFlag := options.StringVar(root.Flags(), &name, "",
+		&options.Option{
+			Type:          options.String,
+			Default:       "",
+			Path:          "name",
+			Env:           "ACE_SAMPLE_NAME", // flagutil.ParseEnvOverrides uses this to set the value.
+			Flag:          "name",
+			FlagShorthand: "n",
+			Short:         "Your name.",
+			Long: heredoc.Doc(`
+				Name of the sample CLI's user.`),
+		})
+	greetingFlag := options.StringVar(root.Flags(), &greeting, "Hello",
+		&options.Option{
+			Type:          options.String,
+			Default:       "Hello",
+			Path:          "",
+			Env:           "ACE_SAMPLE_GREETING",
+			Flag:          "greeting",
+			FlagShorthand: "g",
+			Short:         "Greeting for the user.",
+			Long:          ``,
+		})
+	countFlag := options.IntVar(root.Flags(), &count, 1,
+		&options.Option{
+			Type:          options.Integer,
+			Default:       "1",
+			Path:          "",
+			Env:           "ACE_SAMPLE_COUNT",
+			Flag:          "count",
+			FlagShorthand: "c",
+			Short:         "Number of greetings to output.",
+			Long:          ``,
+		})
+	excitedFlag := options.BoolVar(root.Flags(), &excited, false,
+		&options.Option{
+			Type:          options.Boolean,
+			Default:       "false",
+			Path:          "",
+			Env:           "ACE_SAMPLE_EXCITED",
+			Flag:          "excited",
+			FlagShorthand: "e",
+			Short:         "Greet with excitement.",
+			Long:          ``,
+		})
+
+	// Create a group to organize flags in help text.
+	options.GroupFlags(
+		&options.Group{
+			Name:        "example",
+			Description: "Example options",
+		},
+		nameFlag,
+		greetingFlag,
+		countFlag,
+		excitedFlag,
+	)
+
+	// Formatting options to style the help command text.
+	//
+	// These are just an example of some styling and content choices that can be made.
+	formatOptions := cobrautil.UsageFormatOptions{
+		Format: cobrautil.Formatter{
+			// Format headers as uppercase.
+			Header: strings.ToUpper,
+		},
+		// Options for the display of flag usages.
+		FlagOptions: flagutil.UsageFormatOptions{
+			// Override flag type name with type name configured by `options` package.
+			FormatType: func(flag *pflag.Flag, typeName string) string {
+				opt := options.FromFlag(flag)
+				if opt.FlagType != "" {
+					typeName = opt.FlagType
+				}
+				return typeName
+			},
+			// If there is a configured environment variable for the flag,
+			// add environment variable name to the usage string
+			FormatUsage: func(flag *pflag.Flag, usage string) string {
+				opt := options.FromFlag(flag)
+				if opt.Env != "" {
+					usage += fmt.Sprintf(" (env: %s)", opt.Env)
+				}
+				return usage
+			},
+		},
+		// Set local flags to be separated by grouping.
+		LocalFlags: cobrautil.FlagGroupingOptions{
+			GroupFlags: true,
+		},
+	}
+
+	// Set custom usage function to format command
+	// help text using our special formatting.
+	cobrautil.WithCustomUsage(root, formatOptions)
+
+	// Set custom formatting for the gendocs command
+	// so generated docs match the format of the help text.
+	embedutil.SetUsageFormat(formatOptions)
+
+	return root
 }
