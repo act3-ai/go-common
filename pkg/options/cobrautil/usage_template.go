@@ -19,6 +19,7 @@ type Formatter struct {
 	Header  func(s string) string // Formats all header lines
 	Command func(s string) string // Formats all command names
 	Args    func(s string) string // Formats all command arg placeholders
+	Example func(s string) string // Formats command examples
 }
 
 // Default initializes the formatter so it is safe to call all of its functions without nil checks.
@@ -34,6 +35,9 @@ func (f *Formatter) Default() {
 	}
 	if f.Args == nil {
 		f.Args = noopFormat
+	}
+	if f.Example == nil {
+		f.Example = noopFormat
 	}
 }
 
@@ -81,6 +85,9 @@ func WithCustomUsage(cmd *cobra.Command, opts UsageFormatOptions) {
 		"formatArgs": func(s string) string {
 			return opts.Format.Args(s)
 		},
+		"formatExample": func(s string) string {
+			return opts.Format.Example(s)
+		},
 		"formattedUseLine": func(cmd *cobra.Command) string {
 			useline := cmd.UseLine()
 
@@ -124,7 +131,7 @@ var groupedFlagsUsageTemplate = `{{formatHeader "Usage:"}}{{if .Runnable}}
   {{.NameAndAliases}}{{end}}{{if .HasExample}}
 
 {{formatHeader "Examples:"}}
-{{.Example | indent 2}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
+{{formatExample (.Example | indent 2)}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
 
 {{formatHeader "Available Commands:"}}{{range $cmds}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
   {{formatCommand (rpad .Name .NamePadding) }} {{.Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
@@ -140,7 +147,7 @@ var groupedFlagsUsageTemplate = `{{formatHeader "Usage:"}}{{if .Runnable}}
 {{formatHeader "Additional help topics:"}}{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
   {{formatCommand (rpad .CommandPath .CommandPathPadding)}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
 
-Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+Use "{{formatCommand .CommandPath}} {{formatArgs "[command]"}} {{formatCommand "--help"}}" for more information about a command.{{end}}
 `
 
 // This is the default usage template from cobra.
