@@ -175,6 +175,9 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 
 // Shutdown shuts down the global OpenTelemetry providers, flushing any remaining
 // data to the configured exporters.
+//
+// NOTE: this function logs errors with the logger produced by logger.FromContext.
+// This should probably be changed to return wrapped errors so they can be logged by the caller.
 func (c *Config) Shutdown(ctx context.Context) {
 	log := logger.FromContext(ctx)
 
