@@ -11,7 +11,7 @@ import (
 // UsageFormatOptions is used to format flag usage output.
 type UsageFormatOptions struct {
 	// Columns sets the column wrapping.
-	Columns int
+	Columns Columns
 	// Indentation sets the leading indent for each line.
 	Indentation *string
 	// FormatFlagName is used to format the name of each flag.
@@ -24,6 +24,27 @@ type UsageFormatOptions struct {
 	FormatUsage func(flag *pflag.Flag, usage string) string
 	// LineFunc overrides all other functions.
 	LineFunc func(flag *pflag.Flag) (line string, skip bool)
+}
+
+// Columns sets the width.
+type Columns interface {
+	Value() int
+}
+
+// StaticColumns is a static columns setting.
+type StaticColumns int
+
+// Value implements [Columns].
+func (c StaticColumns) Value() int {
+	return int(c)
+}
+
+// DynamicColumns is a dynamic columns setting.
+type DynamicColumns func() int
+
+// Value implements [Columns].
+func (c DynamicColumns) Value() int {
+	return c()
 }
 
 // FlagUsages returns a string containing the usage information for all flags in
@@ -99,6 +120,10 @@ func FlagUsages(f *pflag.FlagSet, opts UsageFormatOptions) string {
 		lines = append(lines, line)
 	})
 
+	cols := 0
+	if opts.Columns != nil {
+		cols = opts.Columns.Value()
+	}
 	for _, line := range lines {
 		before, after, found := strings.Cut(line, rhsStartChar)
 		if found {
@@ -112,7 +137,7 @@ func FlagUsages(f *pflag.FlagSet, opts UsageFormatOptions) string {
 			// 	maxlen + 2 comes from + 1 for the \x00 and + 1 for the (deliberate) off-by-one in maxlen-sidx
 			prefixlen := maxlen + 3
 			spacing := strings.Repeat(" ", maxlen+1-ansi.StringWidth(before))
-			after = ansi.Wordwrap(after, max(opts.Columns-prefixlen, 0), " ")
+			after = ansi.Wordwrap(after, max(cols-prefixlen, 0), " ")
 			after = strings.ReplaceAll(after, "\n", "\n"+strings.Repeat(" ", prefixlen))
 			_, _ = fmt.Fprintln(buf, before, spacing, after)
 		} else {
