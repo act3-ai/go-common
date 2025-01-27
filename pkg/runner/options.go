@@ -6,124 +6,129 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// WithOptions runs a command with options
-func WithOptions(ctx context.Context, cmd *cobra.Command, opts ...RunOption) error {
-	for _, opt := range opts {
-		opt(cmd)
-	}
+// RunWithOptions runs a command with options.
+func RunWithOptions(ctx context.Context, cmd *cobra.Command, opts ...Option) error {
+	WithOptions(cmd)
 	return cmd.ExecuteContext(ctx)
 }
 
-// RunOption defines an option for running a command.
-type RunOption func(cmd *cobra.Command)
+// WithOptions modifies a command with options.
+func WithOptions(cmd *cobra.Command, opts ...Option) {
+	for _, opt := range opts {
+		opt(cmd)
+	}
+}
+
+// Option defines an option for running a command.
+type Option func(cmd *cobra.Command)
 
 // PrependPersistentPreRun prepends fn to the PersistentPreRun function of the command.
-func PrependPersistentPreRun(fn ...func(cmd *cobra.Command, args []string)) RunOption {
+func PrependPersistentPreRun(fn ...func(cmd *cobra.Command, args []string)) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PersistentPreRun = prependFunc(cmd.PersistentPreRun, fn...)
 	}
 }
 
 // PrependPersistentPreRunE prepends fn to the PersistentPreRunE function of the command.
-func PrependPersistentPreRunE(fn ...func(cmd *cobra.Command, args []string) error) RunOption {
+func PrependPersistentPreRunE(fn ...func(cmd *cobra.Command, args []string) error) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PersistentPreRunE = prependFuncE(cmd.PersistentPreRunE, fn...)
 	}
 }
 
 // PrependPersistentPostRun prepends fn to the PersistentPostRun function of the command.
-func PrependPersistentPostRun(fn ...func(cmd *cobra.Command, args []string)) RunOption {
+func PrependPersistentPostRun(fn ...func(cmd *cobra.Command, args []string)) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PersistentPostRun = prependFunc(cmd.PersistentPostRun, fn...)
 	}
 }
 
 // PrependPersistentPostRunE prepends fn to the PersistentPostRunE function of the command.
-func PrependPersistentPostRunE(fn ...func(cmd *cobra.Command, args []string) error) RunOption {
+func PrependPersistentPostRunE(fn ...func(cmd *cobra.Command, args []string) error) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PersistentPostRunE = prependFuncE(cmd.PersistentPostRunE, fn...)
 	}
 }
 
 // PrependPreRun prepends fn to the PreRun function of the command.
-func PrependPreRun(fn ...func(cmd *cobra.Command, args []string)) RunOption {
+func PrependPreRun(fn ...func(cmd *cobra.Command, args []string)) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PreRun = prependFunc(cmd.PreRun, fn...)
 	}
 }
 
 // PrependPreRunE prepends fn to the PreRunE function of the command.
-func PrependPreRunE(fn ...func(cmd *cobra.Command, args []string) error) RunOption {
+func PrependPreRunE(fn ...func(cmd *cobra.Command, args []string) error) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PreRunE = prependFuncE(cmd.PreRunE, fn...)
 	}
 }
 
 // PrependPostRun prepends fn to the PostRun function of the command.
-func PrependPostRun(fn ...func(cmd *cobra.Command, args []string)) RunOption {
+func PrependPostRun(fn ...func(cmd *cobra.Command, args []string)) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PostRun = prependFunc(cmd.PostRun, fn...)
 	}
 }
 
 // PrependPostRunE prepends fn to the PostRunE function of the command.
-func PrependPostRunE(fn ...func(cmd *cobra.Command, args []string) error) RunOption {
+func PrependPostRunE(fn ...func(cmd *cobra.Command, args []string) error) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PostRunE = prependFuncE(cmd.PostRunE, fn...)
 	}
 }
 
 // AppendPersistentPreRun appends fn to the PersistentPreRun function of the command.
-func AppendPersistentPreRun(fn ...func(cmd *cobra.Command, args []string)) RunOption {
+func AppendPersistentPreRun(fn ...func(cmd *cobra.Command, args []string)) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PersistentPreRun = appendFunc(cmd.PersistentPreRun, fn...)
 	}
 }
 
 // AppendPersistentPreRunE appends fn to the PersistentPreRunE function of the command.
-func AppendPersistentPreRunE(fn ...func(cmd *cobra.Command, args []string) error) RunOption {
+func AppendPersistentPreRunE(fn ...func(cmd *cobra.Command, args []string) error) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PersistentPreRunE = appendFuncE(cmd.PersistentPreRunE, fn...)
 	}
 }
 
 // AppendPersistentPostRun appends fn to the PersistentPostRun function of the command.
-func AppendPersistentPostRun(fn ...func(cmd *cobra.Command, args []string)) RunOption {
+func AppendPersistentPostRun(fn ...func(cmd *cobra.Command, args []string)) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PersistentPostRun = appendFunc(cmd.PersistentPostRun, fn...)
 	}
 }
 
 // AppendPersistentPostRunE appends fn to the PersistentPostRunE function of the command.
-func AppendPersistentPostRunE(fn ...func(cmd *cobra.Command, args []string) error) RunOption {
+func AppendPersistentPostRunE(fn ...func(cmd *cobra.Command, args []string) error) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PersistentPostRunE = appendFuncE(cmd.PersistentPostRunE, fn...)
 	}
 }
 
 // AppendPreRun appends fn to the PreRun function of the command.
-func AppendPreRun(fn ...func(cmd *cobra.Command, args []string)) RunOption {
+func AppendPreRun(fn ...func(cmd *cobra.Command, args []string)) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PreRun = appendFunc(cmd.PreRun, fn...)
 	}
 }
 
 // AppendPreRunE appends fn to the PreRunE function of the command.
-func AppendPreRunE(fn ...func(cmd *cobra.Command, args []string) error) RunOption {
+func AppendPreRunE(fn ...func(cmd *cobra.Command, args []string) error) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PreRunE = appendFuncE(cmd.PreRunE, fn...)
 	}
 }
 
 // AppendPostRun appends fn to the PostRun function of the command.
-func AppendPostRun(fn ...func(cmd *cobra.Command, args []string)) RunOption {
+func AppendPostRun(fn ...func(cmd *cobra.Command, args []string)) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PostRun = appendFunc(cmd.PostRun, fn...)
 	}
 }
 
 // AppendPostRunE appends fn to the PostRunE function of the command.
-func AppendPostRunE(fn ...func(cmd *cobra.Command, args []string) error) RunOption {
+func AppendPostRunE(fn ...func(cmd *cobra.Command, args []string) error) Option {
 	return func(cmd *cobra.Command) {
 		cmd.PostRunE = appendFuncE(cmd.PostRunE, fn...)
 	}
