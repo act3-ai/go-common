@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-/* Implementations are almost identical to the StringTo* implementation in the pflag project. */
+/* Additional flag implementations similar to the StringToString/StringToInt flag implementation in the pflag project. */
 
 // -- stringToBool Value
 type stringToBoolValue struct {
