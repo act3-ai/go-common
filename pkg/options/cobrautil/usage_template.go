@@ -16,10 +16,16 @@ const (
 
 // Formatter defines general formatting functions.
 type Formatter struct {
-	Header  func(s string) string // Formats all header lines
-	Command func(s string) string // Formats all command names
-	Args    func(s string) string // Formats all command arg placeholders
-	Example func(s string) string // Formats command examples
+	Header         func(s string) string // Formats all header lines
+	Command        func(s string) string // Formats all command names
+	Args           func(s string) string // Formats all command arg placeholders
+	CommandAndArgs func(s string) string // Formats all command+arg snippets (supersedes Command and Args)
+	Example        func(s string) string // Formats command examples
+}
+
+// SectionFormatter formats entire sections.
+type SectionFormatter struct {
+	CommandAndArgs func() // Formats all
 }
 
 // Default initializes the formatter so it is safe to call all of its functions without nil checks.
@@ -35,6 +41,9 @@ func (f *Formatter) Default() {
 	}
 	if f.Args == nil {
 		f.Args = noopFormat
+	}
+	if f.CommandAndArgs == nil {
+		f.CommandAndArgs = noopFormat
 	}
 	if f.Example == nil {
 		f.Example = noopFormat
@@ -73,31 +82,27 @@ func WithCustomUsage(cmd *cobra.Command, opts UsageFormatOptions) {
 		"formatHeader": func(s string) string {
 			return opts.Format.Header(s)
 		},
-		"formatCommand": func(s string) string {
-			return opts.Format.Command(s)
-		},
-		"formatArgs": func(s string) string {
-			return opts.Format.Args(s)
+		"formatCommand": func(commandPath string, args ...string) string {
+			return formatCommand(opts, commandPath, args...)
 		},
 		"formatExample": func(s string) string {
 			return opts.Format.Example(s)
 		},
 		"formattedUseLine": func(cmd *cobra.Command) string {
 			useline := cmd.UseLine()
-
 			commandPath := cmd.CommandPath()
-			commandArgs := ""
+			// commandArgs := []string{}
 			if strings.HasPrefix(useline, commandPath) {
-				commandArgs = strings.TrimPrefix(useline, commandPath+" ")
-			} else {
-				// give up
-				return useline
+				// Get string after the command path
+				remainder := strings.TrimPrefix(useline, commandPath+" ")
+				// Split on spaces
+				commandArgs := strings.Split(remainder, " ")
+				return formatCommand(opts, commandPath, commandArgs...)
 			}
 
-			commandPath = opts.Format.Command(commandPath)
-			// useline = opts.FormatCommand(cmd.CommandPath()) + strings.TrimPrefix(useline, cmd.CommandPath())
-			commandArgs = opts.Format.Args(commandArgs)
-			return commandPath + " " + commandArgs
+			// Preserve use line otherwise.
+			// commandPath = useline
+			return formatCommand(opts, useline)
 		},
 		// Indent s by indent spaces (including the first line)
 		"indent": func(indent int, s string) string {
@@ -119,7 +124,7 @@ func WithCustomUsage(cmd *cobra.Command, opts UsageFormatOptions) {
 // This is a modified version of cobra's usage template.
 var groupedFlagsUsageTemplate = `{{formatHeader "Usage:"}}{{if .Runnable}}
   {{formattedUseLine .}}{{end}}{{if .HasAvailableSubCommands}}
-  {{formatCommand .CommandPath}} {{formatArgs "[command]"}}{{end}}{{if gt (len .Aliases) 0}}
+  {{formatCommand .CommandPath "[command]"}}{{end}}{{if gt (len .Aliases) 0}}
 
 {{formatHeader "Aliases:"}}
   {{.NameAndAliases}}{{end}}{{if .HasExample}}
@@ -128,20 +133,20 @@ var groupedFlagsUsageTemplate = `{{formatHeader "Usage:"}}{{if .Runnable}}
 {{formatExample .Example | indent 2}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
 
 {{formatHeader "Available Commands:"}}{{range $cmds}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
-  {{formatCommand (rpad .Name .NamePadding) }} {{.Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
+  {{rpad (formatCommand .Name) .NamePadding}} {{.Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
 
 {{formatHeader .Title}}{{range $cmds}}{{if (and (eq .GroupID $group.ID) (or .IsAvailableCommand (eq .Name "help")))}}
-  {{formatCommand (rpad .Name .NamePadding) }} {{.Short}}{{end}}{{end}}{{end}}{{if not .AllChildCommandsHaveGroup}}
+  {{rpad (formatCommand .Name) .NamePadding}} {{.Short}}{{end}}{{end}}{{end}}{{if not .AllChildCommandsHaveGroup}}
 
 {{formatHeader "Additional Commands:"}}{{range $cmds}}{{if (and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help")))}}
-  {{formatCommand (rpad .Name .NamePadding) }} {{.Short}}{{end}}{{end}}{{end}}{{end}}{{end}}{{with flagUsages .}}
+  {{rpad (formatCommand .Name) .NamePadding}} {{.Short}}{{end}}{{end}}{{end}}{{end}}{{end}}{{with flagUsages .}}
 
 {{ . | trimTrailingWhitespaces }}{{end}}{{if .HasHelpSubCommands}}
 
 {{formatHeader "Additional help topics:"}}{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
-  {{formatCommand (rpad .CommandPath .CommandPathPadding)}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+  {{rpad (formatCommand .CommandPath) .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
 
-Use "{{formatCommand .CommandPath}} {{formatArgs "[command]"}} {{formatCommand "--help"}}" for more information about a command.{{end}}
+Use "{{formatCommand .CommandPath "[command]" "--help"}}" for more information about a command.{{end}}
 `
 
 // This is the default usage template from cobra.
@@ -177,3 +182,22 @@ Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
+
+func formatCommand(opts UsageFormatOptions, commandPath string, args ...string) string {
+	commandPath = opts.Format.Command(commandPath)
+	for i, arg := range args {
+		switch {
+		case strings.HasPrefix(arg, "--"):
+			arg = opts.Format.Command(arg)
+		default:
+			arg = opts.Format.Args(arg)
+		}
+		args[i] = arg
+	}
+	// Assemble full snippet line to format with CommandAndArgs
+	snippet := commandPath
+	if len(args) > 0 {
+		snippet += " " + strings.Join(args, " ")
+	}
+	return opts.Format.CommandAndArgs(snippet)
+}
