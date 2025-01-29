@@ -140,3 +140,43 @@ func RecovererMiddleware(next http.Handler) http.Handler {
 }
 
 var _ middlewareFunc = RecovererMiddleware
+
+// TimeoutMiddleware cancels the request context after a given timeout duration
+func TimeoutMiddleware(next http.Handler, timeout time.Duration) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
+		defer func() {
+			cancel()
+			if ctx.Err() == context.DeadlineExceeded {
+				w.WriteHeader(http.StatusGatewayTimeout)
+			}
+		}()
+
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// AllowContentTypeMiddleware enforces a allowlist of request Content-Types
+func AllowContentTypeMiddleware(next http.Handler, contentTypes ...string) http.Handler {
+	// format contentype strings
+	allowedContentTypes := make(map[string]struct{}, len(contentTypes))
+	for _, ctype := range contentTypes {
+		allowedContentTypes[strings.TrimSpace(strings.ToLower(ctype))] = struct{}{}
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ContentLength == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		s := strings.ToLower(strings.TrimSpace(strings.Split(r.Header.Get("Content-Type"), ";")[0]))
+		if _, ok := allowedContentTypes[s]; ok {
+			next.ServeHTTP(w, r)
+			return
+		} else {
+			w.WriteHeader(http.StatusUnsupportedMediaType)
+		}
+	})
+}
