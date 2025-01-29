@@ -3,6 +3,7 @@ package otel
 import (
 	"net/http"
 
+	"gitlab.com/act3-ai/asce/go-common/pkg/httputil"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -34,3 +35,5 @@ func createSpanMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 }
+
+var _ httputil.MiddlewareFunc = MiddlewareFunc

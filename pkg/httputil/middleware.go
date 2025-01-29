@@ -14,8 +14,6 @@ import (
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 )
 
-type middlewareFunc = func(http.Handler) http.Handler
-
 // contextInstanceKey is how we find the unique instance ID in a context.Context.
 type contextInstanceKey struct{}
 
@@ -39,12 +37,12 @@ func TracingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-var _ middlewareFunc = TracingMiddleware
+var _ MiddlewareFunc = TracingMiddleware
 
 // LoggingMiddleware injects a logger into the context.
 //
 // A previous implementation contained a memory leak because the tracing attributes were always appended to the given logger.
-func LoggingMiddleware(log *slog.Logger) middlewareFunc {
+func LoggingMiddleware(log *slog.Logger) MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -62,7 +60,7 @@ func LoggingMiddleware(log *slog.Logger) middlewareFunc {
 }
 
 // ServerHeaderMiddleware injects the Server into the response headers
-func ServerHeaderMiddleware(server string) middlewareFunc {
+func ServerHeaderMiddleware(server string) MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Server", server)
@@ -108,7 +106,7 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-var _ middlewareFunc = PrometheusMiddleware
+var _ MiddlewareFunc = PrometheusMiddleware
 
 // RecovererMiddleware is a middleware that recovers from panics, logs the panic (and a
 // backtrace), and returns a HTTP 500 (Internal Server Error) status if
@@ -139,4 +137,4 @@ func RecovererMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-var _ middlewareFunc = RecovererMiddleware
+var _ MiddlewareFunc = RecovererMiddleware
