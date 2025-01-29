@@ -171,8 +171,7 @@ func AllowContentTypeMiddleware(next http.Handler, contentTypes ...string) http.
 		if _, ok := allowedContentTypes[s]; ok {
 			next.ServeHTTP(w, r)
 			return
-		} else {
-			w.WriteHeader(http.StatusUnsupportedMediaType)
 		}
+		w.WriteHeader(http.StatusUnsupportedMediaType)
 	})
 }
