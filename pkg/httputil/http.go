@@ -3,9 +3,7 @@ package httputil
 import (
 	"encoding/json"
 	"errors"
-	"io/fs"
 	"net/http"
-	"strings"
 
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger/logutil"

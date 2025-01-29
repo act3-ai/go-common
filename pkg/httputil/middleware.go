@@ -137,8 +137,6 @@ func RecovererMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-var _ middlewareFunc = RecovererMiddleware
-
 // TimeoutMiddleware cancels the request context after a given timeout duration
 func TimeoutMiddleware(next http.Handler, timeout time.Duration) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
