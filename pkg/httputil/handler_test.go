@@ -12,30 +12,30 @@ import (
 var noopMiddlewareFunc = func(next http.Handler) http.Handler { return next }
 
 // interface check
-var _ HandlerInterface = (*noopHandlerInterface)(nil)
+var _ Handler = (*noopHandler)(nil)
 
-// noopHandlerInterface is a no-op implementation of [HandlerInterface].
-type noopHandlerInterface struct{}
+// noopHandler is a no-op implementation of [Handler].
+type noopHandler struct{}
 
-// Handle implements [HandlerInterface].
-func (*noopHandlerInterface) Handle(pattern string, handler http.Handler) {}
+// Handle implements [Handler].
+func (*noopHandler) Handle(pattern string, handler http.Handler) {}
 
-// HandleFunc implements [HandlerInterface].
-func (*noopHandlerInterface) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+// HandleFunc implements [Handler].
+func (*noopHandler) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 }
 
-// ServeHTTP implements [HandlerInterface].
-func (*noopHandlerInterface) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
+// ServeHTTP implements [Handler].
+func (*noopHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
 
 func TestWrapHandler(t *testing.T) {
 	type args struct {
-		mux         HandlerInterface
+		mux         Handler
 		middlewares []MiddlewareFunc
 	}
 	tests := []struct {
 		name string
 		args args
-		want HandlerInterface
+		want Handler
 	}{
 		{"default",
 			args{
@@ -80,7 +80,7 @@ func TestWrapHandler(t *testing.T) {
 	}
 }
 
-func TestHandler_Handle(t *testing.T) {
+func Test_mwHandler_Handle(t *testing.T) {
 	noopHandlerFunc := func(w http.ResponseWriter, r *http.Request) {}
 	type args struct {
 		pattern string
@@ -108,7 +108,7 @@ func TestHandler_Handle(t *testing.T) {
 	}
 }
 
-func TestHandler_HandleFunc(t *testing.T) {
+func Test_mwHandler_HandleFunc(t *testing.T) {
 	// mux := http.NewServeMux()
 	noopHandlerFunc := func(w http.ResponseWriter, r *http.Request) {}
 	type args struct {
@@ -131,7 +131,7 @@ func TestHandler_HandleFunc(t *testing.T) {
 	}
 }
 
-func TestHandler_ServeHTTP(t *testing.T) {
+func Test_mwHandler_ServeHTTP(t *testing.T) {
 	type args struct {
 		w http.ResponseWriter
 		r *http.Request
@@ -143,7 +143,7 @@ func TestHandler_ServeHTTP(t *testing.T) {
 	}{
 		{"default",
 			&mwHandler{
-				mux:         &noopHandlerInterface{},
+				mux:         &noopHandler{},
 				middlewares: []MiddlewareFunc{noopMiddlewareFunc},
 			},
 			args{

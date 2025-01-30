@@ -1,11 +1,9 @@
 package httputil
 
-import (
-	"net/http"
-)
+import "net/http"
 
-// HandlerInterface represents an HTTP request handler.
-type HandlerInterface interface {
+// Handler represents an HTTP request handler.
+type Handler interface {
 	Handle(pattern string, handler http.Handler)
 	HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request))
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
@@ -14,8 +12,8 @@ type HandlerInterface interface {
 // MiddlewareFunc is an alias for middleware functions.
 type MiddlewareFunc = func(http.Handler) http.Handler
 
-// WrapHandler wraps a [HandlerInterface] with middlewares.
-func WrapHandler(mux HandlerInterface, middlewares ...MiddlewareFunc) HandlerInterface {
+// WrapHandler wraps a [Handler] with middlewares.
+func WrapHandler(mux Handler, middlewares ...MiddlewareFunc) Handler {
 	if len(middlewares) == 0 {
 		return mux
 	}
@@ -31,22 +29,22 @@ func WrapHandler(mux HandlerInterface, middlewares ...MiddlewareFunc) HandlerInt
 
 // mwHandler wraps a Handler with the given middleware functions.
 type mwHandler struct {
-	mux         HandlerInterface
+	mux         Handler
 	middlewares []func(http.Handler) http.Handler
 }
 
-// Handle implements [HandlerInterface].
+// Handle implements [Handler].
 func (h *mwHandler) Handle(pattern string, handler http.Handler) {
 	h.mux.Handle(pattern, callMiddlewares(handler, h.middlewares))
 }
 
-// HandleFunc implements [HandlerInterface].
+// HandleFunc implements [Handler].
 func (h *mwHandler) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 	// Call the mwHandler's implementation of Handle so middlewares are called.
 	h.Handle(pattern, http.HandlerFunc(handler))
 }
 
-// ServeHTTP implements [HandlerInterface].
+// ServeHTTP implements [Handler].
 func (h *mwHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mux.ServeHTTP(w, r)
 }
