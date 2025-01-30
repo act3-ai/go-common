@@ -1,0 +1,62 @@
+<!-- markdownlint-disable -->
+# Top-level header
+
+## First section
+
+- List item
+  - Nested list item
+    - Granchild list item
+    - Indented, word-wrap requiring code block:
+
+      ```go
+      // Add subcommands
+      cmd.AddCommand(
+        NewServeCmd(action),
+        otelhelp.GeneralHelpCmd(),
+        otelhelp.ExporterHelpCmd(),
+        termdoc.AdditionalHelpTopic("example", "Help for example", docs.ExampleDocs),
+        termdoc.AdditionalHelpTopic("long-line", "Help for an example line that is very long and will need wrapped inside this code block", testFile),
+      )
+      ```
+
+## Second section
+
+Code block containing false `code` block:
+
+````md
+This is a markdown code block inside a markdown code block:
+
+```go
+fmt.Println("Hello, world!")
+```
+
+**This text should not be bold.**
+
+> Hopefully that worked!
+````
+
+**This text should be bold!**
+
+__Underlines mark this text as bold__
+
+*This text should be italic!*
+
+_Underlines mark this text as italic_
+
+## Comment testing
+
+<!--
+These lines are commented out
+as part of a multiline comment --> Some tests:
+
+1. Hello!
+
+<!-- This is an inline comment -->
+2. Hello <!-- This is an inline comment between uncommented text --> again!
+
+3. Hello. <!-- The rest of this line is commented.
+
+<!--
+These lines are commented out
+as part of a multiline comment -->
+4. Goodbye!
