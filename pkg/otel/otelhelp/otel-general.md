@@ -131,7 +131,7 @@ may be a comma-separated list.
 
 Accepted values for are:
 
-- `"otlp"`: [OTLP][]
+- `"otlp"`: [OTLP](https://opentelemetry.io/docs/specs/otlp/)
 - `"jaeger"`: export in Jaeger data model
 - `"zipkin"`: [Zipkin](https://zipkin.io/zipkin-api/)
 - `"console"`: [Standard Output](https://opentelemetry.io/docs/specs/otel/trace/sdk_exporters/stdout/)
@@ -150,7 +150,7 @@ may be a comma-separated list.
 
 Accepted values for `OTEL_METRICS_EXPORTER` are:
 
-- `"otlp"`: [OTLP][]
+- `"otlp"`: [OTLP](https://opentelemetry.io/docs/specs/otlp/)
 - `"prometheus"`:
   [Prometheus](https://github.com/prometheus/docs/blob/main/content/docs/instrumenting/exposition_formats.md)
 - `"console"`: [Standard Output](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/stdout/)
@@ -169,8 +169,7 @@ may be a comma-separated list.
 
 Accepted values for `OTEL_LOGS_EXPORTER` are:
 
-- `"otlp"`: [OTLP][]
+- `"otlp"`: [OTLP](https://opentelemetry.io/docs/specs/otlp/)
 - `"console"`: [Standard Output](https://opentelemetry.io/docs/specs/otel/logs/sdk_exporters/stdout/)
 - `"none"`: No automatically configured exporter for logs.
 
-[otlp]: https://opentelemetry.io/docs/specs/otlp/

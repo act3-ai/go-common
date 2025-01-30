@@ -50,15 +50,23 @@ function fill_relative_links() {
 			continue
 		fi
 
+		# Skip otlp link definition
+		if [[ "${line}" == "[otlp]: "* ]]; then
+			continue
+		fi
+
 		fmtline="$line"
 
 		# Change relative markdown links to URLs
 		fmtline="${fmtline//"](/docs/"/"](https://opentelemetry.io/docs/"}"
 		fmtline="${fmtline//"]: /docs/"/"]: https://opentelemetry.io/docs/"}"
 
+		# Replace OTLP link shortcut
+		fmtline="${fmtline//"[OTLP][]"/"[OTLP](https://opentelemetry.io/docs/specs/otlp/)"}"
+
 		lastline="$fmtline"
 
-		echo "$fmtline" >>"$fmtfile"
+		printf '%s\n' "$fmtline" >>"$fmtfile"
 	done <"$file"
 	mv "$fmtfile" "$file"
 }

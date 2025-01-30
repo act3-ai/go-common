@@ -23,20 +23,26 @@ sample [flags]
 # Run sample:
 sample
 
-# Run sample with name flag:
+# Run sample with name set by flag:
 sample --name "Foo"
+
+# Run sample with name set by environment variable:
+ACE_SAMPLE_NAME="Foo" sample
 ```
 
 ## Options
 
 ```plaintext
 OPTIONS:
-  -v, --verbosity strings[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
-                                   Aliases: error=0, warn=4, info=8, debug=12 (default [error])
-  -h, --help                       help for sample
+  -h, --help                           help for sample
+  -v, --verbosity stringSlice[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
+                                       Aliases: error=0, warn=4, info=8, debug=12 (default [error])
 
 EXAMPLE OPTIONS:
-  -n, --name string   Your name.
+  -c, --count int         Number of greetings to output. (env: ACE_SAMPLE_COUNT) (default 1)
+  -e, --excited           Greet with excitement. (env: ACE_SAMPLE_EXCITED)
+  -g, --greeting string   Greeting for the user. (env: ACE_SAMPLE_GREETING) (default "Hello")
+  -n, --name string       Your name. (env: ACE_SAMPLE_NAME)
 ```
 
 ## Subcommands
