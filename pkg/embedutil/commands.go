@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/spf13/cobra"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
@@ -26,14 +27,18 @@ func renderMarkdownTree(cmd *cobra.Command, dir string, opts *Options) error {
 		return fmt.Errorf("command docs: %w", err)
 	}
 
-	// Generate parent command
-	out := new(bytes.Buffer)
-	err = GenMarkdownCustom(cmd, out)
+	buf := new(bytes.Buffer)
+
+	// Generate command
+	err = GenMarkdownCustom(cmd, buf)
 	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile(dest, out.Bytes(), 0o644)
+	content := buf.String()
+	content = ansi.Strip(content)
+
+	err = os.WriteFile(dest, []byte(content), 0o644)
 	if err != nil {
 		return fmt.Errorf("command docs: %w", err)
 	}
