@@ -1,3 +1,4 @@
+// Package testutil contains utilities for writing tests.
 package testutil
 
 import (
@@ -7,7 +8,7 @@ import (
 )
 
 // AssertErrorIf asserts that err is not nil if wantErr is true, or nil if wantErr is false.
-func AssertErrorIf(t *testing.T, wantErr bool, err error, msgAndArgs ...any) bool { //nolint:revive
+func AssertErrorIf(t *testing.T, wantErr bool, err error, msgAndArgs ...any) bool {
 	t.Helper()
 	if wantErr {
 		return assert.Error(t, err, msgAndArgs...)
