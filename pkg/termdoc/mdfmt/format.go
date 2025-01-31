@@ -68,12 +68,15 @@ func (format *Formatter) Format(markdownText string) string {
 			if strings.HasPrefix(lineTrimSpace, codeBlockStop) {
 				loc.CodeBlock = false
 				loc.CodeBlockLevel = 0
+				loc.CodeBlockLang = ""
 				codeBlockStop = ""
+			} else if format.CodeBlock != nil {
+				line = format.CodeBlock(line, loc)
 			}
 		// Start code block
 		case strings.HasPrefix(lineTrimSpace, codeBlockStart):
 			loc.CodeBlock = true
-			loc.CodeBlockLevel = codeBlockLevel(lineTrimSpace)
+			loc.CodeBlockLevel, loc.CodeBlockLang = parseCodeBlockStart(lineTrimSpace)
 			codeBlockStop = strings.Repeat("`", loc.CodeBlockLevel)
 			codeBlockIndent = extraIndent(line)
 		// Comment line
@@ -118,19 +121,19 @@ func (format *Formatter) Format(markdownText string) string {
 			// and is easier to implement.
 			var indent string
 			switch {
-			// Obey code block wrapping setting
+			// Obey code block wrapping mode
 			case loc.CodeBlock:
-				switch format.CodeBlockWrapping {
+				switch format.CodeBlockWrapMode {
+				// Preserve leading whitespace from where the codeblock was started
 				case WrapToStartingIndentation:
-					// Preserve leading whitespace from where the codeblock was started
 					indent = codeBlockIndent
 				// Preserve leading whitespace in the line
 				// Must be determined from the line itself
-				case WrapToCurrentIndentation, Default:
+				default:
 					indent = extraIndent(line)
 				}
-				// Preserve leading whitespace in the line
-				// Must be determined from the line itself
+			// Preserve leading whitespace in the line
+			// Must be determined from the line itself
 			default:
 				indent = extraIndent(line)
 			}
@@ -265,9 +268,10 @@ func extraIndent(s string) string {
 	return ""
 }
 
-func codeBlockLevel(s string) int {
+func parseCodeBlockStart(s string) (level int, lang string) {
 	if strings.HasPrefix(s, "`") {
-		return 1 + codeBlockLevel(strings.TrimPrefix(s, "`"))
+		level, lang := parseCodeBlockStart(strings.TrimPrefix(s, "`"))
+		return 1 + level, lang
 	}
-	return 0
+	return 0, s
 }

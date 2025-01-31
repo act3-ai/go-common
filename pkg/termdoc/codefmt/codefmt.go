@@ -35,6 +35,8 @@ type Formatter struct {
 	// produce column width for wrapping
 	// (nil function or 0 return value disables wrapping)
 	Columns func() int
+
+	WrapMode WrapMode
 }
 
 // StaticColumns is a static columns setting.
@@ -43,3 +45,13 @@ func StaticColumns(cols int) func() int {
 		return cols
 	}
 }
+
+// WrapMode signifies a code block wrapping style.
+type WrapMode uint8
+
+// Defined code block wrapping styles.
+const (
+	Default                   WrapMode = iota
+	WrapToCurrentIndentation           // Indent wrapped lines to the current line's indentation
+	WrapToStartingIndentation          // Indent wrapped lines to the starting indentation of the sectin
+)

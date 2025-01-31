@@ -77,17 +77,6 @@ func WithCustomUsage(cmd *cobra.Command, opts UsageFormatOptions) {
 		opts.InheritedFlags.UngroupedHeader = DefaultGlobalFlagHeader
 	}
 
-	// // Pre-compute names and padding
-	// commandNames := map[string]string{}
-	// commandNameMax := 0
-	// for _, subcmd := range cmd.Commands() {
-	// 	name := subcmd.Name()
-	// 	fmtname := formatCommand(opts, subcmd.Name())
-	// 	commandNames[name] = fmtname
-	// 	if len(name) > commandNameMax {
-	// 	}
-	// }
-
 	cobra.AddTemplateFuncs(template.FuncMap{
 		"flagUsages": func(cmd *cobra.Command) string {
 			return CommandFlagUsages(cmd, opts)

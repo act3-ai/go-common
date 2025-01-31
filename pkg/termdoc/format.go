@@ -5,12 +5,14 @@ import (
 	"strings"
 
 	"github.com/muesli/termenv"
+	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/codefmt"
 	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/mdfmt"
 )
 
-// AutoColorFormat produces the default format.
-func AutoColorFormat() *mdfmt.Formatter {
+// AutoMarkdownFormat produces the default terminal markdown formatter.
+func AutoMarkdownFormat() *mdfmt.Formatter {
 	columnsVal := TerminalWidth(120) // compute AOT
+	codeFormatter := AutoCodeFormat()
 	return &mdfmt.Formatter{
 		// bold green with markdown header preserved
 		Header: func(text string, loc mdfmt.Location) string {
@@ -38,6 +40,20 @@ func AutoColorFormat() *mdfmt.Formatter {
 			}
 			return cyan().Styled(code)
 		},
+		CodeBlock: func(code string, loc mdfmt.Location) string {
+			switch loc.CodeBlockLang {
+			case "bash", "sh", "python":
+				return codeFormatter.Format(code, codefmt.LangInfo{
+					LineCommentStart: "#",
+				})
+			case "go":
+				return codeFormatter.Format(code, codefmt.LangInfo{
+					LineCommentStart: "//",
+				})
+			default:
+				return code
+			}
+		},
 		Bold: func(text string, loc mdfmt.Location) string {
 			if loc.Header {
 				return text
@@ -53,6 +69,7 @@ func AutoColorFormat() *mdfmt.Formatter {
 		Columns: func() int {
 			return columnsVal
 		},
+		CodeBlockWrapMode: mdfmt.WrapToCurrentIndentation,
 		Indent: func(loc mdfmt.Location) string {
 			level := loc.Level
 			if loc.Header {
@@ -65,6 +82,20 @@ func AutoColorFormat() *mdfmt.Formatter {
 				return strings.Repeat("  ", level-1)
 			}
 		},
+	}
+}
+
+// AutoCodeFormat produces the default terminal code formatter.
+func AutoCodeFormat() *codefmt.Formatter {
+	columnsVal := TerminalWidth(120) // compute AOT
+	return &codefmt.Formatter{
+		Comment: func(comment string, loc codefmt.Location) string {
+			return faint().Styled(comment)
+		},
+		Columns: func() int {
+			return columnsVal
+		},
+		WrapMode: codefmt.WrapToCurrentIndentation,
 	}
 }
 

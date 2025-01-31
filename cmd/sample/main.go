@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -198,7 +197,7 @@ func newSample(version string) *cobra.Command {
 			// Format command examples as Bash code snippets
 			// with faint comments.
 			Example: func(s string) string {
-				return codeFormatter.Format(s, codefmt.Bash)
+				return termdoc.AutoCodeFormat().Format(s, codefmt.Bash)
 			},
 		},
 		// Options for the display of flag usages.
@@ -237,14 +236,8 @@ func newSample(version string) *cobra.Command {
 
 	root.AddCommand(
 		// Add "Additional Help Topic" command that simply prints documentation.
-		termdoc.AdditionalHelpTopic("testfile", "Help command that displays the test file", testFile),
+		termdoc.AdditionalHelpTopic("testfile", "Help command that displays the test file", testFile, termdoc.AutoMarkdownFormat()),
 	)
 
 	return root
-}
-
-var codeFormatter = codefmt.Formatter{
-	Comment: func(comment string, loc codefmt.Location) string {
-		return termenv.String().Faint().Styled(comment)
-	},
 }

@@ -26,6 +26,7 @@ func GeneralHelpCmd() *cobra.Command {
 		"otel-config",
 		"Help for general OpenTelemetry configuration.",
 		otelGeneral,
+		termdoc.AutoMarkdownFormat(),
 	)
 }
 
@@ -35,5 +36,20 @@ func ExporterHelpCmd() *cobra.Command {
 		"otlp-config",
 		"Help for OpenTelemetry Protocol Exporter (OTLP) configuration.",
 		otelExporter,
+		termdoc.AutoMarkdownFormat(),
 	)
+}
+
+// GeneralDoc returns the general OpenTelemetry configuration document for caller use.
+//
+// Use this to create your own "Additional Help Topic" command if you want different configuration.
+func GeneralDoc() string {
+	return otelGeneral
+}
+
+// ExporterDoc returns the OpenTelemetry Protocol Exporter (OTLP) configuration document for caller use.
+//
+// Use this to create your own "Additional Help Topic" command if you want different configuration.
+func ExporterDoc() string {
+	return otelExporter
 }

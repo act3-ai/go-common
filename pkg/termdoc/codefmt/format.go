@@ -49,9 +49,19 @@ func (format *Formatter) Format(codeText string, lang LangInfo) string {
 
 		// Perform word wrapping:
 		if cols > 0 {
-			// Preserve leading whitespace from the line
+			// Obey wrapping mode
+			var indent string
+			switch format.WrapMode {
+			// No wrapping indent
+			case WrapToStartingIndentation:
+				indent = ""
+			// Preserve leading whitespace in the line
 			// Must be determined from the line itself
-			indent := extraIndent(line)
+			default:
+				indent = extraIndent(line)
+			}
+			// Preserve leading whitespace in the line
+			// Must be determined from the line itself
 			// Wrap lines
 			line = ansi.Wordwrap(line, cols, " ")
 			// Add indent to wrapped lines
