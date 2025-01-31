@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
+	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -18,6 +19,8 @@ import (
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
+	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc"
+	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/codefmt"
 	vv "gitlab.com/act3-ai/asce/go-common/pkg/version"
 )
 
@@ -78,6 +81,9 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+//go:embed docs/testfile.md
+var testFile string
 
 // NOTE Often the main command is created in another package and imported
 func newSample(version string) *cobra.Command {
@@ -189,6 +195,11 @@ func newSample(version string) *cobra.Command {
 		Format: cobrautil.Formatter{
 			// Format headers as uppercase.
 			Header: strings.ToUpper,
+			// Format command examples as Bash code snippets
+			// with faint comments.
+			Example: func(s string) string {
+				return codeFormatter.Format(s, codefmt.Bash)
+			},
 		},
 		// Options for the display of flag usages.
 		FlagOptions: flagutil.UsageFormatOptions{
@@ -224,5 +235,16 @@ func newSample(version string) *cobra.Command {
 	// so generated docs match the format of the help text.
 	embedutil.SetUsageFormat(formatOptions)
 
+	root.AddCommand(
+		// Add "Additional Help Topic" command that simply prints documentation.
+		termdoc.AdditionalHelpTopic("testfile", "Help command that displays the test file", testFile),
+	)
+
 	return root
+}
+
+var codeFormatter = codefmt.Formatter{
+	Comment: func(comment string, loc codefmt.Location) string {
+		return termenv.String().Faint().Styled(comment)
+	},
 }
