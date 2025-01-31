@@ -4,6 +4,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/spf13/cobra"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 )
@@ -75,6 +76,18 @@ func WithCustomUsage(cmd *cobra.Command, opts UsageFormatOptions) {
 	if opts.InheritedFlags.UngroupedHeader == "" {
 		opts.InheritedFlags.UngroupedHeader = DefaultGlobalFlagHeader
 	}
+
+	// // Pre-compute names and padding
+	// commandNames := map[string]string{}
+	// commandNameMax := 0
+	// for _, subcmd := range cmd.Commands() {
+	// 	name := subcmd.Name()
+	// 	fmtname := formatCommand(opts, subcmd.Name())
+	// 	commandNames[name] = fmtname
+	// 	if len(name) > commandNameMax {
+	// 	}
+	// }
+
 	cobra.AddTemplateFuncs(template.FuncMap{
 		"flagUsages": func(cmd *cobra.Command) string {
 			return CommandFlagUsages(cmd, opts)
@@ -88,6 +101,7 @@ func WithCustomUsage(cmd *cobra.Command, opts UsageFormatOptions) {
 		"formatExample": func(s string) string {
 			return opts.Format.Example(s)
 		},
+		"rpadANSI": rpadANSI,
 		"formattedUseLine": func(cmd *cobra.Command) string {
 			useline := cmd.UseLine()
 			commandPath := cmd.CommandPath()
@@ -133,18 +147,18 @@ var groupedFlagsUsageTemplate = `{{formatHeader "Usage:"}}{{if .Runnable}}
 {{formatExample .Example | indent 2}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
 
 {{formatHeader "Available Commands:"}}{{range $cmds}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
-  {{rpad (formatCommand .Name) .NamePadding}} {{.Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
+  {{rpadANSI (formatCommand .Name) .NamePadding}} {{.Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
 
 {{formatHeader .Title}}{{range $cmds}}{{if (and (eq .GroupID $group.ID) (or .IsAvailableCommand (eq .Name "help")))}}
-  {{rpad (formatCommand .Name) .NamePadding}} {{.Short}}{{end}}{{end}}{{end}}{{if not .AllChildCommandsHaveGroup}}
+  {{rpadANSI (formatCommand .Name) .NamePadding}} {{.Short}}{{end}}{{end}}{{end}}{{if not .AllChildCommandsHaveGroup}}
 
 {{formatHeader "Additional Commands:"}}{{range $cmds}}{{if (and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help")))}}
-  {{rpad (formatCommand .Name) .NamePadding}} {{.Short}}{{end}}{{end}}{{end}}{{end}}{{end}}{{with flagUsages .}}
+  {{rpadANSI (formatCommand .Name) .NamePadding}} {{.Short}}{{end}}{{end}}{{end}}{{end}}{{end}}{{with flagUsages .}}
 
 {{ . | trimTrailingWhitespaces }}{{end}}{{if .HasHelpSubCommands}}
 
 {{formatHeader "Additional help topics:"}}{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
-  {{rpad (formatCommand .CommandPath) .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+  {{rpadANSI (formatCommand .CommandPath) .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
 
 Use "{{formatCommand .CommandPath "[command]" "--help"}}" for more information about a command.{{end}}
 `
@@ -200,4 +214,21 @@ func formatCommand(opts UsageFormatOptions, commandPath string, args ...string) 
 		snippet += " " + strings.Join(args, " ")
 	}
 	return opts.Format.CommandAndArgs(snippet)
+}
+
+// rpadANSI adds padding to the right of a string.
+//
+// based on cobra's version, modified to be ANSI-aware.
+func rpadANSI(s string, padding int) string {
+	// Cobra implementation:
+	// // rpad adds padding to the right of a string.
+	// func rpad(s string, padding int) string {
+	// 	formattedString := fmt.Sprintf("%%-%ds", padding)
+	// 	return fmt.Sprintf(formattedString, s)
+	// }
+	strlen := ansi.StringWidth(s)
+	if strlen < padding {
+		return s + strings.Repeat(" ", padding-strlen)
+	}
+	return s
 }
