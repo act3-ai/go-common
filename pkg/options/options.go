@@ -2,6 +2,7 @@
 package options
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -14,6 +15,7 @@ func ResolveDescriptions(groups ...*Group) error {
 			allGroups[g.Name] = g
 		}
 	}
+	var errs []error
 	for _, g := range groups {
 		for _, o := range g.Options {
 			switch {
@@ -26,11 +28,15 @@ func ResolveDescriptions(groups ...*Group) error {
 			default:
 				target, ok := allGroups[o.TargetGroupName]
 				if !ok {
-					return fmt.Errorf("Group %q, Option %q: could not resolve TargetGroupName %q", g.Name, o.Header(), o.TargetGroupName)
+					errs = append(errs, fmt.Errorf("Group %q, Option %q: could not resolve TargetGroupName %q", g.Name, o.Header(), o.TargetGroupName))
+					continue
 				}
 				o.Short = target.Description
 			}
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("resolving descriptions: %w", errors.Join(errs...))
 	}
 	return nil
 }
