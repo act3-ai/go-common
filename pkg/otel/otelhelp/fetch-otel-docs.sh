@@ -76,3 +76,6 @@ curl -o "$otlp_exporter_file" "${otel_docs_base}/refs/heads/${otel_docs_ref}/${o
 
 fill_relative_links "$general_file"
 fill_relative_links "$otlp_exporter_file"
+
+markdownlint-cli2 "$general_file" --fix
+markdownlint-cli2 "$otlp_exporter_file" --fix

@@ -9,15 +9,12 @@ import (
 
 // Markdown component regexes
 var (
-	mdBoldUnderlineRegex   = regexp.MustCompile(wordish(`__([^_]+)__`))      // __bold__
-	mdBoldAsteriskRegex    = regexp.MustCompile(wordish(`\*\*([^\*]+)\*\*`)) // **bold**
-	mdItalicUnderlineRegex = regexp.MustCompile(wordish(`_([^_]+)_`))        // _italic_
-	mdItalicAsteriskRegex  = regexp.MustCompile(wordish(`\*([^\*]+)\*`))     // *italic*
-	mdCodeRegex            = regexp.MustCompile("`[^`]+`")                   // `code`
-	mdLinkRegex            = regexp.MustCompile(`\[([^\]]+)\]\(([^\)]+)\)`)  // [text](url)
-
-	startWord = `^(?:.*\s)?`
-	endWord   = `(?:\s.*)?$`
+	mdBoldUndRegex   = regexp.MustCompile(wordUnd(`__([^_]+)__`))                   // __bold__
+	mdBoldAstRegex   = regexp.MustCompile(wordAst(`\*\*([^\*]+)\*\*`))              // **bold**
+	mdItalicUndRegex = regexp.MustCompile(wordUnd(`_([^_]+)_`))                     // _italic_
+	mdItalicAstRegex = regexp.MustCompile(wordAst(`\*([^\*]+)\*`))                  // *italic*
+	mdCodeRegex      = regexp.MustCompile("`[^`]+`")                                // `code`
+	mdLinkRegex      = regexp.MustCompile(`\[(?P<text>[^\]]+)\]\((?<url>[^\)]+)\)`) // [text](url)
 )
 
 const (
@@ -26,8 +23,12 @@ const (
 	commentEnd     = "-->"
 )
 
-func wordish(re string) string {
-	return startWord + re + endWord
+func wordAst(re string) string {
+	return `(?P<before>^|[^\w\*])` + re + `(?P<after>[^\w\*]|$)`
+}
+
+func wordUnd(re string) string {
+	return `(?P<before>^|[^\w_])` + re + `(?P<after>[^\w_]|$)`
 }
 
 // Format formats markdown text according the Formatter's rules.
@@ -146,49 +147,94 @@ func (format *Formatter) formatRegularLine(line string, loc MDLocation) string {
 	// Markdown link formatter:
 	if format.Link != nil {
 		// Replace links first, the regex gets messed up by ANSI sequences
-		line = mdLinkRegex.ReplaceAllStringFunc(line, func(s string) string {
-			match := mdLinkRegex.FindStringSubmatch(s)
-			return format.Link(match[1], match[2], loc)
-		})
+		line = mdLinkRegex.ReplaceAllStringFunc(line,
+			func(s string) string {
+				match := mdLinkRegex.FindStringSubmatch(s)
+				return format.Link(match[1], match[2], loc)
+			})
 	}
 	if format.Header != nil && loc.Header {
 		line = format.Header(strings.TrimSpace(strings.TrimLeft(line, "#")), loc)
 	}
 
 	// Markdown inline code formatter:
-	if format.Code != nil {
-		line = mdCodeRegex.ReplaceAllStringFunc(line, func(s string) string {
-			return format.Code(s[1:len(s)-1], loc)
-		})
+	codeBlockMatches := mdCodeRegex.FindAllStringIndex(line, -1)
+	endPrevious := 0
+	linePieces := []string{}
+	for _, match := range codeBlockMatches {
+		// Add text before code block
+		// Get string from end of last code block to start of this one
+		before := line[endPrevious:match[0]]
+		linePieces = append(linePieces, format.textFormat(before, loc))
+
+		// Add the code block
+		codeBlock := line[match[0]:match[1]]
+		if format.Code != nil {
+			// Add formatted code block
+			codeBlockWithoutBackticks := codeBlock[1 : len(codeBlock)-1]
+			linePieces = append(linePieces, format.Code(codeBlockWithoutBackticks, loc))
+		} else {
+			// Add unformatted code block
+			linePieces = append(linePieces, codeBlock)
+		}
+
+		// Update end index
+		endPrevious = match[1]
 	}
 
+	// Add formatted remainder (which may be entire line if no code blocks found)
+	linePieces = append(linePieces, format.textFormat(line[endPrevious:], loc))
+
+	// Rejoin line
+	line = strings.Join(linePieces, "")
+
+	return line
+}
+
+func (format *Formatter) textFormat(text string, loc MDLocation) string {
 	// Markdown bold formatter:
 	if format.Bold != nil {
 		// Replace both underline and asterisk notation
-		line = mdBoldUnderlineRegex.ReplaceAllStringFunc(line,
+		text = mdBoldUndRegex.ReplaceAllStringFunc(text,
 			func(s string) string {
-				return format.Bold(s[2:len(s)-2], loc)
+				match := mdBoldUndRegex.FindStringSubmatch(s)
+				before := match[1]
+				inner := format.Bold(match[2], loc)
+				after := match[3]
+				return before + inner + after
 			})
-		line = mdBoldAsteriskRegex.ReplaceAllStringFunc(line,
+		text = mdBoldAstRegex.ReplaceAllStringFunc(text,
 			func(s string) string {
-				return format.Bold(s[2:len(s)-2], loc)
+				match := mdBoldAstRegex.FindStringSubmatch(s)
+				before := match[1]
+				inner := format.Bold(match[2], loc)
+				after := match[3]
+				return before + inner + after
 			})
 	}
 
 	// Markdown italic formatter:
 	if format.Italics != nil {
 		// Replace both underline and asterisk notation
-		line = mdItalicUnderlineRegex.ReplaceAllStringFunc(line,
+		text = mdItalicUndRegex.ReplaceAllStringFunc(text,
 			func(s string) string {
-				return format.Italics(s[1:len(s)-1], loc)
+				match := mdItalicUndRegex.FindStringSubmatch(s)
+				before := match[1]
+				inner := format.Italics(match[2], loc)
+				after := match[3]
+				return before + inner + after
 			})
-		line = mdItalicAsteriskRegex.ReplaceAllStringFunc(line,
+		text = mdItalicAstRegex.ReplaceAllStringFunc(text,
 			func(s string) string {
-				return format.Italics(s[1:len(s)-1], loc)
+				match := mdItalicAstRegex.FindStringSubmatch(s)
+				before := match[1]
+				inner := format.Italics(match[2], loc)
+				after := match[3]
+				return before + inner + after
 			})
 	}
 
-	return line
+	return text
 }
 
 func headerLevel(s string) int {

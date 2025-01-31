@@ -172,4 +172,3 @@ Accepted values for `OTEL_LOGS_EXPORTER` are:
 - `"otlp"`: [OTLP](https://opentelemetry.io/docs/specs/otlp/)
 - `"console"`: [Standard Output](https://opentelemetry.io/docs/specs/otel/logs/sdk_exporters/stdout/)
 - `"none"`: No automatically configured exporter for logs.
-
