@@ -13,7 +13,7 @@ func AutoColorFormat() *mdfmt.Formatter {
 	columnsVal := TerminalWidth(120) // compute AOT
 	return &mdfmt.Formatter{
 		// bold green with markdown header preserved
-		Header: func(text string, loc mdfmt.MDLocation) string {
+		Header: func(text string, loc mdfmt.Location) string {
 			return green().Bold().Styled(
 				fmt.Sprintf("%s %s",
 					strings.Repeat("#", loc.Level),
@@ -21,7 +21,7 @@ func AutoColorFormat() *mdfmt.Formatter {
 				),
 			)
 		},
-		Link: func(text, url string, loc mdfmt.MDLocation) string {
+		Link: func(text, url string, loc mdfmt.Location) string {
 			if loc.Header {
 				// Do not change boldness of headers
 				return fmt.Sprintf("%s%s",
@@ -32,19 +32,19 @@ func AutoColorFormat() *mdfmt.Formatter {
 				bold().Styled("["+text+"]"),
 				faint().Styled("("+url+")"))
 		},
-		Code: func(code string, loc mdfmt.MDLocation) string {
+		Code: func(code string, loc mdfmt.Location) string {
 			if loc.Header {
 				return code
 			}
 			return cyan().Styled(code)
 		},
-		Bold: func(text string, loc mdfmt.MDLocation) string {
+		Bold: func(text string, loc mdfmt.Location) string {
 			if loc.Header {
 				return text
 			}
 			return bold().Styled(text)
 		},
-		Italics: func(text string, loc mdfmt.MDLocation) string {
+		Italics: func(text string, loc mdfmt.Location) string {
 			if loc.Header {
 				return text
 			}
@@ -53,7 +53,7 @@ func AutoColorFormat() *mdfmt.Formatter {
 		Columns: func() int {
 			return columnsVal
 		},
-		Indent: func(loc mdfmt.MDLocation) string {
+		Indent: func(loc mdfmt.Location) string {
 			level := loc.Level
 			if loc.Header {
 				level-- // reduce by 1 for headers

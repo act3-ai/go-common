@@ -40,7 +40,7 @@ func (format *Formatter) Format(markdownText string) string {
 
 	lines := strings.Split(markdownText, "\n")
 	formatted := make([]string, 0, len(lines))
-	var loc MDLocation
+	var loc Location
 	codeBlockIndent := ""
 	codeBlockStop := ""
 	for _, line := range lines {
@@ -111,19 +111,31 @@ func (format *Formatter) Format(markdownText string) string {
 
 		// Perform word wrapping:
 		if cols > 0 {
+			// TODO: code block wrapping
+			// should it wrap to the level of the starting backticks or to the indentation level
+			// of the line within the code block?
+			// Wrapping to the indentation level of the line within the code block looks somewhat nicer
+			// and is easier to implement.
 			var indent string
 			switch {
-			// Preserve leading whitespace from where the codeblock was started
+			// Obey code block wrapping setting
 			case loc.CodeBlock:
-				indent = codeBlockIndent
-			// Preserve leading whitespace in the line
+				switch format.CodeBlockWrapping {
+				case WrapToStartingIndentation:
+					// Preserve leading whitespace from where the codeblock was started
+					indent = codeBlockIndent
+				// Preserve leading whitespace in the line
+				// Must be determined from the line itself
+				case WrapToCurrentIndentation, Default:
+					indent = extraIndent(line)
+				}
+				// Preserve leading whitespace in the line
+				// Must be determined from the line itself
 			default:
 				indent = extraIndent(line)
 			}
-			// // Preserve leading whitespace from the line
-			// indent := extraIndent(line)
 			// Wrap lines
-			line = ansi.Wordwrap(line, 100, " ")
+			line = ansi.Wordwrap(line, cols, " ")
 			// Add indent to wrapped lines
 			line = strings.ReplaceAll(line, "\n", "\n"+indent)
 		}
@@ -135,7 +147,7 @@ func (format *Formatter) Format(markdownText string) string {
 }
 
 // Performs all non-word-wrap formatting for all markdown lines except those inside multiline code blocks
-func (format *Formatter) formatRegularLine(line string, loc MDLocation) string {
+func (format *Formatter) formatRegularLine(line string, loc Location) string {
 	// Set header level (if header)
 	if h := headerLevel(line); h > 0 {
 		loc.Header = true
@@ -191,7 +203,7 @@ func (format *Formatter) formatRegularLine(line string, loc MDLocation) string {
 	return line
 }
 
-func (format *Formatter) textFormat(text string, loc MDLocation) string {
+func (format *Formatter) textFormat(text string, loc Location) string {
 	// Markdown bold formatter:
 	if format.Bold != nil {
 		// Replace both underline and asterisk notation
