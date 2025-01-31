@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
+	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc"
 )
 
 // adapted from: https://gitlab.com/gitlab-org/cli/-/blob/main/cmd/gen-docs/docs.go
@@ -125,9 +126,20 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer) error {
 	// Disable markdowlint single title rule for the next line
 	buf.WriteString("<!-- markdownlint-disable-next-line single-title -->\n")
 
+	var done bool
 	if cmd.IsAdditionalHelpTopicCommand() {
-		buf.WriteString(cmd.Long + "\n")
-	} else {
+		if termdoc.HasLazyLongMessage(cmd) {
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+			cmd.HelpFunc()(cmd, []string{})
+		}
+		if cmd.Long != "" {
+			buf.WriteString(cmd.Long + "\n")
+			done = true
+		}
+	}
+
+	if !done {
 		buf.WriteString("# " + cmd.CommandPath() + "\n")
 
 		if len(cmd.Short) > 0 {

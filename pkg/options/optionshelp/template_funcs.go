@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options"
 )
 
@@ -16,33 +17,16 @@ import (
 {{- end }}
 */
 func groupTable(g *options.Group) string {
-	w := &strings.Builder{}
-
-	rows := [][2]string{}
+	header := []string{"Option", "Description"}
+	rows := [][]string{}
 
 	for _, o := range g.Options {
-		rows = append(rows, [2]string{
+		rows = append(rows, []string{
 			o.MarkdownLink(), o.ShortDescription(),
 		})
 	}
 
-	descMax := len("Description")
-	for _, row := range rows {
-		descLen := len(row[1])
-		if descLen > descMax {
-			descMax = descLen
-		}
-	}
-
-	fmtRow := fmtRowFunc(descMax)
-
-	_, _ = w.WriteString(fmtRow("Option", "Description"))
-	_, _ = w.WriteString(fmt.Sprintf("| %s | %s |\n", strings.Repeat("-", nameMax), strings.Repeat("-", descMax)))
-	for _, row := range rows {
-		_, _ = w.WriteString(fmtRow(row[0], row[1]))
-	}
-
-	return w.String()
+	return writeTable(header, rows)
 }
 
 /*
@@ -69,14 +53,13 @@ func groupTable(g *options.Group) string {
 {{- end }}
 */
 func optionTable(o *options.Option) string {
-	w := &strings.Builder{}
-
-	rows := [][2]string{
+	header := []string{"Name", "Value"}
+	rows := [][]string{
 		{"type", o.FormattedType()},
 	}
 
 	if o.Type == options.StringMap {
-		rows = append(rows, [2]string{
+		rows = append(rows, []string{
 			"keys", "string",
 		})
 	}
@@ -85,17 +68,17 @@ func optionTable(o *options.Option) string {
 		if o.TargetLink() == "" {
 			fvalues = "any"
 		}
-		rows = append(rows, [2]string{
+		rows = append(rows, []string{
 			"values", fvalues,
 		})
 	}
 	if fdefault := o.FormattedDefault(); fdefault != "" {
-		rows = append(rows, [2]string{
+		rows = append(rows, []string{
 			"default", "`" + fdefault + "`",
 		})
 	}
 	if o.JSON != "" {
-		rows = append(rows, [2]string{
+		rows = append(rows, []string{
 			"json/yaml", "`" + o.JSON + "`",
 		})
 	}
@@ -109,44 +92,60 @@ func optionTable(o *options.Option) string {
 		case o.FlagShorthand != "":
 			fflag = fmt.Sprintf("`-%s`", o.FlagShorthand)
 		}
-		rows = append(rows, [2]string{
+		rows = append(rows, []string{
 			"cli", fflag,
 		})
 	}
 	if o.Env != "" {
-		rows = append(rows, [2]string{
+		rows = append(rows, []string{
 			"env", "`" + o.Env + "`",
 		})
 	}
 
-	valueMax := 0
+	return writeTable(header, rows)
+}
+
+// writeTable writes a markdown table with equal length columns
+func writeTable(header []string, rows [][]string) string {
+	// Get maximum width of each column
+	colMaxLens := make([]int, len(header))
 	for _, row := range rows {
-		valueLen := len(row[1])
-		if valueLen > valueMax {
-			valueMax = valueLen
+		for col, cell := range row {
+			cellLen := ansi.StringWidth(cell) // ansi-aware string width
+			if cellLen > colMaxLens[col] {
+				colMaxLens[col] = cellLen
+			}
 		}
 	}
 
-	fmtRow := fmtRowFunc(valueMax)
+	fmtStrings := make([]string, len(header))
+	for col, maxLen := range colMaxLens {
+		fmtStrings[col] = fmt.Sprintf("%%-%ds", maxLen)
+	}
 
-	_, _ = w.WriteString(fmtRow("Name", "Value"))
-	_, _ = w.WriteString(fmt.Sprintf("| %s | %s |\n", strings.Repeat("-", nameMax), strings.Repeat("-", valueMax)))
+	w := &strings.Builder{}
+
+	// Write header row
+	for col, cell := range header {
+		_, _ = w.WriteString("| " + fmt.Sprintf(fmtStrings[col], cell) + " ")
+	}
+	_, _ = w.WriteString("|\n")
+
+	// Write separator row
+	for col := range header {
+		_, _ = w.WriteString(fmt.Sprintf("| %s ", strings.Repeat("-", colMaxLens[col])))
+	}
+	_, _ = w.WriteString("|\n")
+
+	// Write separator row
 	for _, row := range rows {
-		_, _ = w.WriteString(fmtRow(row[0], row[1]))
+		for col, cell := range row {
+			_, _ = w.WriteString("| " + fmt.Sprintf(fmtStrings[col], cell) + " ")
+		}
+		_, _ = w.WriteString("|\n")
 	}
 
 	return w.String()
-}
-
-const nameMax = 9
-
-func fmtRowFunc(valueMax int) func(name, value string) string {
-	fmtName := fmt.Sprintf("%%-%ds", nameMax)
-	fmtValue := fmt.Sprintf("%%-%ds", valueMax)
-	fmtRow := fmt.Sprintf("| %s | %s |\n", fmtName, fmtValue)
-	return func(name, value string) string {
-		return fmt.Sprintf(fmtRow, name, value)
-	}
 }
 
 /* Vendored functions from sprig to avoid bringing in a dependency */

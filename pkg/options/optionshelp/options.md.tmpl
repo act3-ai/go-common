@@ -1,6 +1,6 @@
 {{ define "groupOptions" -}}
 {{ groupTable . }}
-{{ end }}
+{{- end }}
 # Configuration Options
 
 Table of contents:
@@ -26,9 +26,8 @@ Table of contents:
 
 {{ optionTable . }}
 {{- if .Long }}
-
 {{ .Long }}
-{{- end }}
 {{ end }}
+{{- end }}
 {{- end }}
 {{- end -}}

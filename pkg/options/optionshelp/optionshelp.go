@@ -2,6 +2,7 @@
 package optionshelp
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"text/template"
@@ -23,12 +24,18 @@ func Command(name, short string, groups []*options.Group, format *mdfmt.Formatte
 	return termdoc.AdditionalHelpTopic(name, short, optionsDoc, format)
 }
 
-// MarkdownDoc produces markdown documentation for the given options.
-func MarkdownDoc(groups []*options.Group) (string, error) {
-	err := options.ResolveDescriptions(groups...)
-	if err != nil {
-		return "", err
+// LazyCommand creates a command to display help for the given options.
+func LazyCommand(name, short string, groupFunc func() []*options.Group, format *mdfmt.Formatter) *cobra.Command {
+	contentFunc := func(cmd *cobra.Command, args []string) (string, error) {
+		return MarkdownDoc(groupFunc())
 	}
+	return termdoc.LazyAdditionalHelpTopic(name, short, contentFunc, format)
+}
+
+// MarkdownDoc produces markdown documentation for the given options.
+func MarkdownDoc(groups []*options.Group) (docs string, err error) {
+	descErr := options.ResolveDescriptions(groups...)
+	defer func() { err = errors.Join(err, descErr) }()
 
 	w := &strings.Builder{}
 

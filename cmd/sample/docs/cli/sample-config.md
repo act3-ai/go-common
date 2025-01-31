@@ -19,13 +19,12 @@ Table of contents:
 
 Example options
 
-| Option    | Description                    |
-| --------- | ------------------------------ |
-| [`name`](#name) | Your name.                     |
+| Option                      | Description                    |
+| --------------------------- | ------------------------------ |
+| [`name`](#name)             | Your name.                     |
 | [`--greeting`](#--greeting) | Greeting for the user.         |
-| [`--count`](#--count) | Number of greetings to output. |
-| [`--excited`](#--excited) | Greet with excitement.         |
-
+| [`--count`](#--count)       | Number of greetings to output. |
+| [`--excited`](#--excited)   | Greet with excitement.         |
 
 ### `name`
 
@@ -38,40 +37,37 @@ Your name.
 | cli       | `--name`, `-n`    |
 | env       | `ACE_SAMPLE_NAME` |
 
-
 Name of the sample CLI's user.
 
 ### `--greeting`
 
 Greeting for the user.
 
-| Name      | Value                 |
-| --------- | --------------------- |
-| type      | string                |
-| default   | `"Hello"`             |
-| cli       | `--greeting`, `-g`    |
-| env       | `ACE_SAMPLE_GREETING` |
-
+| Name    | Value                 |
+| ------- | --------------------- |
+| type    | string                |
+| default | `"Hello"`             |
+| cli     | `--greeting`, `-g`    |
+| env     | `ACE_SAMPLE_GREETING` |
 
 ### `--count`
 
 Number of greetings to output.
 
-| Name      | Value              |
-| --------- | ------------------ |
-| type      | integer            |
-| default   | `1`                |
-| cli       | `--count`, `-c`    |
-| env       | `ACE_SAMPLE_COUNT` |
-
+| Name    | Value              |
+| ------- | ------------------ |
+| type    | integer            |
+| default | `1`                |
+| cli     | `--count`, `-c`    |
+| env     | `ACE_SAMPLE_COUNT` |
 
 ### `--excited`
 
 Greet with excitement.
 
-| Name      | Value                |
-| --------- | -------------------- |
-| type      | boolean              |
-| default   | `false`              |
-| cli       | `--excited`, `-e`    |
-| env       | `ACE_SAMPLE_EXCITED` |
+| Name    | Value                |
+| ------- | -------------------- |
+| type    | boolean              |
+| default | `false`              |
+| cli     | `--excited`, `-e`    |
+| env     | `ACE_SAMPLE_EXCITED` |

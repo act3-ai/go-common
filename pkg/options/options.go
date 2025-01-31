@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// ErrGroupNotFound is returned while resolving descriptions.
+var ErrGroupNotFound = errors.New("group not found")
+
 // ResolveDescriptions set option descriptions from their target groups, if they specify one.
 func ResolveDescriptions(groups ...*Group) error {
 	allGroups := map[string]*Group{}
@@ -28,7 +31,8 @@ func ResolveDescriptions(groups ...*Group) error {
 			default:
 				target, ok := allGroups[o.TargetGroupName]
 				if !ok {
-					errs = append(errs, fmt.Errorf("Group %q, Option %q: could not resolve TargetGroupName %q", g.Name, o.Header(), o.TargetGroupName))
+					errs = append(errs,
+						fmt.Errorf("Group %q, Option %q, TargetGroupName %q: %w", g.Name, o.Header(), o.TargetGroupName, ErrGroupNotFound))
 					continue
 				}
 				o.Short = target.Description
@@ -45,6 +49,7 @@ func ResolveDescriptions(groups ...*Group) error {
 type Group struct {
 	Name        string    // Name of the group
 	Description string    // Description of the group
+	JSON        string    // Path to group in JSON config file
 	Options     []*Option // Options contained in this group
 }
 
@@ -199,7 +204,13 @@ func (o Option) ShortDescription() string {
 
 // markdownLink produces a markdown link to the given header.
 func markdownLink(header string) string {
-	return fmt.Sprintf("[%s](#%s)", header, toMarkdownLinkFragment(header))
+	var fragment string
+	if strings.HasPrefix(header, "`") && strings.HasSuffix(header, "`") {
+		fragment = markdownCodeLinkFragment(header)
+	} else {
+		fragment = toMarkdownLinkFragment(header)
+	}
+	return fmt.Sprintf("[%s](#%s)", header, fragment)
 }
 
 // toMarkdownLinkFragment formats the string as a markdown link fragment.
@@ -207,16 +218,24 @@ func toMarkdownLinkFragment(s string) string {
 	// Lowercase
 	return strings.ToLower(
 		// Replace forbidden characters
-		mdlinkReplacer.Replace(
+		mdNameLinkReplacer.Replace(
 			// Trim forbidden leading/trailing characters
 			strings.Trim(s, mdlinkCutset)))
+}
+
+// markdownCodeLinkFragment formats the string as a markdown link fragment.
+func markdownCodeLinkFragment(s string) string {
+	// Lowercase
+	return strings.ToLower(
+		// Replace forbidden characters
+		mdCodeLinkReplacer.Replace(s))
 }
 
 // mdlinkCutset is used to trim characters from the beginning and end of strings.
 var mdlinkCutset = "-"
 
-// mdlinkReplacer replaces characters to produce the equivalent markdown link handle
-var mdlinkReplacer = strings.NewReplacer(
+// mdNameLinkReplacer replaces characters to produce the equivalent markdown link handle
+var mdNameLinkReplacer = strings.NewReplacer(
 	" ", "-",
 	".", "",
 	"/", "",
@@ -225,4 +244,16 @@ var mdlinkReplacer = strings.NewReplacer(
 	"'", "",
 	`"`, "",
 	"_", "",
+)
+
+// mdlinkReplacer replaces characters to produce the equivalent markdown link handle
+var mdCodeLinkReplacer = strings.NewReplacer(
+	" ", "-",
+	".", "",
+	"/", "",
+	"*", "",
+	"`", "",
+	"'", "",
+	`"`, "",
+	// "_", "",
 )
