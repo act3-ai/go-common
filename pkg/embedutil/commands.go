@@ -125,37 +125,41 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer) error {
 	// Disable markdowlint single title rule for the next line
 	buf.WriteString("<!-- markdownlint-disable-next-line single-title -->\n")
 
-	buf.WriteString("# " + cmd.CommandPath() + "\n")
-
-	if len(cmd.Short) > 0 {
-		buf.WriteString("\n" + cmd.Short + "\n")
-	}
-
-	if len(cmd.Long) > 0 {
-		buf.WriteString("\n## Synopsis\n\n")
+	if cmd.IsAdditionalHelpTopicCommand() {
 		buf.WriteString(cmd.Long + "\n")
-	}
+	} else {
+		buf.WriteString("# " + cmd.CommandPath() + "\n")
 
-	if cmd.Runnable() {
-		buf.WriteString(fmt.Sprintf("\n## Usage\n\n```plaintext\n%s\n```\n", cmd.UseLine()))
-	}
-
-	if len(cmd.Aliases) > 0 {
-		buf.WriteString("\n## Aliases\n\n```plaintext\n")
-		for _, a := range cmd.Aliases {
-			buf.WriteString(fmt.Sprintf("%s %s\n", cmd.Parent().CommandPath(), a))
+		if len(cmd.Short) > 0 {
+			buf.WriteString("\n" + cmd.Short + "\n")
 		}
-		buf.WriteString("```\n")
+
+		if len(cmd.Long) > 0 {
+			buf.WriteString("\n## Synopsis\n\n")
+			buf.WriteString(cmd.Long + "\n")
+		}
+
+		if cmd.Runnable() {
+			buf.WriteString(fmt.Sprintf("\n## Usage\n\n```plaintext\n%s\n```\n", cmd.UseLine()))
+		}
+
+		if len(cmd.Aliases) > 0 {
+			buf.WriteString("\n## Aliases\n\n```plaintext\n")
+			for _, a := range cmd.Aliases {
+				buf.WriteString(fmt.Sprintf("%s %s\n", cmd.Parent().CommandPath(), a))
+			}
+			buf.WriteString("```\n")
+		}
+
+		if len(cmd.Example) > 0 {
+			buf.WriteString("\n## Examples\n\n")
+			buf.WriteString(fmt.Sprintf("```sh\n%s\n```\n", cmd.Example))
+		}
+
+		printOptions(buf, cmd)
+
+		printSubcommands(cmd, buf)
 	}
-
-	if len(cmd.Example) > 0 {
-		buf.WriteString("\n## Examples\n\n")
-		buf.WriteString(fmt.Sprintf("```sh\n%s\n```\n", cmd.Example))
-	}
-
-	printOptions(buf, cmd)
-
-	printSubcommands(cmd, buf)
 
 	_, err := buf.WriteTo(w)
 	if err != nil {
