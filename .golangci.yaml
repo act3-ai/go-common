@@ -133,6 +133,7 @@ linters-settings:
     ignorePackageGlobs:
       - encoding/*
       - git.act3-ace.com/* # Only catches things when they are imported
+      - gitlab.com/act3-ai/* # Only catches things when they are imported
 
   gocognit:
     min-complexity: 35

@@ -36,7 +36,7 @@ func ResolveDescriptions(groups ...*Group) error {
 		}
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("resolving descriptions: %w", errors.Join(errs...))
+		return fmt.Errorf("resolving option descriptions: %w", errors.Join(errs...))
 	}
 	return nil
 }
@@ -72,7 +72,8 @@ type Option struct {
 	Type            Type   // Type of the field
 	TargetGroupName string // Target group ID
 	Default         string // Default value (as a string)
-	Path            string // Path to field in JSON config file
+	Name            string // Name to use for the field in documentation
+	JSON            string // Path to field in JSON config file
 	Env             string // Environment variable name
 	Flag            string // Flag name
 	FlagShorthand   string // Flag shorthand
@@ -152,12 +153,14 @@ func (o Option) FormattedDefault() string {
 // Header formats the name of the option for markdown output.
 func (o Option) Header() string {
 	switch {
-	case o.Path != "":
-		return o.Path
+	case o.Name != "":
+		return o.Name
+	case o.JSON != "":
+		return "`" + o.JSON + "`"
 	case o.Flag != "":
-		return "--" + o.Flag
+		return "`--" + o.Flag + "`"
 	case o.Env != "":
-		return o.Env
+		return "`" + o.Env + "`"
 	default:
 		return ""
 	}

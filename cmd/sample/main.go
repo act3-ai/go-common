@@ -17,6 +17,7 @@ import (
 	"gitlab.com/act3-ai/asce/go-common/pkg/options"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
+	"gitlab.com/act3-ai/asce/go-common/pkg/options/optionshelp"
 	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
 	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc"
 	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/codefmt"
@@ -31,7 +32,7 @@ var schemas embed.FS
 // an example quick start guide is embedded here
 // for use in the "gendocs" and "info" commands
 //
-//go:embed docs/*
+//go:embed docs/*.md
 var docs embed.FS
 
 // getVersionInfo retreives the proper version information for this executable
@@ -84,15 +85,17 @@ func main() {
 //go:embed docs/testfile.md
 var testFile string
 
+// Define command options.
+type sampleAction struct {
+	greeting string
+	name     string
+	count    int
+	excited  bool
+}
+
 // NOTE Often the main command is created in another package and imported
 func newSample(version string) *cobra.Command {
-	// Flag variable declaractions.
-	var (
-		greeting string
-		name     string
-		count    int
-		excited  bool
-	)
+	action := &sampleAction{}
 
 	root := &cobra.Command{
 		Use: "sample",
@@ -115,77 +118,21 @@ func newSample(version string) *cobra.Command {
 			return cobrautil.ParseEnvOverrides(cmd)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			if name == "" {
-				name = "world"
+			if action.name == "" {
+				action.name = "world"
 			}
 			suffix := ""
-			if excited {
+			if action.excited {
 				suffix = "!"
 			}
-			for range count {
-				cmd.Println(greeting + " " + name + suffix)
+			for range action.count {
+				cmd.Println(action.greeting + " " + action.name + suffix)
 			}
 		},
 	}
 
-	// Add flags to the command.
-	nameFlag := options.StringVar(root.Flags(), &name, "",
-		&options.Option{
-			Type:          options.String,
-			Default:       "",
-			Path:          "name",
-			Env:           "ACE_SAMPLE_NAME", // flagutil.ParseEnvOverrides uses this to set the value.
-			Flag:          "name",
-			FlagShorthand: "n",
-			Short:         "Your name.",
-			Long: heredoc.Doc(`
-				Name of the sample CLI's user.`),
-		})
-	greetingFlag := options.StringVar(root.Flags(), &greeting, "Hello",
-		&options.Option{
-			Type:          options.String,
-			Default:       "Hello",
-			Path:          "",
-			Env:           "ACE_SAMPLE_GREETING",
-			Flag:          "greeting",
-			FlagShorthand: "g",
-			Short:         "Greeting for the user.",
-			Long:          ``,
-		})
-	countFlag := options.IntVar(root.Flags(), &count, 1,
-		&options.Option{
-			Type:          options.Integer,
-			Default:       "1",
-			Path:          "",
-			Env:           "ACE_SAMPLE_COUNT",
-			Flag:          "count",
-			FlagShorthand: "c",
-			Short:         "Number of greetings to output.",
-			Long:          ``,
-		})
-	excitedFlag := options.BoolVar(root.Flags(), &excited, false,
-		&options.Option{
-			Type:          options.Boolean,
-			Default:       "false",
-			Path:          "",
-			Env:           "ACE_SAMPLE_EXCITED",
-			Flag:          "excited",
-			FlagShorthand: "e",
-			Short:         "Greet with excitement.",
-			Long:          ``,
-		})
-
-	// Create a group to organize flags in help text.
-	options.GroupFlags(
-		&options.Group{
-			Name:        "example",
-			Description: "Example options",
-		},
-		nameFlag,
-		greetingFlag,
-		countFlag,
-		excitedFlag,
-	)
+	// Add flags to the command
+	optionGroups := addFlags(root.Flags(), action)
 
 	// Formatting options to style the help command text.
 	//
@@ -234,10 +181,88 @@ func newSample(version string) *cobra.Command {
 	// so generated docs match the format of the help text.
 	embedutil.SetUsageFormat(formatOptions)
 
+	termMD := termdoc.AutoMarkdownFormat()
+
 	root.AddCommand(
+		optionshelp.Command(
+			"sample-config", "Help for sample CLI configuration", optionGroups, termMD),
 		// Add "Additional Help Topic" command that simply prints documentation.
-		termdoc.AdditionalHelpTopic("testfile", "Help command that displays the test file", testFile, termdoc.AutoMarkdownFormat()),
+		termdoc.AdditionalHelpTopic(
+			"testfile", "Help command that displays the test file", testFile, termMD),
 	)
 
 	return root
+}
+
+func addFlags(f *pflag.FlagSet, action *sampleAction) []*options.Group {
+	// Define each option
+	name := &options.Option{
+		Type:          options.String,
+		Default:       "",
+		JSON:          "name",
+		Env:           "ACE_SAMPLE_NAME", // flagutil.ParseEnvOverrides uses this to set the value.
+		Flag:          "name",
+		FlagShorthand: "n",
+		Short:         "Your name.",
+		Long: heredoc.Doc(`
+			Name of the sample CLI's user.`),
+	}
+	greeting := &options.Option{
+		Type:          options.String,
+		Default:       "Hello",
+		JSON:          "",
+		Env:           "ACE_SAMPLE_GREETING",
+		Flag:          "greeting",
+		FlagShorthand: "g",
+		Short:         "Greeting for the user.",
+		Long:          ``,
+	}
+	count := &options.Option{
+		Type:          options.Integer,
+		Default:       "1",
+		JSON:          "",
+		Env:           "ACE_SAMPLE_COUNT",
+		Flag:          "count",
+		FlagShorthand: "c",
+		Short:         "Number of greetings to output.",
+		Long:          ``,
+	}
+	excited := &options.Option{
+		Type:          options.Boolean,
+		Default:       "false",
+		JSON:          "",
+		Env:           "ACE_SAMPLE_EXCITED",
+		Flag:          "excited",
+		FlagShorthand: "e",
+		Short:         "Greet with excitement.",
+		Long:          ``,
+	}
+
+	// Create a group for the options
+	group := &options.Group{
+		Name:        "example",
+		Description: "Example options",
+		Options: []*options.Option{
+			name,
+			greeting,
+			count,
+			excited,
+		},
+	}
+
+	// Add flags to the command.
+	nameFlag := options.StringVar(f, &action.name, "", name)
+	greetingFlag := options.StringVar(f, &action.greeting, "Hello", greeting)
+	countFlag := options.IntVar(f, &action.count, 1, count)
+	excitedFlag := options.BoolVar(f, &action.excited, false, excited)
+
+	// Mark the flags as grouped to organize in help text.
+	options.GroupFlags(group,
+		nameFlag,
+		greetingFlag,
+		countFlag,
+		excitedFlag,
+	)
+
+	return []*options.Group{group}
 }

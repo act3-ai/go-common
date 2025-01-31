@@ -12,7 +12,8 @@ func FromFlag(f *pflag.Flag) *Option {
 		Type:            Type(flagutil.GetFirstAnnotationOr(f, typeAnno, "")),
 		TargetGroupName: flagutil.GetFirstAnnotationOr(f, targetGroupAnno, ""),
 		Default:         flagutil.GetFirstAnnotationOr(f, defaultAnno, ""),
-		Path:            flagutil.GetFirstAnnotationOr(f, jsonAnno, ""),
+		Name:            flagutil.GetFirstAnnotationOr(f, nameAnno, ""),
+		JSON:            flagutil.GetFirstAnnotationOr(f, jsonAnno, ""),
 		Env:             flagutil.GetEnvName(f),
 		Flag:            f.Name,
 		FlagShorthand:   f.Shorthand,
@@ -29,7 +30,8 @@ func FromFlag(f *pflag.Flag) *Option {
 const (
 	defaultAnno     = "options_option_default"   // annotation for options.Option.Default
 	typeAnno        = "options_option_type"      // annotation for options.Option.Type
-	jsonAnno        = "options_option_json"      // annotation for options.Option.Path
+	nameAnno        = "options_option_name"      // annotation for options.Option.Name
+	jsonAnno        = "options_option_json"      // annotation for options.Option.JSON
 	flagUsageAnno   = "options_option_flagUsage" // annotation for options.Option.FlagUsage
 	flagTypeAnno    = "options_option_flagType"  // annotation for options.Option.FlagType
 	shortAnno       = "options_option_short"     // annotation for options.Option.Short
@@ -60,8 +62,11 @@ func withOptionConfig(f *pflag.Flag, opt *Option) {
 	if opt.Default != "" {
 		flagutil.SetAnnotation(f, defaultAnno, opt.Default)
 	}
-	if opt.Path != "" {
-		flagutil.SetAnnotation(f, jsonAnno, opt.Path)
+	if opt.Name != "" {
+		flagutil.SetAnnotation(f, nameAnno, opt.Name)
+	}
+	if opt.JSON != "" {
+		flagutil.SetAnnotation(f, jsonAnno, opt.JSON)
 	}
 	if opt.Env != "" {
 		flagutil.SetEnvName(f, opt.Env)

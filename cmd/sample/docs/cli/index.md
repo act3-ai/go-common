@@ -51,4 +51,6 @@ EXAMPLE OPTIONS:
 - [`sample gendocs`](gendocs/index.md) - Generate documentation for the tool in various formats
 - [`sample genschema`](genschema.md) - Outputs configuration file validators
 - [`sample info`](info/index.md) - View detailed documentation for the tool
+- [`sample sample-config`](sample-config.md) - Help for sample CLI configuration
+- [`sample testfile`](testfile.md) - Help command that displays the test file
 - [`sample version`](version.md) - Print the version
