@@ -125,11 +125,15 @@ func writeTable(header []string, rows [][]string) string {
 
 	w := &strings.Builder{}
 
-	// Write header row
-	for col, cell := range header {
-		_, _ = w.WriteString("| " + fmt.Sprintf(fmtStrings[col], cell) + " ")
+	writeRow := func(row []string) {
+		for col, cell := range row {
+			_, _ = w.WriteString("| " + fmt.Sprintf(fmtStrings[col], cell) + " ")
+		}
+		_, _ = w.WriteString("|\n")
 	}
-	_, _ = w.WriteString("|\n")
+
+	// Write header row
+	writeRow(header)
 
 	// Write separator row
 	for col := range header {
@@ -139,10 +143,7 @@ func writeTable(header []string, rows [][]string) string {
 
 	// Write separator row
 	for _, row := range rows {
-		for col, cell := range row {
-			_, _ = w.WriteString("| " + fmt.Sprintf(fmtStrings[col], cell) + " ")
-		}
-		_, _ = w.WriteString("|\n")
+		writeRow(row)
 	}
 
 	return w.String()
