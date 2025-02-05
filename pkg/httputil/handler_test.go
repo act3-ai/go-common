@@ -12,30 +12,30 @@ import (
 var noopMiddlewareFunc = func(next http.Handler) http.Handler { return next }
 
 // interface check
-var _ Handler = (*noopHandler)(nil)
+var _ Router = (*noopHandler)(nil)
 
-// noopHandler is a no-op implementation of [Handler].
+// noopHandler is a no-op implementation of [Router].
 type noopHandler struct{}
 
-// Handle implements [Handler].
+// Handle implements [Router].
 func (*noopHandler) Handle(pattern string, handler http.Handler) {}
 
-// HandleFunc implements [Handler].
+// HandleFunc implements [Router].
 func (*noopHandler) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 }
 
-// ServeHTTP implements [Handler].
+// ServeHTTP implements [Router].
 func (*noopHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
 
 func TestWrapHandler(t *testing.T) {
 	type args struct {
-		mux         Handler
+		mux         ServeMuxer
 		middlewares []MiddlewareFunc
 	}
 	tests := []struct {
 		name string
 		args args
-		want Handler
+		want ServeMuxer
 	}{
 		{"default",
 			args{
@@ -104,29 +104,6 @@ func Test_mwHandler_Handle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.h.Handle(tt.args.pattern, tt.args.handler)
-		})
-	}
-}
-
-func Test_mwHandler_HandleFunc(t *testing.T) {
-	// mux := http.NewServeMux()
-	noopHandlerFunc := func(w http.ResponseWriter, r *http.Request) {}
-	type args struct {
-		pattern string
-		handler func(http.ResponseWriter, *http.Request)
-	}
-	tests := []struct {
-		name string
-		h    *mwHandler
-		args args
-	}{
-		{"default", &mwHandler{http.NewServeMux(), []MiddlewareFunc{noopMiddlewareFunc}}, args{"GET /here", noopHandlerFunc}},
-		{"nilMiddlewares", &mwHandler{http.NewServeMux(), nil}, args{"GET /here", noopHandlerFunc}},
-		{"emptyMiddlewares", &mwHandler{http.NewServeMux(), []MiddlewareFunc{}}, args{"GET /here", noopHandlerFunc}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.h.HandleFunc(tt.args.pattern, tt.args.handler)
 		})
 	}
 }
