@@ -103,7 +103,7 @@ func (m *GoCommon) Test(
 	return dag.Go().
 		WithSource(m.Source).
 		WithCgoDisabled().
-		Exec([]string{"test", "./..."}).
+		Exec([]string{"go", "test", "./..."}).
 		Stdout(ctx)
 }
 
