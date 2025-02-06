@@ -73,7 +73,7 @@ func TestWrapHandler(t *testing.T) {
 			gotmw, gotok := got.(*mwHandler)
 			wantmw, wantok := tt.want.(*mwHandler)
 			if gotok && wantok {
-				assert.Equal(t, wantmw.mux, gotmw.mux)
+				assert.Equal(t, wantmw.ServeMuxer, gotmw.ServeMuxer)
 				assert.Len(t, gotmw.middlewares, len(wantmw.middlewares))
 			}
 		})
@@ -120,7 +120,7 @@ func Test_mwHandler_ServeHTTP(t *testing.T) {
 	}{
 		{"default",
 			&mwHandler{
-				mux:         &noopHandler{},
+				ServeMuxer:         &noopHandler{},
 				middlewares: []MiddlewareFunc{noopMiddlewareFunc},
 			},
 			args{

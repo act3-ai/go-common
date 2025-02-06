@@ -28,14 +28,14 @@ func WrapHandler(mux ServeMuxer, middlewares ...MiddlewareFunc) ServeMuxer {
 		return mwmux
 	}
 	return &mwHandler{
-		mux:         mux,
+		ServeMuxer:  mux,
 		middlewares: middlewares,
 	}
 }
 
 // mwHandler wraps a Handler with the given middleware functions.
 type mwHandler struct {
-	mux         ServeMuxer
+	ServeMuxer
 	middlewares []MiddlewareFunc
 }
 
@@ -44,12 +44,7 @@ func (h *mwHandler) Handle(pattern string, handler http.Handler) {
 	for _, mware := range h.middlewares {
 		handler = mware(handler)
 	}
-	h.mux.Handle(pattern, handler)
-}
-
-// ServeHTTP implements [Router].
-func (h *mwHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mux.ServeHTTP(w, r)
+	h.ServeMuxer.Handle(pattern, handler)
 }
 
 // RouteMiddlewareFunc modifies a handler as it is registered with a router.
