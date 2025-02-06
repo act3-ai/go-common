@@ -2,6 +2,7 @@
 package secret
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/config/env"
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 	"gitlab.com/act3-ai/asce/go-common/pkg/redact"
 )
@@ -68,9 +68,7 @@ func (v *Value) Get(ctx context.Context) (redact.Secret, error) {
 	if v.secret != "" {
 		return v.secret, nil
 	}
-	var err error
-	v.secret, err = v.resolveSecret(ctx)
-	return v.secret, err
+	return v.resolveSecret(ctx)
 }
 
 type secretSource string
@@ -88,7 +86,7 @@ var errUnsupportedSecretSource = fmt.Errorf("unsupported secret source, want '%s
 func (v *Value) resolveSecret(ctx context.Context) (redact.Secret, error) {
 	// modified version of https://github.com/dagger/dagger/blob/main/cmd/dagger/flags.go#L505
 	log := logger.FromContext(ctx)
-	var secret redact.Secret
+	var plaintext redact.Secret
 
 	switch v.source {
 	case envSrc:
@@ -100,9 +98,9 @@ func (v *Value) resolveSecret(ctx context.Context) (redact.Secret, error) {
 			if len(key) >= 4 {
 				key = key[:3] + "..."
 			}
-			return "", fmt.Errorf("looking up secret: %w: %q", env.ErrEnvVarNotFound, key)
+			return "", fmt.Errorf("secret env var not found: %q", key)
 		}
-		secret = redact.Secret(envPlaintext)
+		plaintext = redact.Secret(envPlaintext)
 
 	case fileSrc:
 		log.InfoContext(ctx, "reading secret from file")
@@ -110,10 +108,9 @@ func (v *Value) resolveSecret(ctx context.Context) (redact.Secret, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to read secret file %q: %w", v.sourceVal, err)
 		}
-		secret = redact.Secret(filePlaintext)
+		plaintext = redact.Secret(filePlaintext)
 
 	case cmdSrc:
-		log.InfoContext(ctx, "reading secret from command")
 		var stdoutBytes []byte
 		var err error
 		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
@@ -124,19 +121,14 @@ func (v *Value) resolveSecret(ctx context.Context) (redact.Secret, error) {
 			// #nosec G204
 			stdoutBytes, err = exec.CommandContext(ctx, "sh", "-c", v.sourceVal).Output()
 		}
-		select {
-		case <-ctx.Done():
-			err = ctx.Err()
-		default:
-		}
 		if err != nil {
 			return "", fmt.Errorf("failed to run secret command %q: %w", v.sourceVal, err)
 		}
-		secret = redact.Secret(stdoutBytes)
+		plaintext = redact.Secret(bytes.TrimSpace(stdoutBytes))
 
 	default:
 		return "", fmt.Errorf("%w: got %q", errUnsupportedSecretSource, v.source)
 	}
 
-	return secret, nil
+	return plaintext, nil
 }
