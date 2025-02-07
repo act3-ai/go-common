@@ -21,6 +21,7 @@ const (
 	codeBlockStart = "```"
 	commentStart   = "<!--"
 	commentEnd     = "-->"
+	tableStart     = "|"
 )
 
 func wordAst(re string) string {
@@ -79,6 +80,36 @@ func (format *Formatter) Format(markdownText string) string {
 			loc.CodeBlockLevel, loc.CodeBlockLang = parseCodeBlockStart(lineTrimSpace)
 			codeBlockStop = strings.Repeat("`", loc.CodeBlockLevel)
 			codeBlockIndent = extraIndent(line)
+		// In table
+		case strings.HasPrefix(lineTrimSpace, tableStart):
+			loc.Table = true
+
+			// Assemble list of cells
+			var cells []string
+			for _, cell := range strings.Split(strings.Trim(lineTrimSpace, "|"), "|") {
+				col := len(cells)
+				// If there is a previous cell and it ends with the escape character,
+				// append the current cell with the escaped pipe character.
+				if col > 0 && strings.HasSuffix(cells[col-1], `\`) {
+					cells[col-1] += "|" + cell
+					continue
+				}
+				cells = append(cells, cell)
+			}
+
+			// Format the text within each cell.
+			for i := range cells {
+				width := ansi.StringWidth(cells[i])
+				cells[i] = format.formatRegularLine(cells[i], loc)
+				fmtwidth := ansi.StringWidth(cells[i])
+				if width > fmtwidth {
+					// Compensate for changed width, if possible
+					cells[i] += strings.Repeat(" ", width-fmtwidth)
+				}
+			}
+
+			// Re-assemble line
+			line = "|" + strings.Join(cells, "|") + "|"
 		// Comment line
 		case strings.Contains(line, commentStart):
 			beforeStart, _, _ := strings.Cut(line, commentStart)

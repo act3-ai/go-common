@@ -7,6 +7,7 @@ type Location struct {
 	CodeBlock      bool   // Line is within a multiline code block
 	CodeBlockLang  string // Language identifier for the code block
 	CodeBlockLevel int    // Number of "`" characters used to start the multiline code block
+	Table          bool   // In a table
 	Comment        bool   // Line is in an HTML comment
 }
 
