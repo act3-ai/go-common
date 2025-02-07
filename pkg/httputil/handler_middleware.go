@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/segmentio/ksuid"
 
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
@@ -70,43 +69,6 @@ func ServerHeaderMiddleware(server string) MiddlewareFunc {
 		})
 	}
 }
-
-/*
-// statusMiddleware logs the status response, install after the LoggingMiddleware
-func statusMiddleware(next http.Handler) http.Handler {
-	ctx := r.Context()
-	log := logger.FromContext(ctx)
-	// TODO or use https://github.com/felixge/httpsnoop directly
-	return handlers.CustomLoggingHandler(nil, next,
-		func(_ io.Writer, params handlers.LogFormatterParams) {
-			log.Info("Completed request", "code", params.StatusCode)
-		},
-	)
-}
-*/
-
-// HTTPDuration is prometheus histogram of the time for the server to handle a HTTP request
-// Users need to register this with a prometheus.Registerer
-var HTTPDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-	Name:    "http_request_duration_seconds",
-	Help:    "Duration of HTTP requests in seconds.",
-	Buckets: []float64{0.1, .25, .5, 1, 2.5, 5, 10},
-}, []string{"method", "route"})
-
-// PrometheusMiddleware records timing metrics
-func PrometheusMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		// call the next handler
-		next.ServeHTTP(w, r)
-
-		// This must be done after calling next.ServeHTTP()
-		pattern := strings.TrimPrefix(r.Pattern, r.Method+" ")
-		HTTPDuration.WithLabelValues(r.Method, pattern).Observe(time.Since(start).Seconds())
-	})
-}
-
-var _ MiddlewareFunc = PrometheusMiddleware
 
 // RecovererMiddleware is a middleware that recovers from panics, logs the panic (and a
 // backtrace), and returns a HTTP 500 (Internal Server Error) status if
