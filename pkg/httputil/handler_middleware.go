@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/segmentio/ksuid"
+	"github.com/google/uuid"
 
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 )
@@ -17,19 +17,24 @@ import (
 type contextInstanceKey struct{}
 
 // InstanceFromContext returns the instance for this request to uniquely identify the request
-func InstanceFromContext(ctx context.Context) ksuid.KSUID {
+func InstanceFromContext(ctx context.Context) uuid.UUID {
 	if v := ctx.Value(contextInstanceKey{}); v != nil {
-		return v.(ksuid.KSUID)
+		return v.(uuid.UUID)
 	}
 	// panic("instance missing from context")
-	return ksuid.Nil
+	return uuid.Nil
 }
 
 // TracingMiddleware injects a tracing ID into the context
 func TracingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		id := ksuid.New()
+		id, err := uuid.NewV7()
+		if err != nil {
+			log := logger.FromContext(r.Context())
+			log.ErrorContext(ctx, "Failed to generate UUID", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 		ctx = context.WithValue(ctx, contextInstanceKey{}, id)
 		// Call the next handler
 		next.ServeHTTP(w, r.WithContext(ctx))
