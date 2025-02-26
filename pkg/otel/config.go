@@ -4,20 +4,25 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"google.golang.org/grpc"
 
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 )
@@ -304,7 +309,26 @@ func ConfiguredSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) 
 			return nil, fmt.Errorf("creating http/protobuf span exporter: %w", err)
 		}
 	case "grpc":
-		return nil, fmt.Errorf("OTLP grpc protocol not supported")
+		var u *url.URL
+		u, err = url.Parse(endpoint)
+		if err != nil {
+			return nil, fmt.Errorf("bad OTLP traces endpoint %q: %w", endpoint, err)
+		}
+		opts := []otlptracegrpc.Option{
+			otlptracegrpc.WithEndpointURL(endpoint),
+		}
+		if u.Scheme == "unix" {
+			dialer := func(ctx context.Context, addr string) (net.Conn, error) {
+				return net.Dial(u.Scheme, u.Path)
+			}
+			opts = append(opts,
+				otlptracegrpc.WithDialOption(grpc.WithContextDialer(dialer)),
+				otlptracegrpc.WithInsecure())
+		}
+		configuredSpanExporter, err = otlptracegrpc.New(ctx, opts...)
+		if err != nil {
+			return nil, fmt.Errorf("creating grpc span exporter: %w", err)
+		}
 	default:
 		return nil, fmt.Errorf("unknown OTLP protocol: %s", proto)
 	}
@@ -363,7 +387,26 @@ func ConfiguredLogExporter(ctx context.Context) (sdklog.Exporter, error) { //nol
 		}
 
 	case "grpc":
-		return nil, fmt.Errorf("OTLP grpc protocol not supported")
+		var u *url.URL
+		u, err = url.Parse(endpoint)
+		if err != nil {
+			return nil, fmt.Errorf("bad OTLP logs endpoint %q: %w", endpoint, err)
+		}
+		opts := []otlploggrpc.Option{
+			otlploggrpc.WithEndpointURL(endpoint),
+		}
+		if u.Scheme == "unix" {
+			dialer := func(ctx context.Context, addr string) (net.Conn, error) {
+				return net.Dial(u.Scheme, u.Path)
+			}
+			opts = append(opts,
+				otlploggrpc.WithDialOption(grpc.WithContextDialer(dialer)),
+				otlploggrpc.WithInsecure())
+		}
+		configuredLogExporter, err = otlploggrpc.New(ctx, opts...)
+		if err != nil {
+			return nil, fmt.Errorf("creating grpc log exporter: %w", err)
+		}
 	default:
 		return nil, fmt.Errorf("unknown OTLP protocol: %s", proto)
 	}
@@ -416,9 +459,27 @@ func ConfiguredMetricExporter(ctx context.Context) (sdkmetric.Exporter, error) {
 		if err != nil {
 			return nil, fmt.Errorf("creating http/protobuf metric exporter: %w", err)
 		}
-
 	case "grpc":
-		return nil, fmt.Errorf("OTLP grpc protocol not supported")
+		var u *url.URL
+		u, err = url.Parse(endpoint)
+		if err != nil {
+			return nil, fmt.Errorf("bad OTLP metrics endpoint %q: %w", endpoint, err)
+		}
+		opts := []otlpmetricgrpc.Option{
+			otlpmetricgrpc.WithEndpointURL(endpoint),
+		}
+		if u.Scheme == "unix" {
+			dialer := func(ctx context.Context, addr string) (net.Conn, error) {
+				return net.Dial(u.Scheme, u.Path)
+			}
+			opts = append(opts,
+				otlpmetricgrpc.WithDialOption(grpc.WithContextDialer(dialer)),
+				otlpmetricgrpc.WithInsecure())
+		}
+		configuredMetricExporter, err = otlpmetricgrpc.New(ctx, opts...)
+		if err != nil {
+			return nil, fmt.Errorf("creating grpc metric exporter: %w", err)
+		}
 	default:
 		return nil, fmt.Errorf("unknown OTLP protocol: %s", proto)
 	}
