@@ -33,6 +33,8 @@ func wordUnd(re string) string {
 }
 
 // Format formats markdown text according the Formatter's rules.
+//
+//nolint:gocognit
 func (format *Formatter) Format(markdownText string) string {
 	cols := 0
 	if format.Columns != nil {
