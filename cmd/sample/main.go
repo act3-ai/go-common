@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"os"
@@ -77,7 +78,7 @@ func main() {
 		commands.NewGenschemaCmd(schemas, schemaAssociations),
 	)
 
-	if err := runner.Run(root, "ACE_SAMPLE_VERBOSITY"); err != nil {
+	if err := runner.Run(context.Background(), root, "ACE_SAMPLE_VERBOSITY"); err != nil {
 		os.Exit(1)
 	}
 }

@@ -77,7 +77,7 @@ func getLogLevel(verbosityFlag []string) slog.Level {
 			// Set integer verbosity
 			level -= slog.Level(l)
 		} else {
-			fmt.Printf("Error: invalid argument %q for \"-v, --verbosity\" flag\n", val) //nolint:revive
+			fmt.Printf("Error: invalid argument %q for \"-v, --verbosity\" flag\n", val)
 			os.Exit(1)
 		}
 	}
