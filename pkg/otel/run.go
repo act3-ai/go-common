@@ -11,9 +11,9 @@ import (
 	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
 )
 
-// RunWithContext will run the root level cobra command, with the provided
-// OpenTelemetry configuration. It calls cfg.Init and cfg.Close appropriately.
-func RunWithContext(ctx context.Context, cmd *cobra.Command, cfg *Config, verbosityEnvName string) error {
+// Run will run the root level cobra command, with logging and with the provided
+// OpenTelemetry configuration.
+func Run(ctx context.Context, cmd *cobra.Command, cfg *Config, verbosityEnvName string) error {
 	if cfg == nil {
 		cfg = &Config{} // ensure to check for environment configuration
 	}
