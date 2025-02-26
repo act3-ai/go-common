@@ -23,7 +23,7 @@ linters:
     - unused
     - misspell
     - goimports
-    - tenv
+    - usetesting
     # - gochecknoglobals
     - gochecknoinits
     # - gci
