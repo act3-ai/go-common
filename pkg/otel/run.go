@@ -2,6 +2,7 @@ package otel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -31,5 +32,5 @@ func Run(ctx context.Context, cmd *cobra.Command, cfg *Config, verbosityEnvName 
 	log := slog.New(otelWrappedHandler)
 	ctx = logger.NewContext(ctx, log)
 
-	return cmd.ExecuteContext(ctx)
+	return errors.Join(cmd.ExecuteContext(ctx), cfg.Shutdown(ctx))
 }
