@@ -17,8 +17,8 @@ import (
 )
 
 // Config configures the initialization of OpenTelemetry. Typically configuration
-// through environment variables is sufficient. If not, define processors and exporters
-// with the appropriate options as needed.
+// through environment variables is sufficient. If not, define the appropriate
+// exporters and processors.
 type Config struct {
 	// Override auto-detect exporters from OTEL_* env variables.
 	DisableEnvConfiguration bool
@@ -26,21 +26,11 @@ type Config struct {
 	// SpanProcessors are processors to prepend to the telemetry pipeline.
 	SpanProcessors []sdktrace.SpanProcessor
 
-	// BatchedTraceExporters are exporters that receive spans in batches, after
-	// the spans have ended.
-	BatchedTraceExporters []sdktrace.SpanExporter
-
 	// LogProcessors are processors to prepend to the telemetry pipeline.
 	LogProcessors []sdklog.Processor
 
-	// BatchedLogExporters are exporters that receive logs in batches.
-	BatchedLogExporters []sdklog.Exporter
-
 	// MetricReaders are readers that collect metric data.
 	MetricReaders []sdkmetric.Reader
-
-	// BatchedMetricExporters are exporters that receive metrics in batches.
-	BatchedMetricExporters []sdkmetric.Exporter
 
 	// Resource is the resource describing this component and runtime
 	// environment.
@@ -51,10 +41,6 @@ type Config struct {
 	meterProvider *sdkmetric.MeterProvider
 	propagator    propagation.TextMapPropagator
 }
-
-// Resource is the globally configured resource, allowing it to be provided
-// to dynamically allocated log/trace providers at runtime.
-var Resource *resource.Resource
 
 // Init sets up the global OpenTelemetry providers for tracing, logging, and
 // metrics. It does not setup handling of telemetry errors, use otel.SetErrorHandler
@@ -76,59 +62,46 @@ func (c *Config) Init(ctx context.Context) (context.Context, error) {
 		c.Resource = fallbackResource(ctx)
 	}
 
-	// Set up the global resource so we can pass it into dynamically allocated
-	// log/trace providers at runtime.
-	Resource = c.Resource
-
 	if !c.DisableEnvConfiguration {
 		if err := c.configureFromEnvironment(ctx); err != nil {
 			return nil, fmt.Errorf("configuring exporters from environment: %w", err)
 		}
 	}
 
-	// Set up trace provider if configured.
-	if len(c.BatchedTraceExporters) > 0 {
-		traceOpts := []sdktrace.TracerProviderOption{
-			sdktrace.WithResource(c.Resource),
+	if len(c.SpanProcessors) > 0 {
+		traceOpts := make([]sdktrace.TracerProviderOption, 0, 1+len(c.SpanProcessors))
+		traceOpts = append(traceOpts, sdktrace.WithResource(c.Resource))
+
+		for _, sp := range c.SpanProcessors {
+			traceOpts = append(traceOpts, sdktrace.WithSpanProcessor(sp))
 		}
 
-		for _, exporter := range c.BatchedTraceExporters {
-			processor := sdktrace.NewBatchSpanProcessor(exporter)
-			c.SpanProcessors = append(c.SpanProcessors, processor)
-			traceOpts = append(traceOpts, sdktrace.WithSpanProcessor(processor))
-		}
 		c.traceProvider = sdktrace.NewTracerProvider(traceOpts...)
 		otel.SetTracerProvider(c.traceProvider)
 	}
 
-	// Set up a log provider if configured.
-	if len(c.BatchedLogExporters) > 0 {
-		logOpts := []sdklog.LoggerProviderOption{
-			sdklog.WithResource(c.Resource),
+	if len(c.LogProcessors) > 0 {
+		logOpts := make([]sdklog.LoggerProviderOption, 0, 1+len(c.LogProcessors))
+		logOpts = append(logOpts, sdklog.WithResource(c.Resource))
+
+		for _, lp := range c.LogProcessors {
+			logOpts = append(logOpts, sdklog.WithProcessor(lp))
 		}
 
-		for _, exp := range c.BatchedLogExporters {
-			processor := sdklog.NewBatchProcessor(exp)
-			c.LogProcessors = append(c.LogProcessors, processor)
-			logOpts = append(logOpts, sdklog.WithProcessor(processor))
-		}
 		c.logProvider = sdklog.NewLoggerProvider(logOpts...)
 		// unlike traces and metrics we don't need to set a global logger provider,
 		// not only  does otel not provide this but we use a slog bridge
 		// and we're still able to shut down properly.
 	}
 
-	// Set up a metric provider if configured.
-	if len(c.BatchedMetricExporters) > 0 {
-		meterOpts := []sdkmetric.Option{
-			sdkmetric.WithResource(c.Resource),
+	if len(c.MetricReaders) > 0 {
+		meterOpts := make([]sdkmetric.Option, 0, 1+len(c.MetricReaders))
+		meterOpts = append(meterOpts, sdkmetric.WithResource(c.Resource))
+
+		for _, mr := range c.MetricReaders {
+			meterOpts = append(meterOpts, sdkmetric.WithReader(mr))
 		}
 
-		for _, exp := range c.BatchedMetricExporters {
-			reader := sdkmetric.NewPeriodicReader(exp)
-			c.MetricReaders = append(c.MetricReaders, reader)
-			meterOpts = append(meterOpts, sdkmetric.WithReader(reader))
-		}
 		c.meterProvider = sdkmetric.NewMeterProvider(meterOpts...)
 		otel.SetMeterProvider(c.meterProvider)
 	}
@@ -164,33 +137,35 @@ func (c *Config) Shutdown(ctx context.Context) error {
 // configureFromEnvironment creates trace exporters, log exporters, and metric readers
 // configured through environment variables.
 func (c *Config) configureFromEnvironment(ctx context.Context) error {
-	// Spans
+	// span exporter from environment
 	spanExp, err := autoexport.NewSpanExporter(ctx)
 	if err != nil {
 		return fmt.Errorf("configuring span exporter from environment variables: %w", err)
 	}
 	if spanExp != nil {
-		c.BatchedTraceExporters = append(c.BatchedTraceExporters,
-			// Filter out unfinished spans to avoid confusing external systems.
-			FilterLiveSpansExporter{spanExp})
+		// span processor from environment
+		sp := sdktrace.NewBatchSpanProcessor(spanExp)
+		c.SpanProcessors = append(c.SpanProcessors, sp)
 	}
 
-	// Logs
+	// log exporter from environment
 	logExp, err := autoexport.NewLogExporter(ctx)
 	if err != nil {
 		return fmt.Errorf("configuring log exporter from environment variables: %w", err)
 	}
 	if logExp != nil {
-		c.BatchedLogExporters = append(c.BatchedLogExporters, logExp)
+		// log processor from environment
+		lp := sdklog.NewBatchProcessor(logExp)
+		c.LogProcessors = append(c.LogProcessors, lp)
 	}
 
-	// Metrics
-	metricReader, err := autoexport.NewMetricReader(ctx)
+	// metric exporter and reader from environment
+	mr, err := autoexport.NewMetricReader(ctx)
 	if err != nil {
 		return fmt.Errorf("configuring metric exporter from environment variables: %w", err)
 	}
-	if metricReader != nil {
-		c.MetricReaders = append(c.MetricReaders, metricReader)
+	if mr != nil {
+		c.MetricReaders = append(c.MetricReaders, mr)
 	}
 
 	return nil
