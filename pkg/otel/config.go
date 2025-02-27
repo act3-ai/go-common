@@ -131,7 +131,7 @@ func (c *Config) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	return errors.Join(errs...)
+	return errors.Join(errs...) //nolint:wrapcheck
 }
 
 // configureFromEnvironment creates trace exporters, log exporters, and metric readers
