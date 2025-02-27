@@ -91,11 +91,11 @@ func ExampleConfig_spans() {
 	if err != nil {
 		panic(fmt.Sprintf("initializing trace exporter: error = %v", err))
 	}
+	sp := sdktrace.NewBatchSpanProcessor(exp)
 
 	cfg := Config{
-		// LiveTraceExporters: []sdktrace.SpanExporter{exp}, // export when spans start and finish
-		BatchedTraceExporters: []sdktrace.SpanExporter{exp}, // export when spans finish
-		Resource:              rsrc,
+		SpanProcessors: []sdktrace.SpanProcessor{sp},
+		Resource:       rsrc,
 	}
 
 	ctx, err = cfg.Init(ctx)
@@ -152,11 +152,11 @@ func ExampleConfig_logs() {
 	if err != nil {
 		panic(fmt.Sprintf("initializing log exporter: error = %v", err))
 	}
+	lp := sdklog.NewBatchProcessor(exp)
 
 	cfg := Config{
-		// LiveLogExporters: []sdklog.Exporter{exp}, // export every 100ms.
-		BatchedLogExporters: []sdklog.Exporter{exp}, // export in batches.
-		Resource:            rsrc,
+		LogProcessors: []sdklog.Processor{lp},
+		Resource:      rsrc,
 	}
 
 	ctx, err = cfg.Init(ctx)
@@ -199,11 +199,11 @@ func TestSpans(t *testing.T) {
 	}
 
 	exp := tracetest.NewInMemoryExporter()
+	sp := sdktrace.NewSimpleSpanProcessor(exp) // simple only recommended for testing
 
 	cfg := Config{
-		// LiveTraceExporters: []sdktrace.SpanExporter{exp}, // export when spans start and finish
-		BatchedTraceExporters: []sdktrace.SpanExporter{exp}, // export when spans finish
-		Resource:              rsrc,
+		SpanProcessors: []sdktrace.SpanProcessor{sp},
+		Resource:       rsrc,
 	}
 
 	ctx, err = cfg.Init(ctx)
