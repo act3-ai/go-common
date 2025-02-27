@@ -14,20 +14,34 @@ require (
 	github.com/muesli/termenv v0.15.2
 	github.com/neilotoole/slogt v1.1.0
 	github.com/prometheus/client_golang v1.20.5
+	github.com/samber/slog-multi v1.3.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.8.0
+	go.opentelemetry.io/contrib/exporters/autoexport v0.59.0
 	go.opentelemetry.io/otel v1.34.0
-	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.9.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.33.0
+	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.10.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.34.0
 	go.opentelemetry.io/otel/sdk v1.34.0
-	go.opentelemetry.io/otel/sdk/log v0.9.0
+	go.opentelemetry.io/otel/sdk/log v0.10.0
 	go.opentelemetry.io/otel/sdk/metric v1.34.0
 	go.opentelemetry.io/otel/trace v1.34.0
 	golang.org/x/term v0.28.0
 	k8s.io/apimachinery v0.31.2
+)
+
+require (
+	github.com/klauspost/compress v1.17.11 // indirect
+	go.opentelemetry.io/contrib/bridges/prometheus v0.59.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.10.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.34.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.34.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.34.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.56.0 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.10.0 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.34.0 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.34.0 // indirect
 )
 
 require (
@@ -55,17 +69,16 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.60.1 // indirect
+	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/samber/lo v1.47.0 // indirect
-	github.com/samber/slog-multi v1.3.3
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.34.0 // indirect
-	go.opentelemetry.io/otel/log v0.9.0 // indirect
+	go.opentelemetry.io/otel/log v0.10.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
