@@ -202,8 +202,9 @@ func TestSpans(t *testing.T) {
 	sp := sdktrace.NewSimpleSpanProcessor(exp) // simple only recommended for testing
 
 	cfg := Config{
-		SpanProcessors: []sdktrace.SpanProcessor{sp},
-		Resource:       rsrc,
+		DisableEnvConfiguration: true,
+		SpanProcessors:          []sdktrace.SpanProcessor{sp},
+		Resource:                rsrc,
 	}
 
 	ctx, err = cfg.Init(ctx)
