@@ -12,6 +12,7 @@ import (
 
 	commands "gitlab.com/act3-ai/asce/go-common/pkg/cmd"
 	"gitlab.com/act3-ai/asce/go-common/pkg/config"
+	"gitlab.com/act3-ai/asce/go-common/pkg/config/env"
 	"gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/otel"
 	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
@@ -77,7 +78,7 @@ func mainE(args []string) error {
 
 	root.SetArgs(args)
 
-	if v := os.Getenv("OTEL_INSTRUMENTATION_ENABLED"); v == "true" {
+	if env.BoolOr("OTEL_INSTRUMENTATION_ENABLED", false) {
 		r, _ := resource.New(
 			ctx,
 			resource.WithAttributes(
