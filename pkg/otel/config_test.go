@@ -165,7 +165,7 @@ func ExampleConfig_logs() {
 	}
 	defer cfg.Shutdown(ctx) // ensure to shutdown, flushing remaining data to exporters
 
-	// Multi-logger setup is handled by otel.RunWithContext.
+	// Multi-logger setup is handled by otel.Run().
 	level := new(slog.LevelVar)
 	level.Set(slog.LevelDebug)
 	stdErrHandler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: level})
