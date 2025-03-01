@@ -2,7 +2,6 @@ package otel
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -32,14 +31,20 @@ func run(ctx context.Context, cmd *cobra.Command, cfg *Config, verbosityEnvName 
 	if err != nil {
 		return fmt.Errorf("initializing OpenTelemetry providers: %w", err)
 	}
-	defer cfg.Shutdown(ctx) //nolint:errcheck
+	defer func() {
+		if err := cfg.Shutdown(ctx); err != nil {
+			slog.WarnContext(ctx, "OTEL shutdown failed", "error", err)
+		}
+	}()
 
 	// create a single log handler with a handler for stderr and otel
 	stderrHandler := runner.SetupLoggingHandler(cmd, verbosityEnvName)
 	otelWrappedHandler := cfg.WrapSlogHandler(cmd.Name(), stderrHandler)
 
 	log := slog.New(otelWrappedHandler)
+	slog.SetDefault(log)
 	ctx = logger.NewContext(ctx, log)
 
-	return errors.Join(cmd.ExecuteContext(ctx), cfg.Shutdown(ctx)) //nolint:wrapcheck
+	// errors from cfg.Shutdown() are not fatal so we just log them
+	return cmd.ExecuteContext(ctx)
 }
