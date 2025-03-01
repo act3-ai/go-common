@@ -39,68 +39,9 @@ More configuration examples are available in [config_test.go](./config_test.go) 
 - In `main.go` add a custom resource, which provides identifying information added to OTel signals; e.g. which service generated the signals.
   - See [OTel Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/resource/#service) for service naming best practices.
 - Any errors encountered during OTel configuration should be logged within `root.PersistentPreRun`, see [OTel Export Errors](#opentelemetry-export-errors) for more info.
-- Replace `runner.RunWithContext()` with `otel.RunWithContext()`, and add the `otel.Config` as an argument.
+- Replace `runner.Run()` with `otel.Run()`, and add the `otel.Config` as an argument.
 
-```go
-import (
-   "context"
-   "log/slog"
-
-   "go.opentelemetry.io/otel/sdk/resource"
-   semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
-
-   "gitlab.com/act3-ai/asce/go-common/pkg/otel"
-   "gitlab.com/act3-ai/asce/go-common/pkg/logger"
-)
-
-func main() {
-   info := getVersionInfo()
-   root := cli.NewCLI(info.Version)
-   root.SilenceUsage = true
-
-   ctx := context.Background()
-
-   // Define custom resource. Order matters, by defining a service name before WithFromEnv()
-   // we can use "my.service.name" as the default while allowing users to override via
-   // OTEL_SERVICE_NAME.
-   r, err := resource.New(
-      ctx,
-      resource.WithAttributes(
-         semconv.ServiceName("my.service.name"),
-         semconv.ServiceVersion(info.Version),
-      ),
-      resource.WithFromEnv(),
-      resource.WithTelemetrySDK(),
-      resource.WithOS(),
-   )
-
-   // Optionally, create hardcoded exporters here with errors logged within root.PersistentPreRun
-
-   // Add resource to config
-   otelCfg := otel.Config{
-      Resource: r,
-      // Hardcoded exporters may be added here...
-   }
-
-   root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-      ctx := cmd.Context()
-      // OTel errors should not be fatal, but we must wait for the logger to be
-      // initialized in otel.RunWithContext(); a convention established by pkg runner.RunWithContext()
-      log := logger.FromContext(ctx)
-      if err != nil {
-         log.ErrorContext(ctx, "insufficient resource information", "error", err)
-      }
-   }
-
-   // ...
-
-   // Run root command with OTel, replaces runner.RunWithContext().
-   // Initializes OTel providers and shuts them down appropriately.
-   if err := otel.RunWithContext(ctx, root, &otelCfg, "MY_SERVICE_VERBOSITY"); err != nil {
-      os.Exit(1)
-   }
-}
-```
+See a complete example in [main.go](../../cmd/sample/main.go).
 
 ### Instrument OTel Signals
 
@@ -108,11 +49,11 @@ Documentation on OTel naming conventions are available on [github](https://githu
 
 #### Logs
 
-`otel.RunWithContext()` configures logging for you. Logs at the configured verbosity will be output to stderr and all logs will be exported as an OTel signal, if an endpoint is defined (e.g. setting `OTEL_EXPORTER_OTLP_ENDPOINT`). Logs are written to stderr, at the configured verbosity level, regardless of OTel logging configuration.
+`otel.Run()` configures logging for you. Logs at the configured verbosity will be output to stderr and all logs will be exported as an OTel signal, if an endpoint is defined (e.g. setting `OTEL_EXPORTER_OTLP_ENDPOINT`). Logs are written to stderr, at the configured verbosity level, regardless of OTel logging configuration.
 
 #### Traces and Metrics
 
-Any instrumentation for traces or metrics need access to a `trace.Tracer` or `metric.Meter` respectively. They are created from the global tracer and meter providers, which are initialized in `otel.RunWithContext()`. For this reason, setting a global `Tracer` and `Meter` is a common practice. Following `go-common` practices, it is advised to initialize a trace or metric itself in a `Run` action.
+Any instrumentation for traces or metrics need access to a `trace.Tracer` or `metric.Meter` respectively. They are created from the global tracer and meter providers, which are initialized in `otel.Run()`. For this reason, setting a global `Tracer` and `Meter` is a common practice. Following `go-common` practices, it is advised to initialize a trace or metric itself in a `Run` action.
 
 ```go
 import (
