@@ -70,6 +70,9 @@ linters-settings:
       #   arguments: [120]
       - name: unhandled-error
         arguments:
+          - "fmt.Printf"
+          - "fmt.Println"
+          - "fmt.Print"
           - "bytes.Buffer.Write"
           - "bytes.Buffer.WriteString"
           - "bytes.Buffer.WriteByte"
@@ -181,4 +184,3 @@ issues:
     - EXC0012
     - EXC0009
     - EXC0002
-    - ST1000

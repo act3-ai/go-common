@@ -11,6 +11,8 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 
 	commands "gitlab.com/act3-ai/asce/go-common/pkg/cmd"
 	"gitlab.com/act3-ai/asce/go-common/pkg/config"
@@ -19,7 +21,7 @@ import (
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/options/optionshelp"
-	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
+	"gitlab.com/act3-ai/asce/go-common/pkg/otel"
 	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc"
 	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/codefmt"
 	vv "gitlab.com/act3-ai/asce/go-common/pkg/version"
@@ -45,9 +47,30 @@ func getVersionInfo() vv.Info {
 	return info
 }
 
-func main() {
+func mainSetup() (context.Context, *cobra.Command, *otel.Config, error) {
 	info := getVersionInfo()        // Load the version info from the build
 	root := newSample(info.Version) // Create the root command
+
+	ctx := context.Background()
+
+	r, err := resource.New(
+		ctx,
+		resource.WithAttributes(
+			semconv.ServiceName("sample"),
+			semconv.ServiceVersion(info.Version),
+		),
+		resource.WithFromEnv(),
+		resource.WithTelemetrySDK(),
+		resource.WithOS(),
+	)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("OTEL resource setup failed: %w", err)
+	}
+
+	otelCfg := &otel.Config{
+		Resource: r,
+		// Hardcoded exporters may be added here...
+	}
 
 	schemaAssociations := []commands.SchemaAssociation{
 		{
@@ -77,8 +100,22 @@ func main() {
 		commands.NewGendocsCmd(docs),
 		commands.NewGenschemaCmd(schemas, schemaAssociations),
 	)
+	return ctx, root, otelCfg, nil
+}
 
-	if err := runner.Run(context.Background(), root, "ACE_SAMPLE_VERBOSITY"); err != nil {
+func mainE(args []string) error {
+	ctx, root, otelCfg, err := mainSetup()
+	if err != nil {
+		return err
+	}
+	root.SetArgs(args)
+
+	// Run root command with OTel instrumentation enabled.
+	return otel.Run(ctx, root, otelCfg, "ACE_SAMPLE_VERBOSITY")
+}
+
+func main() {
+	if err := mainE(os.Args[1:]); err != nil {
 		os.Exit(1)
 	}
 }
