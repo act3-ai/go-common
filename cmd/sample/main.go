@@ -12,10 +12,8 @@ import (
 
 	commands "gitlab.com/act3-ai/asce/go-common/pkg/cmd"
 	"gitlab.com/act3-ai/asce/go-common/pkg/config"
-	"gitlab.com/act3-ai/asce/go-common/pkg/config/env"
 	"gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
 	"gitlab.com/act3-ai/asce/go-common/pkg/otel"
-	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
 	vv "gitlab.com/act3-ai/asce/go-common/pkg/version"
 )
 
@@ -76,28 +74,25 @@ func mainE(args []string) error {
 		commands.NewGenschemaCmd(schemas, schemaAssociations),
 	)
 
+	r, _ := resource.New(
+		ctx,
+		resource.WithAttributes(
+			semconv.ServiceName("sample"),
+			semconv.ServiceVersion(info.Version),
+		),
+		resource.WithFromEnv(),
+		resource.WithTelemetrySDK(),
+		resource.WithOS(),
+	)
+
+	otelCfg := &otel.Config{
+		Resource: r,
+	}
+
 	root.SetArgs(args)
 
-	if env.BoolOr("OTEL_INSTRUMENTATION_ENABLED", false) {
-		r, _ := resource.New(
-			ctx,
-			resource.WithAttributes(
-				semconv.ServiceName("sample"),
-				semconv.ServiceVersion(info.Version),
-			),
-			resource.WithFromEnv(),
-			resource.WithTelemetrySDK(),
-			resource.WithOS(),
-		)
-
-		otelCfg := &otel.Config{
-			Resource: r,
-		}
-
-		// Run root command with OTel instrumentation enabled.
-		return otel.Run(ctx, root, otelCfg, verbosityEnvName)
-	}
-	return runner.Run(ctx, root, verbosityEnvName)
+	// Run root command with OTel instrumentation enabled.
+	return otel.Run(ctx, root, otelCfg, verbosityEnvName)
 }
 
 func main() {

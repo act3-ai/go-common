@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"gitlab.com/act3-ai/asce/go-common/pkg/config/env"
 	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
 	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
 )
@@ -15,6 +16,14 @@ import (
 // Run will run the root level cobra command, with logging and with the provided
 // OpenTelemetry configuration.
 func Run(ctx context.Context, cmd *cobra.Command, cfg *Config, verbosityEnvName string) error {
+	if env.BoolOr("OTEL_INSTRUMENTATION_ENABLED", false) {
+		// Run root command with OTel instrumentation enabled.
+		return run(ctx, cmd, cfg, verbosityEnvName)
+	}
+	return runner.Run(ctx, cmd, verbosityEnvName)
+}
+
+func run(ctx context.Context, cmd *cobra.Command, cfg *Config, verbosityEnvName string) error {
 	if cfg == nil {
 		cfg = &Config{} // ensure to check for environment configuration
 	}
