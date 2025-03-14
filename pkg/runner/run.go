@@ -14,6 +14,7 @@ import (
 func Run(ctx context.Context, cmd *cobra.Command, verbosityEnvName string) error {
 	handler := SetupLoggingHandler(cmd, verbosityEnvName)
 	log := slog.New(handler)
+	slog.SetDefault(log)
 	ctx = logger.NewContext(ctx, log)
 	return cmd.ExecuteContext(ctx)
 }
