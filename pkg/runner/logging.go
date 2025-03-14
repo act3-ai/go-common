@@ -21,7 +21,7 @@ func SetupLoggingHandler(cmd *cobra.Command, verbosityEnvName string) slog.Handl
 		AddSource: true,
 		Level:     level,
 	}
-	handler := slog.NewJSONHandler(os.Stderr, options)
+	handler := slog.NewJSONHandler(cmd.ErrOrStderr(), options)
 
 	// Flags
 	var verbosityFlag []string
