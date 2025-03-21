@@ -34,7 +34,7 @@ func SetupLoggingHandler(cmd *cobra.Command, verbosityEnvName string) slog.Handl
 	})
 
 	cmd.PersistentFlags().StringSliceVarP(&verbosityFlag, "verbosity", "v",
-		[]string{config.EnvOr(verbosityEnvName, "error")},
+		[]string{config.EnvOr(verbosityEnvName, "warn")},
 		`Logging verbosity level (also setable with environment variable `+verbosityEnvName+`)
 Aliases: error=0, warn=4, info=8, debug=12`)
 	x := cmd.PersistentFlags().Lookup("verbosity")
