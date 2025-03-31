@@ -40,10 +40,6 @@ func WrapRouter(mux Router, middlewares ...RouteMiddlewareFunc) Router {
 	if len(middlewares) == 0 {
 		return mux
 	}
-	if mwmux, ok := mux.(*mwRouter); ok {
-		mwmux.middlewares = append(mwmux.middlewares, middlewares...)
-		return mwmux
-	}
 	return &mwRouter{
 		Router:      mux,
 		middlewares: middlewares,
