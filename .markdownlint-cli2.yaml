@@ -7,5 +7,4 @@ globs:
 
 ignores:
   - CHANGELOG.md
-  - .gitlab/issue_templates/*
   - cmd/sample/docs/cli/** # ignore generated CLI docs
