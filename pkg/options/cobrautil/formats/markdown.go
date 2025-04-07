@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/act3-ai/go-common/pkg/options/cobrautil"
+	"github.com/act3-ai/go-common/pkg/options/flagutil"
 	"github.com/spf13/pflag"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 )
 
 //nolint:unused

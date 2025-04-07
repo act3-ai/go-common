@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/act3-ai/go-common/pkg/options"
+	"github.com/act3-ai/go-common/pkg/options/cobrautil"
+	"github.com/act3-ai/go-common/pkg/options/flagutil"
+	"github.com/act3-ai/go-common/pkg/termdoc"
 	"github.com/muesli/termenv"
 	"github.com/spf13/pflag"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc"
 )
 
 //nolint:unused

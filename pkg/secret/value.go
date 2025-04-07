@@ -13,8 +13,8 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
-	"gitlab.com/act3-ai/asce/go-common/pkg/redact"
+	"github.com/act3-ai/go-common/pkg/logger"
+	"github.com/act3-ai/go-common/pkg/redact"
 )
 
 // Secret is the type of a secret value.

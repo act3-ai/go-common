@@ -1,4 +1,4 @@
-module gitlab.com/act3-ai/asce/go-common
+module github.com/act3-ai/go-common
 
 go 1.23
 

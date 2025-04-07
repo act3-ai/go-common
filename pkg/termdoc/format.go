@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/act3-ai/go-common/pkg/termdoc/codefmt"
+	"github.com/act3-ai/go-common/pkg/termdoc/mdfmt"
 	"github.com/muesli/termenv"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/codefmt"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/mdfmt"
 )
 
 // AutoMarkdownFormat produces the default terminal markdown formatter.

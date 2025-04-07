@@ -4,8 +4,8 @@ package otelhelp
 import (
 	_ "embed"
 
+	"github.com/act3-ai/go-common/pkg/termdoc"
 	"github.com/spf13/cobra"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc"
 )
 
 // Fetch the otel docs

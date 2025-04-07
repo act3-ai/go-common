@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/act3-ai/go-common/pkg/httputil"
 	"github.com/prometheus/client_golang/prometheus"
-	"gitlab.com/act3-ai/asce/go-common/pkg/httputil"
 )
 
 // HTTPDuration is prometheus histogram of the time for the server to handle a HTTP request

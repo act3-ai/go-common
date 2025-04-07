@@ -6,15 +6,15 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
+	"github.com/act3-ai/go-common/pkg/embedutil"
+	"github.com/act3-ai/go-common/pkg/options"
+	"github.com/act3-ai/go-common/pkg/options/cobrautil"
+	"github.com/act3-ai/go-common/pkg/options/flagutil"
+	"github.com/act3-ai/go-common/pkg/options/optionshelp"
+	"github.com/act3-ai/go-common/pkg/termdoc"
+	"github.com/act3-ai/go-common/pkg/termdoc/codefmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/optionshelp"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/codefmt"
 )
 
 //go:embed docs/testfile.md

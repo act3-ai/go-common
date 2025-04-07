@@ -1,8 +1,8 @@
 package options
 
 import (
+	"github.com/act3-ai/go-common/pkg/options/flagutil"
 	"github.com/spf13/pflag"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 )
 
 // GroupFlags marks flags as part of a [Group].

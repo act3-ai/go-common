@@ -24,7 +24,7 @@ And the file called by the go:generate directive in gen.go:
 		"fmt"
 		"log"
 
-		"gitlab.com/act3-ai/asce/go-common/pkg/genschema"
+		"github.com/act3-ai/go-common/pkg/genschema"
 		"git.act3-ace.com/ace/example/pkg/apis/example.act3-ace.io/v1alpha1"
 	)
 
@@ -56,7 +56,7 @@ And finally, embedding the JSON Schema definitions in a CLI and adding the "gens
 
 		"github.com/spf13/cobra"
 
-		commands "gitlab.com/act3-ai/asce/go-common/pkg/cmd"
+		commands "github.com/act3-ai/go-common/pkg/cmd"
 	)
 
 	//go:embed schemas/*

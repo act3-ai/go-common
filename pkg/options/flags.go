@@ -3,7 +3,7 @@ package options
 import (
 	"github.com/spf13/pflag"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
+	"github.com/act3-ai/go-common/pkg/options/flagutil"
 )
 
 /*

@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
+	"github.com/act3-ai/go-common/pkg/logger"
 )
 
 // contextInstanceKey is how we find the unique instance ID in a context.Context.

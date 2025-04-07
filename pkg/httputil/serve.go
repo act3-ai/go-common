@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
+	"github.com/act3-ai/go-common/pkg/logger"
 )
 
 // TODO support HTTPS (TLS) with srv.ListenAndServeTLS(certFile, keyFile)
