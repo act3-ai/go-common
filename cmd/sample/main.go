@@ -10,11 +10,11 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 
-	commands "gitlab.com/act3-ai/asce/go-common/pkg/cmd"
-	"gitlab.com/act3-ai/asce/go-common/pkg/config"
-	"gitlab.com/act3-ai/asce/go-common/pkg/embedutil"
-	"gitlab.com/act3-ai/asce/go-common/pkg/otel"
-	vv "gitlab.com/act3-ai/asce/go-common/pkg/version"
+	commands "github.com/act3-ai/go-common/pkg/cmd"
+	"github.com/act3-ai/go-common/pkg/config"
+	"github.com/act3-ai/go-common/pkg/embedutil"
+	"github.com/act3-ai/go-common/pkg/otel"
+	vv "github.com/act3-ai/go-common/pkg/version"
 )
 
 // manpages and schema definitions are embedded here for use in the gendocs and genschema commands

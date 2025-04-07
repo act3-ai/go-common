@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/httputil"
+	"github.com/act3-ai/go-common/pkg/httputil"
 )
 
 func pathMW(pattern string, next http.Handler) http.Handler {

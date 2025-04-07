@@ -4,9 +4,9 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/act3-ai/go-common/pkg/options/flagutil"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/spf13/cobra"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
 )
 
 // Default values for the flag section headers.

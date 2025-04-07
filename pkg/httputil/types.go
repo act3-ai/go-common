@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/logger/logutil"
+	"github.com/act3-ai/go-common/pkg/logger/logutil"
 )
 
 const (

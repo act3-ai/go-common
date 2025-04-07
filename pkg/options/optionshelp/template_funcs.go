@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/act3-ai/go-common/pkg/options"
 	"github.com/charmbracelet/x/ansi"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options"
 )
 
 /*

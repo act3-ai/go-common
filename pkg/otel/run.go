@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/config/env"
-	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
-	"gitlab.com/act3-ai/asce/go-common/pkg/runner"
+	"github.com/act3-ai/go-common/pkg/config/env"
+	"github.com/act3-ai/go-common/pkg/logger"
+	"github.com/act3-ai/go-common/pkg/runner"
 )
 
 // Run will run the root level cobra command, with logging and with the provided

@@ -4,7 +4,7 @@ package oapiutil
 import (
 	"net/http"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/httputil"
+	"github.com/act3-ai/go-common/pkg/httputil"
 )
 
 // SpecHandler creates an [http.Handler] to serve an OpenAPI specification.

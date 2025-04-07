@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/act3-ai/go-common/pkg/options/cobrautil"
+	"github.com/act3-ai/go-common/pkg/options/flagutil"
+	"github.com/act3-ai/go-common/pkg/termdoc"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/spf13/cobra"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/cobrautil"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options/flagutil"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc"
 )
 
 // adapted from: https://gitlab.com/gitlab-org/cli/-/blob/main/cmd/gen-docs/docs.go

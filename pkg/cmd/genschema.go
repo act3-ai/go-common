@@ -55,7 +55,7 @@ type SchemaAssociation struct {
 //
 //	NewGenschemaCmd(schemaDefs, associations)
 //
-// [go-common/pkg/genschema]: https://gitlab.com/act3-ai/asce/go-common/-/tree/main/pkg/genschema
+// [go-common/pkg/genschema]: https://github.com/act3-ai/go-common/-/tree/main/pkg/genschema
 func NewGenschemaCmd(schemaDefs fs.FS, associations []SchemaAssociation) *cobra.Command {
 	schemaCmd := &cobra.Command{
 		Use:   "genschema <schema location>",

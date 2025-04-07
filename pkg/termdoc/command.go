@@ -3,8 +3,8 @@ package termdoc
 import (
 	"fmt"
 
+	"github.com/act3-ai/go-common/pkg/termdoc/mdfmt"
 	"github.com/spf13/cobra"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/mdfmt"
 )
 
 // AdditionalHelpTopic creates a cobra command that will be surfaced as an "Additional Help Topic".

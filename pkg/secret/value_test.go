@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
-	tlog "gitlab.com/act3-ai/asce/go-common/pkg/test"
+	"github.com/act3-ai/go-common/pkg/logger"
+	tlog "github.com/act3-ai/go-common/pkg/test"
 )
 
 func Test_resolveSecret(t *testing.T) {

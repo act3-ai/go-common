@@ -9,10 +9,10 @@ import (
 
 	_ "embed"
 
+	"github.com/act3-ai/go-common/pkg/options"
+	"github.com/act3-ai/go-common/pkg/termdoc"
+	"github.com/act3-ai/go-common/pkg/termdoc/mdfmt"
 	"github.com/spf13/cobra"
-	"gitlab.com/act3-ai/asce/go-common/pkg/options"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc"
-	"gitlab.com/act3-ai/asce/go-common/pkg/termdoc/mdfmt"
 )
 
 // Command creates a command to display help for the given options.

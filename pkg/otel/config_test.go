@@ -20,8 +20,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 
-	"gitlab.com/act3-ai/asce/go-common/pkg/logger"
-	tlog "gitlab.com/act3-ai/asce/go-common/pkg/test"
+	"github.com/act3-ai/go-common/pkg/logger"
+	tlog "github.com/act3-ai/go-common/pkg/test"
 )
 
 // TestExampleResource wraps ExampleResource as test func to simply display the
