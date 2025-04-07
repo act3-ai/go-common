@@ -1,6 +1,6 @@
 # go-common
 
-[![Go Reference](https://pkg.go.dev/badge/gitlab.com/act3-ai/asce/go-common.svg)](https://pkg.go.dev/gitlab.com/act3-ai/asce/go-common)
+[![Go Reference](https://pkg.go.dev/badge/github.com/act3-ai/go-common.svg)](https://pkg.go.dev/github.com/act3-ai/go-common)
 
 This project houses Go code shared between ASCE projects. It mostly focuses on logging, CLI, and REST API functionality.
 
