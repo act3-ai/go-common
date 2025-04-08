@@ -1,11 +1,18 @@
 name: dagger
-run-name: ${{ github.action }} is testing with dagger 🗡️
+run-name: ${{ github.actor }} is testing with dagger 🗡️
 on:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
 jobs:
+  Setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Dagger Engine
+        uses: dagger/dagger-for-github@8.0.0
   Test:
     runs-on: ubuntu-latest
     steps:
@@ -23,3 +30,4 @@ jobs:
 
       - name: Build
         run: dagger call build
+  
