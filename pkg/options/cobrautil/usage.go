@@ -5,10 +5,11 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/act3-ai/go-common/pkg/options"
-	"github.com/act3-ai/go-common/pkg/options/flagutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/act3-ai/go-common/pkg/options"
+	"github.com/act3-ai/go-common/pkg/options/flagutil"
 )
 
 // CommandFlagUsages returns flag usage description for all flags of a command.

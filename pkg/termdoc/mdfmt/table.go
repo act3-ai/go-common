@@ -82,15 +82,15 @@ func WriteTableWithAlignment(header []string, rows [][]string, alignment []TextA
 	for col := range header {
 		switch alignment[col] {
 		case TextAlignmentRight:
-			_, _ = w.WriteString(fmt.Sprintf("| %s: ", strings.Repeat("-", colMaxLens[col]-1)))
+			_, _ = fmt.Fprintf(w, "| %s: ", strings.Repeat("-", colMaxLens[col]-1))
 		case TextAlignmentCenter:
-			_, _ = w.WriteString(fmt.Sprintf("| :%s: ", strings.Repeat("-", colMaxLens[col]-2)))
+			_, _ = fmt.Fprintf(w, "| :%s: ", strings.Repeat("-", colMaxLens[col]-2))
 		case
 			TextAlignmentLeft,
 			TextAlignmentDefault:
 			fallthrough
 		default:
-			_, _ = w.WriteString(fmt.Sprintf("| %s ", strings.Repeat("-", colMaxLens[col])))
+			_, _ = fmt.Fprintf(w, "| %s ", strings.Repeat("-", colMaxLens[col]))
 		}
 	}
 	_, _ = w.WriteString("|\n")
