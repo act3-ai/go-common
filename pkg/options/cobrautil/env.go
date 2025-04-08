@@ -3,9 +3,10 @@ package cobrautil
 import (
 	"errors"
 
-	"github.com/act3-ai/go-common/pkg/options/flagutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/act3-ai/go-common/pkg/options/flagutil"
 )
 
 // ParseEnvOverrides receives a flag set after it has been parsed
