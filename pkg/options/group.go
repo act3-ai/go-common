@@ -128,7 +128,7 @@ func ToGroupFlagSets(flagSet *pflag.FlagSet) (groupList []*GroupedFlags, ungroup
 				FlagSet: pflag.NewFlagSet(groupName, pflag.ContinueOnError),
 			}
 			if len(f.Annotations[groupAnno]) > 1 {
-				g.Group.Description = f.Annotations[groupAnno][1]
+				g.Description = f.Annotations[groupAnno][1]
 			}
 			g.FlagSet.SortFlags = flagSet.SortFlags // Preserve parent sort setting
 

@@ -14,7 +14,8 @@ import (
 // RootHandler a wrapper around the handler functions to allow uniform error handling
 type RootHandler func(http.ResponseWriter, *http.Request) error
 
-// RootHandler implements http.Handler interface.
+// ServeHTTP performs uniform error handling.
+// Implements http.Handler interface.
 func (fn RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := fn(w, r) // Call handler function
 	if err == nil {

@@ -137,7 +137,7 @@ func writeTable(header []string, rows [][]string) string {
 
 	// Write separator row
 	for col := range header {
-		_, _ = w.WriteString(fmt.Sprintf("| %s ", strings.Repeat("-", colMaxLens[col])))
+		_, _ = fmt.Fprintf(w, "| %s ", strings.Repeat("-", colMaxLens[col]))
 	}
 	_, _ = w.WriteString("|\n")
 

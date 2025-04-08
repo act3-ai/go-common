@@ -10,14 +10,14 @@ import (
 
 // WrapSlogHandler produces a slog.Handler that writes logs to OpenTelemetry and the base slog.Handler.
 // Base handler is optional.
-func (cfg *Config) WrapSlogHandler(name string, base slog.Handler) slog.Handler {
-	if cfg.logProvider == nil {
+func (c *Config) WrapSlogHandler(name string, base slog.Handler) slog.Handler {
+	if c.logProvider == nil {
 		// Return unmodified base handler.
 		return base
 	}
 
 	// bridge slog to the log provider, which adds traceid and spanid's to the log
-	otelHandler := otelslog.NewHandler(name, otelslog.WithLoggerProvider(cfg.logProvider))
+	otelHandler := otelslog.NewHandler(name, otelslog.WithLoggerProvider(c.logProvider))
 
 	if base == nil {
 		// Return otelslog handler if no base handler provided.
