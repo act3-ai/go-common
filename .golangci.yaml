@@ -93,7 +93,7 @@ linters:
         - fmt\..?(P|p)rint.*\(
       ignore-package-globs:
         - encoding/*
-        - github.com/act3-ai/*
+        - github.com/act3-ai/go-common/*
   exclusions:
     generated: lax
     paths:
@@ -107,7 +107,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/act3-ai
+        - github.com/act3-ai/go-common/*
   exclusions:
     generated: lax
     paths:
