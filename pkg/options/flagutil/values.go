@@ -10,16 +10,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ValueOr returns either the flag value or the default.
-func ValueOr[T any](f *pflag.Flag, flagValue T, def T) T {
-	if !f.Changed {
-		return def
-	}
+func logOverride(f *pflag.Flag, flagValue any) {
 	src := valueSource(f)
 	slog.Info("overriding config with "+src.Key+" value", //nolint:sloglint
 		src,
 		slog.Any("value", flagValue),
 	)
+}
+
+// ValueOr returns either the flag value or the default.
+func ValueOr[T any](f *pflag.Flag, flagValue T, def T) T {
+	if !f.Changed {
+		return def
+	}
+	logOverride(f, flagValue)
 	return flagValue
 }
 
@@ -38,10 +42,7 @@ func DurationOr(f *pflag.Flag, flagValue string, def *metav1.Duration) *metav1.D
 		)
 		return def
 	}
-	slog.Info("overriding config with "+src.Key+" value", //nolint:sloglint
-		src,
-		slog.String("value", flagValue),
-	)
+	logOverride(f, flagValue)
 	return &metav1.Duration{Duration: pd}
 }
 
@@ -54,11 +55,7 @@ func SetMapKeysOr[T any](f *pflag.Flag, flagValue []string, in map[string]T) map
 	if !f.Changed {
 		return in
 	}
-	src := valueSource(f)
-	slog.Info("overriding config with "+src.Key+" value", //nolint:sloglint
-		src,
-		slog.Any("value", flagValue),
-	)
+	logOverride(f, flagValue)
 	return setMapKeys(flagValue, in)
 }
 
@@ -84,11 +81,7 @@ func SetMapValuesOr[M1 ~map[K]V1, M2 ~map[K]V2, K comparable, V1, V2 any](
 	if !f.Changed {
 		return in
 	}
-	src := valueSource(f)
-	slog.Info("overriding config with "+src.Key+" value", //nolint:sloglint
-		src,
-		slog.Any("value", flagValues),
-	)
+	logOverride(f, flagValues)
 	return setMapValues(flagValues, in, setter)
 }
 
