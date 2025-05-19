@@ -66,6 +66,7 @@ const (
 	String    Type = "string"            // String type.
 	Boolean   Type = "boolean"           // Boolean type.
 	Integer   Type = "integer"           // Integer type.
+	Float     Type = "float"             // Float type.
 	Duration  Type = "duration (string)" // Duration string type.
 	Object    Type = "object"            // Object type.
 	List      Type = "list"              // List type.
@@ -136,7 +137,7 @@ func (o Option) FormattedType() string {
 		// }
 		// return "object(keys: string, values: any)"
 	default:
-		return o.Default
+		return string(o.Type)
 	}
 }
 
