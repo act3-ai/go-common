@@ -121,8 +121,6 @@ func (o *Option) formattedFlagUsage() string {
 // FormattedType formats the type of the option for markdown output.
 func (o Option) FormattedType() string {
 	switch o.Type {
-	case String, Boolean, Integer, Duration:
-		return string(o.Type)
 	case Object:
 		if link := o.TargetLink(); link != "" {
 			return link
