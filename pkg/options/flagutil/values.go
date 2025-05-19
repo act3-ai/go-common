@@ -106,9 +106,9 @@ func setMapValues[M1 ~map[K]V1, M2 ~map[K]V2, K comparable, V1, V2 any](
 }
 
 // MergeMapValues merges the map flag values into the given map.
-func MergeMapValues[M1 ~map[K]V, M2 ~map[K]V, K comparable, V any](f *pflag.Flag, flagValues M1, in M2) {
+func MergeMapValues[M1 ~map[K]V, M2 ~map[K]V, K comparable, V any](f *pflag.Flag, flagValues M1, in M2) M2 {
 	if len(flagValues) == 0 {
-		return
+		return in
 	}
 
 	logOverride(f, flagValues)
@@ -119,7 +119,7 @@ func MergeMapValues[M1 ~map[K]V, M2 ~map[K]V, K comparable, V any](f *pflag.Flag
 		maps.Copy(in, flagValues)
 	}
 
-	return
+	return in
 }
 
 // valueSource produces the source of the flag's value.
