@@ -16,7 +16,7 @@ func AutoMarkdownFormat() *mdfmt.Formatter {
 	return &mdfmt.Formatter{
 		// bold green with markdown header preserved
 		Header: func(text string, loc mdfmt.Location) string {
-			return green().Bold().Styled(
+			return ansiGreen().Bold().Styled(
 				fmt.Sprintf("%s %s",
 					strings.Repeat("#", loc.Level),
 					text,
@@ -28,17 +28,17 @@ func AutoMarkdownFormat() *mdfmt.Formatter {
 				// Do not change boldness of headers
 				return fmt.Sprintf("%s%s",
 					"["+text+"]",
-					faint().Styled("("+url+")"))
+					ansiFaint().Styled("("+url+")"))
 			}
 			return fmt.Sprintf("%s%s",
-				bold().Styled("["+text+"]"),
-				faint().Styled("("+url+")"))
+				ansiBold().Styled("["+text+"]"),
+				ansiFaint().Styled("("+url+")"))
 		},
 		Code: func(code string, loc mdfmt.Location) string {
 			if loc.Header {
 				return code
 			}
-			return cyan().Styled(code)
+			return ansiCyan().Styled(code)
 		},
 		CodeBlock: func(code string, loc mdfmt.Location) string {
 			switch loc.CodeBlockLang {
@@ -58,13 +58,13 @@ func AutoMarkdownFormat() *mdfmt.Formatter {
 			if loc.Header {
 				return text
 			}
-			return bold().Styled(text)
+			return ansiBold().Styled(text)
 		},
 		Italics: func(text string, loc mdfmt.Location) string {
 			if loc.Header {
 				return text
 			}
-			return italic().Styled(text)
+			return ansiItalic().Styled(text)
 		},
 		Columns: func() int {
 			return columnsVal
@@ -90,7 +90,7 @@ func AutoCodeFormat() *codefmt.Formatter {
 	columnsVal := TerminalWidth(120) // compute AOT
 	return &codefmt.Formatter{
 		Comment: func(comment string, loc codefmt.Location) string {
-			return faint().Styled(comment)
+			return ansiFaint().Styled(comment)
 		},
 		Columns: func() int {
 			return columnsVal
@@ -101,15 +101,15 @@ func AutoCodeFormat() *codefmt.Formatter {
 
 //nolint:unused
 var (
-	style     = func(s ...string) termenv.Style { return termenv.DefaultOutput().String(s...) }
-	bold      = func() termenv.Style { return style().Bold() }
-	italic    = func() termenv.Style { return style().Italic() }
-	underline = func() termenv.Style { return style().Underline() }
-	faint     = func() termenv.Style { return style().Faint() }
-	red       = func() termenv.Style { return style().Foreground(termenv.ANSIRed) }
-	yellow    = func() termenv.Style { return style().Foreground(termenv.ANSIYellow) }
-	green     = func() termenv.Style { return style().Foreground(termenv.ANSIGreen) }
-	blue      = func() termenv.Style { return style().Foreground(termenv.ANSIBlue) }
-	magenta   = func() termenv.Style { return style().Foreground(termenv.ANSIMagenta) }
-	cyan      = func() termenv.Style { return style().Foreground(termenv.ANSICyan) }
+	ansiStyle     = func(s ...string) termenv.Style { return termenv.DefaultOutput().String(s...) }
+	ansiBold      = func() termenv.Style { return ansiStyle().Bold() }
+	ansiItalic    = func() termenv.Style { return ansiStyle().Italic() }
+	ansiUnderline = func() termenv.Style { return ansiStyle().Underline() }
+	ansiFaint     = func() termenv.Style { return ansiStyle().Faint() }
+	ansiRed       = func() termenv.Style { return ansiStyle().Foreground(termenv.ANSIRed) }
+	ansiYellow    = func() termenv.Style { return ansiStyle().Foreground(termenv.ANSIYellow) }
+	ansiGreen     = func() termenv.Style { return ansiStyle().Foreground(termenv.ANSIGreen) }
+	ansiBlue      = func() termenv.Style { return ansiStyle().Foreground(termenv.ANSIBlue) }
+	ansiMagenta   = func() termenv.Style { return ansiStyle().Foreground(termenv.ANSIMagenta) }
+	ansiCyan      = func() termenv.Style { return ansiStyle().Foreground(termenv.ANSICyan) }
 )

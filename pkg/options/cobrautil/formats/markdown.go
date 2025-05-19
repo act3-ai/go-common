@@ -19,8 +19,25 @@ var (
 )
 
 // Markdown is a format producing valid markdown.
-var Markdown = cobrautil.UsageFormatOptions{
-	Format: cobrautil.Formatter{
+func Markdown() cobrautil.UsageFormatOptions {
+	return cobrautil.UsageFormatOptions{
+		Format:      markdownCobraFormatter(),
+		FlagOptions: markdownFlagFormatter(),
+		LocalFlags: cobrautil.FlagGroupingOptions{
+			// Separate local flags into groups,
+			// if defined by [options.GroupFlags].
+			GroupFlags: true,
+		},
+		InheritedFlags: cobrautil.FlagGroupingOptions{
+			// Separate inherited flags into groups,
+			// if defined by [options.GroupFlags].
+			GroupFlags: true,
+		},
+	}
+}
+
+func markdownCobraFormatter() cobrautil.Formatter {
+	return cobrautil.Formatter{
 		// Formats headers as markdown h2
 		Header: func(s string) string {
 			return "## " + strings.TrimSuffix(s, ":") + "\n"
@@ -41,63 +58,58 @@ var Markdown = cobrautil.UsageFormatOptions{
 		Example: func(s string) string {
 			return mdCodeBlock("bash", s)
 		},
-	},
-	FlagOptions: flagutil.UsageFormatOptions{
+	}
+}
+
+func markdownFlagLineFunc(flag *pflag.Flag) (line string, skip bool) {
+	if flag.Hidden || flag.Deprecated != "" {
+		return "", true
+	}
+
+	var (
+		flagName  string
+		flagType  string
+		flagUsage string
+	)
+
+	if flag.Shorthand != "" && flag.ShorthandDeprecated == "" {
+		flagName = fmt.Sprintf("-%s, --%s", flag.Shorthand, flag.Name)
+	} else {
+		flagName = "--" + flag.Name
+	}
+
+	flagType, flagUsage = pflag.UnquoteUsage(flag)
+	flagUsage = strings.ReplaceAll(flagUsage, "\n", "\n  ")
+
+	envName := flagutil.GetEnvName(flag)
+	if envName != "" {
+		flagUsage += fmt.Sprintf(" (env: %s)", mdCode(envName))
+	}
+
+	if !flagutil.DefaultIsZeroValue(flag) {
+		defValue := flag.DefValue
+		if flag.Value.Type() == "string" {
+			defValue = fmt.Sprintf("%q", defValue)
+		}
+		flagUsage += fmt.Sprintf(" (default %s)", mdBold(defValue))
+	}
+
+	flagName = mdCode(flagName)
+	if flagType != "" {
+		flagType = " " + mdItalics(flagType)
+	}
+
+	// Create an unordered list entry
+	line = fmt.Sprintf("- %s%s: %s", flagName, flagType, flagUsage)
+
+	return line, false
+}
+
+func markdownFlagFormatter() flagutil.UsageFormatOptions {
+	return flagutil.UsageFormatOptions{
 		// Disable column wrapping
 		Columns: flagutil.StaticColumns(0),
 		// Custom line function creating markdown output.
-		LineFunc: func(flag *pflag.Flag) (line string, skip bool) {
-			if flag.Hidden || flag.Deprecated != "" {
-				return "", true
-			}
-
-			var (
-				flagName  string
-				flagType  string
-				flagUsage string
-			)
-
-			if flag.Shorthand != "" && flag.ShorthandDeprecated == "" {
-				flagName = fmt.Sprintf("-%s, --%s", flag.Shorthand, flag.Name)
-			} else {
-				flagName = "--" + flag.Name
-			}
-
-			flagType, flagUsage = pflag.UnquoteUsage(flag)
-			flagUsage = strings.ReplaceAll(flagUsage, "\n", "\n  ")
-
-			envName := flagutil.GetEnvName(flag)
-			if envName != "" {
-				flagUsage += fmt.Sprintf(" (env: %s)", mdCode(envName))
-			}
-
-			if !flagutil.DefaultIsZeroValue(flag) {
-				defValue := flag.DefValue
-				if flag.Value.Type() == "string" {
-					defValue = fmt.Sprintf("%q", defValue)
-				}
-				flagUsage += fmt.Sprintf(" (default %s)", mdBold(defValue))
-			}
-
-			flagName = mdCode(flagName)
-			if flagType != "" {
-				flagType = " " + mdItalics(flagType)
-			}
-
-			// Create an unordered list entry
-			line = fmt.Sprintf("- %s%s: %s", flagName, flagType, flagUsage)
-
-			return line, false
-		},
-	},
-	LocalFlags: cobrautil.FlagGroupingOptions{
-		// Separate local flags into groups,
-		// if defined by [options.GroupFlags].
-		GroupFlags: true,
-	},
-	InheritedFlags: cobrautil.FlagGroupingOptions{
-		// Separate inherited flags into groups,
-		// if defined by [options.GroupFlags].
-		GroupFlags: true,
-	},
+		LineFunc: markdownFlagLineFunc,
+	}
 }
