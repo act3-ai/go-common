@@ -1,5 +1,9 @@
 // Package csp contains a representation of Content-Security-Policy header directives.
+//
+//nolint:var-naming
 package csp
+
+//nolint:var-naming
 
 import (
 	"maps"
@@ -8,22 +12,24 @@ import (
 	"strings"
 )
 
-const (
-	// The canonical header key.
-	HeaderKey = "Content-Security-Policy"
+// HeaderKey is the canonical header key.
+const HeaderKey = "Content-Security-Policy"
 
-	// Defined directive names.
-	BaseUri        = "base-uri"
-	ConnectSrc     = "connect-src"
-	DefaultSrc     = "default-src"
+// Directive names.
+const (
+	BaseURI        = "base-uri"
+	ConnectSource  = "connect-src"
+	DefaultSource  = "default-src"
 	FormAction     = "form-action"
 	FrameAncestors = "frame-ancestors"
-	ImgSrc         = "img-src"
-	ScriptSrc      = "script-src"
-	StyleSrc       = "style-src"
-	WorkerSrc      = "worker-src"
+	ImageSource    = "img-src"
+	ScriptSource   = "script-src"
+	StyleSource    = "style-src"
+	WorkerSource   = "worker-src"
+)
 
-	// Keywords available for directives.
+// Keywords available for directives.
+const (
 	KeywordBlob         = "blob:"
 	KeywordData         = "data:"
 	KeywordNone         = "'none'"
