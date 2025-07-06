@@ -2,6 +2,7 @@ package termdoc
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/muesli/termenv"
@@ -10,11 +11,15 @@ import (
 
 // TerminalWidth returns the width of the terminal, using fallback if it can't determine width.
 func TerminalWidth(fallback int) int {
-	tty := termenv.DefaultOutput().TTY()
-	if tty == nil {
+	w := termenv.DefaultOutput().Writer()
+	if w == nil {
 		return fallback
 	}
-	width, _, err := term.GetSize(int(tty.Fd()))
+	f, ok := w.(*os.File)
+	if !ok {
+		return fallback
+	}
+	width, _, err := term.GetSize(int(f.Fd()))
 	if err != nil {
 		return fallback
 	}
