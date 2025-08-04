@@ -1,6 +1,6 @@
 {
   "name": "go-common",
-  "engineVersion": "v0.18.2",
+  "engineVersion": "v0.18.14",
   "sdk": {
     "source": "go"
   },
@@ -13,7 +13,7 @@
     {
       "name": "golangci-lint",
       "source": "github.com/sagikazarmark/daggerverse/golangci-lint@golangci-lint/v0.9.0",
-      "pin": "126b5fbbdad70dbf2a8689600baec2eb78c05ef4"
+      "pin": "e6c14178bcaaff9e102e2a89173ca31479b80629"
     }
   ],
   "source": ".dagger"
