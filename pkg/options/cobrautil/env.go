@@ -1,8 +1,6 @@
 package cobrautil
 
 import (
-	"errors"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -20,10 +18,6 @@ import (
 // The first non-nil error returned from cmd.FlagErrorFunc()
 // is returned.
 func ParseEnvOverrides(cmd *cobra.Command) error {
-	if !cmd.Flags().Parsed() {
-		return errors.New("cannot parse environment variables before command-line arguments")
-	}
-
 	// Store first non-empty error.
 	var flagErr error
 
