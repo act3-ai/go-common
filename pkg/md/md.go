@@ -88,14 +88,8 @@ func Link(text, target string) string {
 
 // HeaderLinkTarget encodes the text in link target form.
 func HeaderLinkTarget(header string) string {
-	var fragment string
-	if strings.HasPrefix(header, "`") && strings.HasSuffix(header, "`") {
-		fragment = markdownCodeLinkFragment(header)
-	} else {
-		fragment = toMarkdownLinkFragment(header)
-	}
 	// Begin with target character "#"
-	return "#" + fragment
+	return "#" + toMarkdownLinkFragment(header)
 }
 
 // toMarkdownLinkFragment formats the string as a markdown link fragment.
@@ -106,14 +100,6 @@ func toMarkdownLinkFragment(s string) string {
 		mdLinkTargetReplacer.Replace(
 			// Trim forbidden leading/trailing characters
 			strings.Trim(s, mdlinkCutset)))
-}
-
-// markdownCodeLinkFragment formats the string as a markdown link fragment.
-func markdownCodeLinkFragment(s string) string {
-	// Lowercase
-	return strings.ToLower(
-		// Replace forbidden characters
-		mdCodeLinkReplacer.Replace(s))
 }
 
 // mdlinkCutset is used to trim characters from the beginning and end of strings.
@@ -130,17 +116,4 @@ var mdLinkTargetReplacer = strings.NewReplacer(
 	"`", zeroString,
 	"'", zeroString,
 	`"`, zeroString,
-	"_", zeroString,
-)
-
-// mdlinkReplacer replaces characters to produce the equivalent markdown link handle
-var mdCodeLinkReplacer = strings.NewReplacer(
-	" ", "-",
-	".", zeroString,
-	"/", zeroString,
-	"*", zeroString,
-	"`", zeroString,
-	"'", zeroString,
-	`"`, zeroString,
-	// "_", "",
 )
