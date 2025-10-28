@@ -24,6 +24,27 @@ func GroupFlags(g *Group, flags ...*pflag.Flag) {
 	}
 }
 
+// GroupOptionFlags marks flags as part of a [Group].
+func GroupOptionFlags(g *Group, flagSet *pflag.FlagSet) {
+	flagNames := make(map[string]struct{}, len(g.Options))
+	for _, opt := range g.Options {
+		if opt.Flag != "" {
+			flagNames[opt.Flag] = struct{}{}
+		}
+	}
+	// Visit all flags in the FlagSet, collecting a list of matched flags
+	var flags []*pflag.Flag
+	flagSet.VisitAll(func(f *pflag.Flag) {
+		_, ok := flagNames[f.Name]
+		if ok {
+			// If flag is in the group, add to the collected list
+			flags = append(flags, f)
+		}
+	})
+	// Mark the matched flags as part of this group
+	GroupFlags(g, flags...)
+}
+
 // CombineGroups combines flags in all of the given groups into a single group.
 func CombineGroups(combined *Group, flagSet *pflag.FlagSet, groups ...*Group) {
 	if len(groups) == 0 {
