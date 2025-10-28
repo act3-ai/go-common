@@ -76,7 +76,8 @@ const (
 // Option represents an option.
 type Option struct {
 	Type            Type   // Type of the field
-	TargetGroupName string // Target group ID
+	ValueType       Type   // Type of the values in a composite option (List/StringMap)
+	TargetGroupName string // Target group ID (Object/List/StringMap)
 	Default         string // Default value (as a string)
 	Name            string // Name to use for the field in documentation
 	JSON            string // Path to field in JSON config file
@@ -127,15 +128,22 @@ func (o Option) FormattedType() string {
 		}
 		return "object"
 	case List:
-		return "list"
+		return fmt.Sprintf("list(values: %s)", o.FormattedValueType())
 	case StringMap:
-		return "object"
-		// if link := o.TargetLink(); link != "" {
-		// 	return fmt.Sprintf("object(keys: string, values: %s)", link)
-		// }
-		// return "object(keys: string, values: any)"
+		return fmt.Sprintf("object(keys: string, values: %s)", o.FormattedValueType())
 	default:
 		return string(o.Type)
+	}
+}
+
+func (o Option) FormattedValueType() string {
+	switch {
+	case o.ValueType != "":
+		return string(o.ValueType)
+	case o.TargetGroupName != "":
+		return o.TargetLink()
+	default:
+		return "any"
 	}
 }
 
@@ -145,7 +153,7 @@ func (o Option) FormattedDefault() string {
 		return ""
 	}
 	switch o.Type {
-	case Boolean, Integer, Object, List, StringMap:
+	case Boolean, Integer, Object, StringMap:
 		return o.Default
 	case String, Duration:
 		return `"` + o.Default + `"`

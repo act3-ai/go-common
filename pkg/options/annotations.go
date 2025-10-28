@@ -28,15 +28,15 @@ func FromFlag(f *pflag.Flag) *Option {
 // Defined annotations used to store [Option] fields in [pflag.Flag] annotations.
 // Used to round-trip an Option through a [pflag.Flag].
 const (
-	defaultAnno     = "options_option_default"   // annotation for options.Option.Default
-	typeAnno        = "options_option_type"      // annotation for options.Option.Type
-	nameAnno        = "options_option_name"      // annotation for options.Option.Name
-	jsonAnno        = "options_option_json"      // annotation for options.Option.JSON
-	flagUsageAnno   = "options_option_flagUsage" // annotation for options.Option.FlagUsage
-	flagTypeAnno    = "options_option_flagType"  // annotation for options.Option.FlagType
-	shortAnno       = "options_option_short"     // annotation for options.Option.Short
-	longAnno        = "options_option_long"      // annotation for options.Option.Long
-	targetGroupAnno = "options_option_target"    // annotation for options.Option.TargetGroupName
+	defaultAnno     = "options_option_default"   // annotation for [Option.Default]
+	typeAnno        = "options_option_type"      // annotation for [Option.Type]
+	nameAnno        = "options_option_name"      // annotation for [Option.Name]
+	jsonAnno        = "options_option_json"      // annotation for [Option.JSON]
+	flagUsageAnno   = "options_option_flagUsage" // annotation for [Option.FlagUsage]
+	flagTypeAnno    = "options_option_flagType"  // annotation for [Option.FlagType]
+	shortAnno       = "options_option_short"     // annotation for [Option.Short]
+	longAnno        = "options_option_long"      // annotation for [Option.Long]
+	targetGroupAnno = "options_option_target"    // annotation for [Option.TargetGroupName]
 	groupAnno       = "options_option_group"     // used to group flags
 )
 

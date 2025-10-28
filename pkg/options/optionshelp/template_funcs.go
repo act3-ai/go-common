@@ -5,8 +5,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/act3-ai/go-common/pkg/options"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/act3-ai/go-common/pkg/options"
 )
 
 /*
@@ -54,22 +55,27 @@ func groupTable(g *options.Group) string {
 */
 func optionTable(o *options.Option) string {
 	header := []string{"Name", "Value"}
-	rows := [][]string{
-		{"type", o.FormattedType()},
-	}
+	rows := [][]string{}
 
-	if o.Type == options.StringMap {
+	switch o.Type {
+	case options.Object:
 		rows = append(rows, []string{
-			"keys", "string",
+			"type", o.FormattedValueType(),
 		})
-	}
-	if o.Type == options.StringMap || o.Type == options.List {
-		fvalues := o.TargetLink()
-		if o.TargetLink() == "" {
-			fvalues = "any"
-		}
+	case options.List:
+		rows = append(rows, [][]string{
+			{"type", "list"},
+			{"values", o.FormattedValueType()},
+		}...)
+	case options.StringMap:
+		rows = append(rows, [][]string{
+			{"type", "object"},
+			{"keys", "string"},
+			{"values", o.FormattedValueType()},
+		}...)
+	default:
 		rows = append(rows, []string{
-			"values", fvalues,
+			"type", string(o.Type),
 		})
 	}
 	if fdefault := o.FormattedDefault(); fdefault != "" {
