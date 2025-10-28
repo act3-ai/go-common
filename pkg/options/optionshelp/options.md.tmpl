@@ -1,21 +1,18 @@
-{{ define "groupOptions" -}}
-{{ groupTable . }}
-{{- end }}
 # Configuration Options
 
 Table of contents:
 
 {{ range . -}}
-- {{ .MarkdownLink }}: {{ .Description }}
+- {{ .MarkdownLink }}{{ with .Description }}: {{ . }}{{ end }}
 {{ end }}
 
 {{- range . }}
-## {{ .Name }}
+## {{ .Title }}
 {{- if .Description }}
 
 {{ .Description }}
 {{ end }}
-{{ template "groupOptions" . }}
+{{ groupTable . }}
 {{- range .Options }}
 {{- if ne .Type "object"  }}
 ### {{ .Header }}

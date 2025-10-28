@@ -10,6 +10,7 @@ import (
 func FromFlag(f *pflag.Flag) *Option {
 	opt := &Option{
 		Type:            Type(flagutil.GetFirstAnnotationOr(f, typeAnno, "")),
+		ValueType:       Type(flagutil.GetFirstAnnotationOr(f, valueTypeAnno, "")),
 		TargetGroupName: flagutil.GetFirstAnnotationOr(f, targetGroupAnno, ""),
 		Default:         flagutil.GetFirstAnnotationOr(f, defaultAnno, ""),
 		Name:            flagutil.GetFirstAnnotationOr(f, nameAnno, ""),
@@ -30,6 +31,7 @@ func FromFlag(f *pflag.Flag) *Option {
 const (
 	defaultAnno     = "options_option_default"   // annotation for [Option.Default]
 	typeAnno        = "options_option_type"      // annotation for [Option.Type]
+	valueTypeAnno   = "options_option_valueType" // annotation for [Option.ValueType]
 	nameAnno        = "options_option_name"      // annotation for [Option.Name]
 	jsonAnno        = "options_option_json"      // annotation for [Option.JSON]
 	flagUsageAnno   = "options_option_flagUsage" // annotation for [Option.FlagUsage]
@@ -53,34 +55,23 @@ func withOptionConfig(f *pflag.Flag, opt *Option) {
 			opt.FlagType = varname
 		}
 	}
-	if opt.Type != "" {
-		flagutil.SetAnnotation(f, typeAnno, string(opt.Type))
-	}
-	if opt.TargetGroupName != "" {
-		flagutil.SetAnnotation(f, targetGroupAnno, opt.TargetGroupName)
-	}
-	if opt.Default != "" {
-		flagutil.SetAnnotation(f, defaultAnno, opt.Default)
-	}
-	if opt.Name != "" {
-		flagutil.SetAnnotation(f, nameAnno, opt.Name)
-	}
-	if opt.JSON != "" {
-		flagutil.SetAnnotation(f, jsonAnno, opt.JSON)
-	}
+	setAnnoIfNotEmpty(f, typeAnno, opt.Type)
+	setAnnoIfNotEmpty(f, valueTypeAnno, opt.ValueType)
+	setAnnoIfNotEmpty(f, targetGroupAnno, opt.TargetGroupName)
+	setAnnoIfNotEmpty(f, defaultAnno, opt.Default)
+	setAnnoIfNotEmpty(f, nameAnno, opt.Name)
+	setAnnoIfNotEmpty(f, jsonAnno, opt.JSON)
 	if opt.Env != "" {
 		flagutil.SetEnvName(f, opt.Env)
 	}
-	if opt.FlagUsage != "" {
-		flagutil.SetAnnotation(f, flagUsageAnno, opt.FlagUsage)
-	}
-	if opt.FlagType != "" {
-		flagutil.SetAnnotation(f, flagTypeAnno, opt.FlagType)
-	}
-	if opt.Short != "" {
-		flagutil.SetAnnotation(f, shortAnno, opt.Short)
-	}
-	if opt.Long != "" {
-		flagutil.SetAnnotation(f, longAnno, opt.Long)
+	setAnnoIfNotEmpty(f, flagUsageAnno, opt.FlagUsage)
+	setAnnoIfNotEmpty(f, flagTypeAnno, opt.FlagType)
+	setAnnoIfNotEmpty(f, shortAnno, opt.Short)
+	setAnnoIfNotEmpty(f, longAnno, opt.Long)
+}
+
+func setAnnoIfNotEmpty[T ~string](f *pflag.Flag, key string, value T) {
+	if value != "" {
+		flagutil.SetAnnotation(f, key, string(value))
 	}
 }

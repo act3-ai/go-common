@@ -116,7 +116,7 @@ func GroupedFlagUsages(f *pflag.FlagSet, gopts FlagGroupingOptions, format Forma
 			// Skip empty groups (unsure how this could happen)
 			continue
 		}
-		header := strings.TrimRight(group.Description, ".:") + ":"
+		header := strings.TrimRight(group.Title, ".:") + ":"
 		header = format.Header(header)
 		if header != "" {
 			if i != 0 {

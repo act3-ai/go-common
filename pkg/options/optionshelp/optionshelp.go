@@ -2,17 +2,17 @@
 package optionshelp
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"strings"
 	"text/template"
 
-	_ "embed"
+	"github.com/spf13/cobra"
 
 	"github.com/act3-ai/go-common/pkg/options"
 	"github.com/act3-ai/go-common/pkg/termdoc"
 	"github.com/act3-ai/go-common/pkg/termdoc/mdfmt"
-	"github.com/spf13/cobra"
 )
 
 // Command creates a command to display help for the given options.

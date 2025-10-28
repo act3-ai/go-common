@@ -4,7 +4,8 @@ package options
 import (
 	"errors"
 	"fmt"
-	"strings"
+
+	"github.com/act3-ai/go-common/pkg/md"
 )
 
 // ErrGroupNotFound is returned while resolving descriptions.
@@ -14,8 +15,8 @@ var ErrGroupNotFound = errors.New("group not found")
 func ResolveDescriptions(groups ...*Group) error {
 	allGroups := map[string]*Group{}
 	for _, g := range groups {
-		if g.Name != "" {
-			allGroups[g.Name] = g
+		if g.Key != "" {
+			allGroups[g.Key] = g
 		}
 	}
 	var errs []error
@@ -32,7 +33,7 @@ func ResolveDescriptions(groups ...*Group) error {
 				target, ok := allGroups[o.TargetGroupName]
 				if !ok {
 					errs = append(errs,
-						fmt.Errorf("Group %q, Option %q, TargetGroupName %q: %w", g.Name, o.Header(), o.TargetGroupName, ErrGroupNotFound))
+						fmt.Errorf("Group %q, Option %q, TargetGroupName %q: %w", g.Key, o.Header(), o.TargetGroupName, ErrGroupNotFound))
 					continue
 				}
 				o.Short = target.Description
@@ -47,7 +48,8 @@ func ResolveDescriptions(groups ...*Group) error {
 
 // Group represents a group of options.
 type Group struct {
-	Name        string    // Name of the group
+	Key         string    // Unique key for the group
+	Title       string    // Human-readable title of the group
 	Description string    // Description of the group
 	JSON        string    // Path to group in JSON config file
 	Options     []*Option // Options contained in this group
@@ -55,7 +57,7 @@ type Group struct {
 
 // MarkdownLink produces a markdown link to the group.
 func (g *Group) MarkdownLink() string {
-	return markdownLink(g.Name)
+	return md.Link(g.Title, md.HeaderLinkTarget(g.Title))
 }
 
 // Type represents the type of an option.
@@ -156,7 +158,7 @@ func (o Option) FormattedDefault() string {
 	case Boolean, Integer, Object, StringMap:
 		return o.Default
 	case String, Duration:
-		return `"` + o.Default + `"`
+		return fmt.Sprintf("%q", o.Default)
 	default:
 		return o.Default
 	}
@@ -168,11 +170,11 @@ func (o Option) Header() string {
 	case o.Name != "":
 		return o.Name
 	case o.JSON != "":
-		return "`" + o.JSON + "`"
+		return md.Code(o.JSON)
 	case o.Flag != "":
-		return "`--" + o.Flag + "`"
+		return md.Code("--" + o.Flag)
 	case o.Env != "":
-		return "`" + o.Env + "`"
+		return md.Code(o.Env)
 	default:
 		return ""
 	}
@@ -180,7 +182,8 @@ func (o Option) Header() string {
 
 // MarkdownLink produces a markdown link to the option.
 func (o Option) MarkdownLink() string {
-	return markdownLink(o.Header())
+	header := o.Header()
+	return md.Link(header, md.HeaderLinkTarget(header))
 }
 
 // TargetLink produces a link to the option's target group.
@@ -194,7 +197,7 @@ func (o Option) TargetLink() string {
 		o.Type != StringMap {
 		return ""
 	}
-	return markdownLink(o.TargetGroupName)
+	return md.Link(o.TargetGroupName, md.HeaderLinkTarget(o.TargetGroupName))
 }
 
 // ShortDescription produces the short description of the option.
@@ -208,59 +211,3 @@ func (o Option) ShortDescription() string {
 		return ""
 	}
 }
-
-// markdownLink produces a markdown link to the given header.
-func markdownLink(header string) string {
-	var fragment string
-	if strings.HasPrefix(header, "`") && strings.HasSuffix(header, "`") {
-		fragment = markdownCodeLinkFragment(header)
-	} else {
-		fragment = toMarkdownLinkFragment(header)
-	}
-	return fmt.Sprintf("[%s](#%s)", header, fragment)
-}
-
-// toMarkdownLinkFragment formats the string as a markdown link fragment.
-func toMarkdownLinkFragment(s string) string {
-	// Lowercase
-	return strings.ToLower(
-		// Replace forbidden characters
-		mdNameLinkReplacer.Replace(
-			// Trim forbidden leading/trailing characters
-			strings.Trim(s, mdlinkCutset)))
-}
-
-// markdownCodeLinkFragment formats the string as a markdown link fragment.
-func markdownCodeLinkFragment(s string) string {
-	// Lowercase
-	return strings.ToLower(
-		// Replace forbidden characters
-		mdCodeLinkReplacer.Replace(s))
-}
-
-// mdlinkCutset is used to trim characters from the beginning and end of strings.
-var mdlinkCutset = "-"
-
-// mdNameLinkReplacer replaces characters to produce the equivalent markdown link handle
-var mdNameLinkReplacer = strings.NewReplacer(
-	" ", "-",
-	".", "",
-	"/", "",
-	"*", "",
-	"`", "",
-	"'", "",
-	`"`, "",
-	"_", "",
-)
-
-// mdlinkReplacer replaces characters to produce the equivalent markdown link handle
-var mdCodeLinkReplacer = strings.NewReplacer(
-	" ", "-",
-	".", "",
-	"/", "",
-	"*", "",
-	"`", "",
-	"'", "",
-	`"`, "",
-	// "_", "",
-)

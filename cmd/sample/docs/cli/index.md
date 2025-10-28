@@ -36,7 +36,7 @@ ACE_SAMPLE_NAME="Foo" sample
 OPTIONS:
   -h, --help                           help for sample
   -v, --verbosity stringSlice[=warn]   Logging verbosity level (also setable with environment variable ACE_SAMPLE_VERBOSITY)
-                                       Aliases: error=0, warn=4, info=8, debug=12 (default [error])
+                                       Aliases: error=0, warn=4, info=8, debug=12 (default [warn])
 
 EXAMPLE OPTIONS:
   -c, --count int         Number of greetings to output. (env: ACE_SAMPLE_COUNT) (default 1)

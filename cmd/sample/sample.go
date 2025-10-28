@@ -6,6 +6,9 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+
 	"github.com/act3-ai/go-common/pkg/embedutil"
 	"github.com/act3-ai/go-common/pkg/options"
 	"github.com/act3-ai/go-common/pkg/options/cobrautil"
@@ -13,8 +16,6 @@ import (
 	"github.com/act3-ai/go-common/pkg/options/optionshelp"
 	"github.com/act3-ai/go-common/pkg/termdoc"
 	"github.com/act3-ai/go-common/pkg/termdoc/codefmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 //go:embed docs/testfile.md
@@ -175,8 +176,9 @@ func addFlags(f *pflag.FlagSet, action *sampleAction) []*options.Group {
 
 	// Create a group for the options
 	group := &options.Group{
-		Name:        "example",
-		Description: "Example options",
+		Key:         "example",
+		Title:       "Example options",
+		Description: "Collection of example options",
 		Options: []*options.Option{
 			name,
 			greeting,

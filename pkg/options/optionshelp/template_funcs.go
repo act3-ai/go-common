@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/act3-ai/go-common/pkg/md"
 	"github.com/act3-ai/go-common/pkg/options"
 )
 
@@ -80,12 +81,12 @@ func optionTable(o *options.Option) string {
 	}
 	if fdefault := o.FormattedDefault(); fdefault != "" {
 		rows = append(rows, []string{
-			"default", "`" + fdefault + "`",
+			"default", md.Code(fdefault),
 		})
 	}
 	if o.JSON != "" {
 		rows = append(rows, []string{
-			"json/yaml", "`" + o.JSON + "`",
+			"json/yaml", md.Code(o.JSON),
 		})
 	}
 	if o.Flag != "" || o.FlagShorthand != "" {
@@ -104,7 +105,7 @@ func optionTable(o *options.Option) string {
 	}
 	if o.Env != "" {
 		rows = append(rows, []string{
-			"env", "`" + o.Env + "`",
+			"env", md.Code(o.Env),
 		})
 	}
 
