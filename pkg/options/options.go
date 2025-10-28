@@ -121,49 +121,6 @@ func (o *Option) formattedFlagUsage() string {
 // 	Content     string
 // }
 
-// FormattedType formats the type of the option for markdown output.
-func (o Option) FormattedType() string {
-	switch o.Type {
-	case Object:
-		if link := o.TargetLink(); link != "" {
-			return link
-		}
-		return "object"
-	case List:
-		return fmt.Sprintf("list(values: %s)", o.FormattedValueType())
-	case StringMap:
-		return fmt.Sprintf("object(keys: string, values: %s)", o.FormattedValueType())
-	default:
-		return string(o.Type)
-	}
-}
-
-func (o Option) FormattedValueType() string {
-	switch {
-	case o.ValueType != "":
-		return string(o.ValueType)
-	case o.TargetGroupName != "":
-		return o.TargetLink()
-	default:
-		return "any"
-	}
-}
-
-// FormattedDefault formats the default value of the option for markdown output.
-func (o Option) FormattedDefault() string {
-	if o.Default == "" {
-		return ""
-	}
-	switch o.Type {
-	case Boolean, Integer, Object, StringMap:
-		return o.Default
-	case String, Duration:
-		return fmt.Sprintf("%q", o.Default)
-	default:
-		return o.Default
-	}
-}
-
 // Header formats the name of the option for markdown output.
 func (o Option) Header() string {
 	switch {
@@ -184,20 +141,6 @@ func (o Option) Header() string {
 func (o Option) MarkdownLink() string {
 	header := o.Header()
 	return md.Link(header, md.HeaderLinkTarget(header))
-}
-
-// TargetLink produces a link to the option's target group.
-func (o Option) TargetLink() string {
-	if o.TargetGroupName == "" {
-		return ""
-	}
-	// Return empty for unsupported option types.
-	if o.Type != Object &&
-		o.Type != List &&
-		o.Type != StringMap {
-		return ""
-	}
-	return md.Link(o.TargetGroupName, md.HeaderLinkTarget(o.TargetGroupName))
 }
 
 // ShortDescription produces the short description of the option.

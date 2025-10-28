@@ -39,7 +39,11 @@ func MarkdownDoc(groups []*options.Group) (docs string, err error) {
 
 	w := &strings.Builder{}
 
-	err = optionsTemplate.Execute(w, groups)
+	scope := newTemplateScope(groups...)
+
+	err = optionsTemplate.
+		Funcs(scope.templateFuncs()).
+		Execute(w, groups)
 	if err != nil {
 		return w.String(), fmt.Errorf("bug in optionshelp template: %w", err)
 	}
@@ -48,27 +52,20 @@ func MarkdownDoc(groups []*options.Group) (docs string, err error) {
 }
 
 var (
-	// Template functions.
-	optionsTemplateFunc = template.FuncMap{
-		"default":     dfault,
-		"groupTable":  groupTable,
-		"optionTable": optionTable,
-	}
-
 	//go:embed options.md.tmpl
 	optionsTemplateStr string
 
 	// Parsed template.
 	optionsTemplate = template.Must(
 		template.New("").
-			Funcs(optionsTemplateFunc).
+			Funcs(newTemplateScope().templateFuncs()).
 			Parse(optionsTemplateStr))
 )
 
 // SetTemplate overrides the default template.
 func SetTemplate(tmpl string) error {
 	parsed, err := template.New("").
-		Funcs(optionsTemplateFunc).
+		Funcs(newTemplateScope().templateFuncs()).
 		Parse(tmpl)
 	if err != nil {
 		return fmt.Errorf("overriding template: %w", err)

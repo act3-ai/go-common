@@ -11,7 +11,8 @@ Table of contents:
 {{- if .Description }}
 
 {{ .Description }}
-{{ end }}
+{{- end }}
+
 {{ groupTable . }}
 {{- range .Options }}
 {{- if ne .Type "object"  }}

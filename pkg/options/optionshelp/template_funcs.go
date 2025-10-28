@@ -4,12 +4,43 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"text/template"
 
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/act3-ai/go-common/pkg/md"
 	"github.com/act3-ai/go-common/pkg/options"
 )
+
+type templateScope struct {
+	groupsByKey map[string]*options.Group
+}
+
+func newTemplateScope(groups ...*options.Group) *templateScope {
+	scope := &templateScope{
+		groupsByKey: map[string]*options.Group{},
+	}
+	for _, group := range groups {
+		scope.groupsByKey[group.Key] = group
+	}
+	return scope
+}
+
+func (scope *templateScope) templateFuncs() template.FuncMap {
+	return template.FuncMap{
+		"default":     dfault,
+		"groupTable":  scope.GroupTable,
+		"optionTable": scope.OptionTable,
+	}
+}
+
+func (scope *templateScope) mustGetGroup(key string) *options.Group {
+	group, ok := scope.groupsByKey[key]
+	if !ok {
+		panic(fmt.Errorf("no group with key %q", key))
+	}
+	return group
+}
 
 /*
 | Option | Description |
@@ -18,14 +49,23 @@ import (
 | {{ .MarkdownLink }} | {{ .ShortDescription }} |
 {{- end }}
 */
-func groupTable(g *options.Group) string {
+func (scope *templateScope) GroupTable(g *options.Group) string {
 	header := []string{"Option", "Description"}
 	rows := [][]string{}
 
 	for _, o := range g.Options {
-		rows = append(rows, []string{
-			o.MarkdownLink(), o.ShortDescription(),
-		})
+		header := o.Header()
+		switch {
+		case o.TargetGroupName != "":
+			group := scope.mustGetGroup(o.TargetGroupName)
+			rows = append(rows, []string{
+				md.Link(header, md.HeaderLinkTarget(group.Title)), o.ShortDescription(),
+			})
+		default:
+			rows = append(rows, []string{
+				md.Link(header, md.HeaderLinkTarget(header)), o.ShortDescription(),
+			})
+		}
 	}
 
 	return writeTable(header, rows)
@@ -54,34 +94,34 @@ func groupTable(g *options.Group) string {
 | env       | `{{ .Env }}` |
 {{- end }}
 */
-func optionTable(o *options.Option) string {
+func (scope *templateScope) OptionTable(o *options.Option) string {
 	header := []string{"Name", "Value"}
 	rows := [][]string{}
 
 	switch o.Type {
 	case options.Object:
 		rows = append(rows, []string{
-			"type", o.FormattedValueType(),
+			"type", scope.formattedValueType(o),
 		})
 	case options.List:
 		rows = append(rows, [][]string{
 			{"type", "list"},
-			{"values", o.FormattedValueType()},
+			{"values", scope.formattedValueType(o)},
 		}...)
 	case options.StringMap:
 		rows = append(rows, [][]string{
 			{"type", "object"},
 			{"keys", "string"},
-			{"values", o.FormattedValueType()},
+			{"values", scope.formattedValueType(o)},
 		}...)
 	default:
 		rows = append(rows, []string{
 			"type", string(o.Type),
 		})
 	}
-	if fdefault := o.FormattedDefault(); fdefault != "" {
+	if o.Default != "" {
 		rows = append(rows, []string{
-			"default", md.Code(fdefault),
+			"default", md.Code(o.Default),
 		})
 	}
 	if o.JSON != "" {
@@ -110,6 +150,38 @@ func optionTable(o *options.Option) string {
 	}
 
 	return writeTable(header, rows)
+}
+
+// func (scope *templateScope) formattedType(o *options.Option) string {
+// 	switch o.Type {
+// 	case options.Object:
+// 		if o.TargetGroupName != "" {
+// 			return scope.targetLink(o.TargetGroupName)
+// 		}
+// 		return "object"
+// 	case options.List:
+// 		return fmt.Sprintf("list(values: %s)", scope.formattedValueType(o))
+// 	case options.StringMap:
+// 		return fmt.Sprintf("object(keys: string, values: %s)", scope.formattedValueType(o))
+// 	default:
+// 		return string(o.Type)
+// 	}
+// }
+
+func (scope *templateScope) formattedValueType(o *options.Option) string {
+	switch {
+	case o.ValueType != "":
+		return string(o.ValueType)
+	case o.TargetGroupName != "":
+		return scope.targetLink(o.TargetGroupName)
+	default:
+		return "any"
+	}
+}
+
+func (scope *templateScope) targetLink(groupKey string) string {
+	group := scope.mustGetGroup(groupKey)
+	return md.Link(group.Title, md.HeaderLinkTarget(group.Title))
 }
 
 // writeTable writes a markdown table with equal length columns

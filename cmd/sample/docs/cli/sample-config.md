@@ -46,7 +46,7 @@ Greeting for the user.
 | Name    | Value                 |
 | ------- | --------------------- |
 | type    | string                |
-| default | `"Hello"`             |
+| default | `Hello`               |
 | cli     | `--greeting`, `-g`    |
 | env     | `ACE_SAMPLE_GREETING` |
 
