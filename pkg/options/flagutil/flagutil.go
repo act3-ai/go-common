@@ -77,6 +77,18 @@ func BoolVarP(f *pflag.FlagSet, p *bool, name, shorthand string, value bool, usa
 	return f.Lookup(name)
 }
 
+// BoolFunc creates a [pflag.Flag].
+func BoolFunc(f *pflag.FlagSet, name string, usage string, fn func(string) error) *pflag.Flag {
+	f.BoolFunc(name, usage, fn)
+	return f.Lookup(name)
+}
+
+// BoolFuncP creates a [pflag.Flag].
+func BoolFuncP(f *pflag.FlagSet, name, shorthand string, usage string, fn func(string) error) *pflag.Flag {
+	f.BoolFuncP(name, shorthand, usage, fn)
+	return f.Lookup(name)
+}
+
 /* Bytes flag types */
 // BytesBase64
 // BytesHex
@@ -146,6 +158,20 @@ func Float64SliceVar(f *pflag.FlagSet, p *[]float64, name string, value []float6
 // Float64SliceVarP creates a [pflag.Flag].
 func Float64SliceVarP(f *pflag.FlagSet, p *[]float64, name, shorthand string, value []float64, usage string) *pflag.Flag {
 	f.Float64SliceVarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
+
+/* Func flag types */
+
+// Func creates a [pflag.Flag].
+func Func(f *pflag.FlagSet, name string, usage string, fn func(string) error) *pflag.Flag {
+	f.Func(name, usage, fn)
+	return f.Lookup(name)
+}
+
+// FuncP creates a [pflag.Flag].
+func FuncP(f *pflag.FlagSet, name, shorthand string, usage string, fn func(string) error) *pflag.Flag {
+	f.FuncP(name, shorthand, usage, fn)
 	return f.Lookup(name)
 }
 

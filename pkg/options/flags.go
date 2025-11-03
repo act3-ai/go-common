@@ -42,12 +42,7 @@ func StringToOptStringVar(f *pflag.FlagSet, p *map[string]*string, value map[str
 
 // Var creates a flag for the option.
 func Var(f *pflag.FlagSet, value pflag.Value, opts *Option) *pflag.Flag {
-	var flag *pflag.Flag
-	if opts.FlagShorthand == "" {
-		flag = flagutil.Var(f, value, opts.Flag, opts.formattedFlagUsage())
-	} else {
-		flag = flagutil.VarP(f, value, opts.Flag, opts.FlagShorthand, opts.formattedFlagUsage())
-	}
+	flag := f.VarPF(value, opts.Flag, opts.FlagShorthand, opts.formattedFlagUsage())
 	withOptionConfig(flag, opts)
 	return flag
 }
@@ -59,18 +54,20 @@ func BoolVar(f *pflag.FlagSet, p *bool, value bool, opts *Option) *pflag.Flag {
 	return OptionFlag(f, p, value, opts, flagutil.BoolVarP)
 }
 
+// BoolFunc creates a flag for the option.
+func BoolFunc(f *pflag.FlagSet, opts *Option, fn func(string) error) *pflag.Flag {
+	flag := flagutil.BoolFuncP(f, opts.Flag, opts.FlagShorthand, opts.formattedFlagUsage(), fn)
+	withOptionConfig(flag, opts)
+	return flag
+}
+
 /* Bytes flag types */
 
 /* Count flag types */
 
 // CountVar creates a flag for the option.
 func CountVar(f *pflag.FlagSet, p *int, opts *Option) *pflag.Flag {
-	var flag *pflag.Flag
-	if opts.FlagShorthand == "" {
-		flag = flagutil.CountVar(f, p, opts.Flag, opts.formattedFlagUsage())
-	} else {
-		flag = flagutil.CountVarP(f, p, opts.Flag, opts.FlagShorthand, opts.formattedFlagUsage())
-	}
+	flag := flagutil.CountVarP(f, p, opts.Flag, opts.FlagShorthand, opts.formattedFlagUsage())
 	withOptionConfig(flag, opts)
 	return flag
 }
@@ -78,6 +75,15 @@ func CountVar(f *pflag.FlagSet, p *int, opts *Option) *pflag.Flag {
 /* Duration flag types */
 
 /* Float flag types */
+
+/* Func flag types */
+
+// Func creates a flag for the option.
+func Func(f *pflag.FlagSet, opts *Option, fn func(string) error) *pflag.Flag {
+	flag := flagutil.FuncP(f, opts.Flag, opts.FlagShorthand, opts.formattedFlagUsage(), fn)
+	withOptionConfig(flag, opts)
+	return flag
+}
 
 /* IP flag types */
 
