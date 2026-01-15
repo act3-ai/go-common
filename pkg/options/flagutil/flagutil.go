@@ -1,7 +1,11 @@
 // Package flagutil defines utilities for registering and parsing command line flags.
 package flagutil
 
-import "github.com/spf13/pflag"
+import (
+	"time"
+
+	"github.com/spf13/pflag"
+)
 
 /*
 This file contains flag creation functions that combine the flag creation and flag lookup step.
@@ -63,7 +67,6 @@ func VarP(f *pflag.FlagSet, value pflag.Value, name, shorthand string, usage str
 }
 
 /* Bool flag types */
-// BoolSlice
 
 // BoolVar creates a [pflag.Flag].
 func BoolVar(f *pflag.FlagSet, p *bool, name string, value bool, usage string) *pflag.Flag {
@@ -74,6 +77,18 @@ func BoolVar(f *pflag.FlagSet, p *bool, name string, value bool, usage string) *
 // BoolVarP creates a [pflag.Flag].
 func BoolVarP(f *pflag.FlagSet, p *bool, name, shorthand string, value bool, usage string) *pflag.Flag {
 	f.BoolVarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
+
+// BoolSliceVar creates a [pflag.Flag].
+func BoolSliceVar(f *pflag.FlagSet, p *[]bool, name string, value []bool, usage string) *pflag.Flag {
+	f.BoolSliceVar(p, name, value, usage)
+	return f.Lookup(name)
+}
+
+// BoolSliceVarP creates a [pflag.Flag].
+func BoolSliceVarP(f *pflag.FlagSet, p *[]bool, name, shorthand string, value []bool, usage string) *pflag.Flag {
+	f.BoolSliceVarP(p, name, shorthand, value, usage)
 	return f.Lookup(name)
 }
 
@@ -108,8 +123,30 @@ func CountVarP(f *pflag.FlagSet, p *int, name, shorthand string, usage string) *
 }
 
 /* Duration flag types */
-// Duration
-// DurationSlice
+
+// DurationVar creates a [pflag.Flag].
+func DurationVar(f *pflag.FlagSet, p *time.Duration, name string, value time.Duration, usage string) *pflag.Flag {
+	f.DurationVar(p, name, value, usage)
+	return f.Lookup(name)
+}
+
+// DurationVarP creates a [pflag.Flag].
+func DurationVarP(f *pflag.FlagSet, p *time.Duration, name, shorthand string, value time.Duration, usage string) *pflag.Flag {
+	f.DurationVarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
+
+// DurationSliceVar creates a [pflag.Flag].
+func DurationSliceVar(f *pflag.FlagSet, p *[]time.Duration, name string, value []time.Duration, usage string) *pflag.Flag {
+	f.DurationSliceVar(p, name, value, usage)
+	return f.Lookup(name)
+}
+
+// DurationSliceVarP creates a [pflag.Flag].
+func DurationSliceVarP(f *pflag.FlagSet, p *[]time.Duration, name, shorthand string, value []time.Duration, usage string) *pflag.Flag {
+	f.DurationSliceVarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
 
 /* Float flag types */
 
@@ -182,12 +219,6 @@ func FuncP(f *pflag.FlagSet, name, shorthand string, usage string, fn func(strin
 // IPSlice
 
 /* Int flag types */
-// Int8
-// Int8Slice
-// Int16
-// Int16Slice
-// Int32
-// Int32Slice
 
 // IntVar creates a [pflag.Flag].
 func IntVar(f *pflag.FlagSet, p *int, name string, value int, usage string) *pflag.Flag {
@@ -351,9 +382,75 @@ func StringToStringVarP(f *pflag.FlagSet, p *map[string]string, name, shorthand 
 }
 
 /* Uint flag types */
-// Uint
-// UintSlice
-// Uint8
-// Uint16
-// Uint32
-// Uint64
+
+// UintVar creates a [pflag.Flag].
+func UintVar(f *pflag.FlagSet, p *uint, name string, value uint, usage string) *pflag.Flag {
+	f.UintVar(p, name, value, usage)
+	return f.Lookup(name)
+}
+
+// UintVarP creates a [pflag.Flag].
+func UintVarP(f *pflag.FlagSet, p *uint, name, shorthand string, value uint, usage string) *pflag.Flag {
+	f.UintVarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
+
+// UintSliceVar creates a [pflag.Flag].
+func UintSliceVar(f *pflag.FlagSet, p *[]uint, name string, value []uint, usage string) *pflag.Flag {
+	f.UintSliceVar(p, name, value, usage)
+	return f.Lookup(name)
+}
+
+// UintSliceVarP creates a [pflag.Flag].
+func UintSliceVarP(f *pflag.FlagSet, p *[]uint, name, shorthand string, value []uint, usage string) *pflag.Flag {
+	f.UintSliceVarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
+
+// Uint8Var creates a [pflag.Flag].
+func Uint8Var(f *pflag.FlagSet, p *uint8, name string, value uint8, usage string) *pflag.Flag {
+	f.Uint8Var(p, name, value, usage)
+	return f.Lookup(name)
+}
+
+// Uint8VarP creates a [pflag.Flag].
+func Uint8VarP(f *pflag.FlagSet, p *uint8, name, shorthand string, value uint8, usage string) *pflag.Flag {
+	f.Uint8VarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
+
+// Uint16Var creates a [pflag.Flag].
+func Uint16Var(f *pflag.FlagSet, p *uint16, name string, value uint16, usage string) *pflag.Flag {
+	f.Uint16Var(p, name, value, usage)
+	return f.Lookup(name)
+}
+
+// Uint16VarP creates a [pflag.Flag].
+func Uint16VarP(f *pflag.FlagSet, p *uint16, name, shorthand string, value uint16, usage string) *pflag.Flag {
+	f.Uint16VarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
+
+// Uint32Var creates a [pflag.Flag].
+func Uint32Var(f *pflag.FlagSet, p *uint32, name string, value uint32, usage string) *pflag.Flag {
+	f.Uint32Var(p, name, value, usage)
+	return f.Lookup(name)
+}
+
+// Uint32VarP creates a [pflag.Flag].
+func Uint32VarP(f *pflag.FlagSet, p *uint32, name, shorthand string, value uint32, usage string) *pflag.Flag {
+	f.Uint32VarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
+
+// Uint64Var creates a [pflag.Flag].
+func Uint64Var(f *pflag.FlagSet, p *uint64, name string, value uint64, usage string) *pflag.Flag {
+	f.Uint64Var(p, name, value, usage)
+	return f.Lookup(name)
+}
+
+// Uint64VarP creates a [pflag.Flag].
+func Uint64VarP(f *pflag.FlagSet, p *uint64, name, shorthand string, value uint64, usage string) *pflag.Flag {
+	f.Uint64VarP(p, name, shorthand, value, usage)
+	return f.Lookup(name)
+}
