@@ -3,14 +3,16 @@ package formats
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/muesli/termenv"
+	"github.com/spf13/pflag"
 
 	"github.com/act3-ai/go-common/pkg/options"
 	"github.com/act3-ai/go-common/pkg/options/cobrautil"
 	"github.com/act3-ai/go-common/pkg/options/flagutil"
 	"github.com/act3-ai/go-common/pkg/termdoc"
 	"github.com/act3-ai/go-common/pkg/termdoc/codefmt"
-	"github.com/muesli/termenv"
-	"github.com/spf13/pflag"
 )
 
 //nolint:unused
@@ -97,7 +99,12 @@ func Colorful() cobrautil.UsageFormatOptions {
 			FormatUsage: func(flag *pflag.Flag, usage string) string {
 				envName := flagutil.GetEnvName(flag)
 				if envName != "" {
-					usage += fmt.Sprintf(" (env: %s)", ansiCyan().Bold().Styled(envName))
+					envUsage := fmt.Sprintf("(env: %s)", ansiCyan().Bold().Styled(envName))
+					if strings.Contains(usage, "\n") {
+						usage += "\n" + envUsage
+					} else {
+						usage += " " + envUsage
+					}
 				}
 				return usage
 			},

@@ -76,7 +76,12 @@ func markdownFlagLineFunc(flag *pflag.Flag) (line string, skip bool) {
 
 	envName := flagutil.GetEnvName(flag)
 	if envName != "" {
-		flagUsage += fmt.Sprintf(" (env: %s)", md.Code(envName))
+		envUsage := fmt.Sprintf("(env: %s)", md.Code(envName))
+		if strings.Contains(flagUsage, "\n") {
+			flagUsage += "\n  " + envUsage
+		} else {
+			flagUsage += " " + envUsage
+		}
 	}
 
 	if !flagutil.DefaultIsZeroValue(flag) {
