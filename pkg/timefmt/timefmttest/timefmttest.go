@@ -55,14 +55,14 @@ func runInputTests(t *testing.T, layout timefmt.Interface, tests []InputTest) {
 			t.Run("TimeUnmarshalJSON", func(t *testing.T) {
 				var got time.Time
 				err := layout.TimeUnmarshalJSON(fmt.Appendf(nil, "%q", tt.Value), &got)
-				testutil.AssertErrorIf(t, tt.WantErr, err)
-				assertTimeEquals(t, tt.Want, got, "parsed time does not match")
+				testutil.AssertErrorIf(t, tt.WantErr, err, "TimeUnmarshalJSON() error")
+				assertTimeEquals(t, tt.Want, got, "TimeUnmarshalJSON() output")
 			})
 			t.Run("TimeUnmarshalText", func(t *testing.T) {
 				var got time.Time
 				err := layout.TimeUnmarshalText([]byte(tt.Value), &got)
-				testutil.AssertErrorIf(t, tt.WantErr, err)
-				assertTimeEquals(t, tt.Want, got, "parsed time does not match")
+				testutil.AssertErrorIf(t, tt.WantErr, err, "TimeUnmarshalText() error")
+				assertTimeEquals(t, tt.Want, got, "TimeUnmarshalText() output")
 			})
 		})
 	}
@@ -122,20 +122,20 @@ func runOutputTests(t *testing.T, layout timefmt.Interface, tests []OutputTest) 
 	t.Helper()
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Run("ToString", func(t *testing.T) {
-				got := layout.ToString(tt.Value)
-				assert.Equal(t, tt.Want, got, "ToString value")
+			t.Run("Format", func(t *testing.T) {
+				got := layout.Format(tt.Value)
+				assert.Equal(t, tt.Want, got, "Format() output")
 			})
 			t.Run("TimeMarshalJSON", func(t *testing.T) {
 				wantJSON := fmt.Sprintf("%q", tt.Want)
 				got, err := layout.TimeMarshalJSON(tt.Value)
-				require.NoError(t, err, "TimeMarshalJSON error")
-				assert.Equal(t, wantJSON, string(got), "TimeMarshalJSON value")
+				require.NoError(t, err, "TimeMarshalJSON() error")
+				assert.Equal(t, wantJSON, string(got), "TimeMarshalJSON() output")
 			})
 			t.Run("TimeMarshalText", func(t *testing.T) {
 				got, err := layout.TimeMarshalText(tt.Value)
-				require.NoError(t, err, "TimeMarshalText error")
-				assert.Equal(t, tt.Want, string(got), "TimeMarshalText value")
+				require.NoError(t, err, "TimeMarshalText() error")
+				assert.Equal(t, tt.Want, string(got), "TimeMarshalText() output")
 			})
 		})
 	}

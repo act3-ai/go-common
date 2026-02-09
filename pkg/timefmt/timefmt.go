@@ -8,7 +8,9 @@ import (
 
 // Interface represents a timestamp format.
 type Interface interface {
-	ToString(ts time.Time) string
+	Parse(value string) (time.Time, error)
+	Format(ts time.Time) string
+
 	TimeMarshalJSON(ts time.Time) ([]byte, error)
 	TimeUnmarshalJSON(data []byte, ts *time.Time) error
 	TimeAppendText(b []byte, ts time.Time) ([]byte, error)
@@ -19,14 +21,19 @@ type Interface interface {
 // TimeFormat defines a timestamp format.
 type TimeFormat string
 
-// ToString is used for implementing fmt.Stringer.
-func (layout TimeFormat) ToString(ts time.Time) string {
+// Parse parses a timestamp.
+func (layout TimeFormat) Parse(value string) (time.Time, error) {
+	return time.Parse(string(layout), value)
+}
+
+// Format is used for implementing fmt.Stringer.
+func (layout TimeFormat) Format(ts time.Time) string {
 	return ts.Format(string(layout))
 }
 
 // TimeMarshalJSON is used for implementing json.Marshaler.
 func (layout TimeFormat) TimeMarshalJSON(ts time.Time) ([]byte, error) {
-	return json.Marshal(layout.ToString(ts))
+	return json.Marshal(layout.Format(ts))
 }
 
 // TimeUnmarshalJSON is used for implementing json.Unmarshaler.
@@ -52,14 +59,19 @@ func (layout TimeFormat) TimeUnmarshalText(data []byte, ts *time.Time) error {
 // UTCTimeFormat defines a timestamp format that will always be serialized as UTC.
 type UTCTimeFormat string
 
-// ToString is used for implementing fmt.Stringer.
-func (layout UTCTimeFormat) ToString(ts time.Time) string {
+// Parse parses a timestamp.
+func (layout UTCTimeFormat) Parse(value string) (time.Time, error) {
+	return time.Parse(string(layout), value)
+}
+
+// Format is used for implementing fmt.Stringer.
+func (layout UTCTimeFormat) Format(ts time.Time) string {
 	return ts.UTC().Format(string(layout))
 }
 
 // TimeMarshalJSON is used for implementing json.Marshaler.
 func (layout UTCTimeFormat) TimeMarshalJSON(ts time.Time) ([]byte, error) {
-	return json.Marshal(layout.ToString(ts))
+	return json.Marshal(layout.Format(ts))
 }
 
 // TimeUnmarshalJSON is used for implementing json.Unmarshaler.
