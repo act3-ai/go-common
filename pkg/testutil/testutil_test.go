@@ -32,7 +32,7 @@ func TestAssertErrorIf(t *testing.T) {
 
 func TestAssertPanicsIf(t *testing.T) {
 	var panicFunc assert.PanicTestFunc = func() { panic("test") }
-	var noPanicFunc assert.PanicTestFunc = func() { return }
+	var noPanicFunc assert.PanicTestFunc = func() {}
 	type args struct {
 		wantPanic bool
 		f         assert.PanicTestFunc
