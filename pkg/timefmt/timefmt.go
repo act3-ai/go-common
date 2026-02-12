@@ -9,6 +9,7 @@ import (
 // Interface represents a timestamp format.
 type Interface interface {
 	Parse(value string) (time.Time, error)
+	ParseInLocation(value string, loc *time.Location) (time.Time, error)
 	Format(ts time.Time) string
 
 	TimeMarshalJSON(ts time.Time) ([]byte, error)
@@ -24,6 +25,11 @@ type TimeFormat string
 // Parse parses a timestamp.
 func (layout TimeFormat) Parse(value string) (time.Time, error) {
 	return time.Parse(string(layout), value)
+}
+
+// ParseInLocation parses a timestamp using the given location.
+func (layout TimeFormat) ParseInLocation(value string, loc *time.Location) (time.Time, error) {
+	return time.ParseInLocation(string(layout), value, loc)
 }
 
 // Format is used for implementing fmt.Stringer.
@@ -62,6 +68,11 @@ type UTCTimeFormat string
 // Parse parses a timestamp.
 func (layout UTCTimeFormat) Parse(value string) (time.Time, error) {
 	return time.Parse(string(layout), value)
+}
+
+// ParseInLocation parses a timestamp using the given location.
+func (layout UTCTimeFormat) ParseInLocation(value string, loc *time.Location) (time.Time, error) {
+	return time.ParseInLocation(string(layout), value, loc)
 }
 
 // Format is used for implementing fmt.Stringer.

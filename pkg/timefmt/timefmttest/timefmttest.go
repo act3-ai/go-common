@@ -52,6 +52,16 @@ func runInputTests(t *testing.T, layout timefmt.Interface, tests []InputTest) {
 	t.Helper()
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
+			t.Run("Parse", func(t *testing.T) {
+				got, err := layout.Parse(tt.Value)
+				testutil.AssertErrorIf(t, tt.WantErr, err, "Parse() error")
+				assertTimeEquals(t, tt.Want, got, "Parse() output")
+			})
+			t.Run("ParseInLocation", func(t *testing.T) {
+				got, err := layout.ParseInLocation(tt.Value, time.UTC)
+				testutil.AssertErrorIf(t, tt.WantErr, err, "ParseInLocation() error")
+				assertTimeEquals(t, tt.Want.In(time.UTC), got, "ParseInLocation() output")
+			})
 			t.Run("TimeUnmarshalJSON", func(t *testing.T) {
 				var got time.Time
 				err := layout.TimeUnmarshalJSON(fmt.Appendf(nil, "%q", tt.Value), &got)
