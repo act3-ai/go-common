@@ -1,8 +1,6 @@
 module github.com/act3-ai/go-common
 
-go 1.24.2
-
-toolchain go1.24.4
+go 1.25
 
 require (
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
@@ -10,7 +8,9 @@ require (
 	github.com/charmbracelet/x/ansi v0.10.3
 	github.com/cpuguy83/go-md2man/v2 v2.0.7
 	github.com/gomarkdown/markdown v0.0.0-20250810172220-2e2c11897d1a
+	github.com/google/jsonschema-go v0.4.2
 	github.com/google/uuid v1.6.0
+	github.com/iancoleman/orderedmap v0.3.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/invopop/jsonschema v0.13.0
 	github.com/muesli/termenv v0.16.0

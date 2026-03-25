@@ -1,0 +1,78 @@
+package schemautil
+
+import (
+	"iter"
+	"slices"
+
+	"github.com/google/jsonschema-go/jsonschema"
+	"k8s.io/apimachinery/pkg/util/sets"
+)
+
+// JSON Schema type values.
+const (
+	TypeArray   = "array"
+	TypeBoolean = "boolean"
+	TypeInteger = "integer"
+	TypeNull    = "null"
+	TypeNumber  = "number"
+	TypeObject  = "object"
+	TypeString  = "string"
+)
+
+// JSON Schema format values.
+const (
+	FormatDate     = "date"
+	FormatDateTime = "date-time"
+	FormatTime     = "time"
+	FormatInt32    = "int32"
+	FormatInt64    = "int64"
+	FormatFloat    = "float"
+	FormatDouble   = "double"
+)
+
+// OrderedProperties returns an iterator over the properties of a
+// schema in their defined order, if they are defined with an order.
+func OrderedProperties(schema *jsonschema.Schema) iter.Seq2[string, *jsonschema.Schema] {
+	return func(yield func(string, *jsonschema.Schema) bool) {
+		for propName := range OrderedPropertyNames(schema) {
+			if !yield(propName, schema.Properties[propName]) {
+				return
+			}
+		}
+	}
+}
+
+// OrderedPropertyNames returns an iterator over the property names of a
+// schema in their defined order, if they are defined with an order.
+func OrderedPropertyNames(schema *jsonschema.Schema) iter.Seq[string] {
+	return func(yield func(string) bool) {
+		if schema == nil || schema.Properties == nil {
+			return
+		}
+
+		for _, propName := range schema.PropertyOrder {
+			if !yield(propName) {
+				return
+			}
+		}
+
+		// Lookup for ordered property names
+		orderedProps := sets.New(schema.PropertyOrder...)
+
+		// Create list of remaining property names
+		remainingProperties := make([]string, 0, len(schema.Properties)-len(schema.PropertyOrder))
+		for propName := range schema.Properties {
+			if !orderedProps.Has(propName) {
+				// Add property if it is not in PropertyOrder
+				remainingProperties = append(remainingProperties, propName)
+			}
+		}
+
+		// Iterate over the remaining properties in deterministic order
+		for _, propName := range slices.Sorted(slices.Values(remainingProperties)) {
+			if !yield(propName) {
+				return
+			}
+		}
+	}
+}
