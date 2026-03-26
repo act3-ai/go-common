@@ -1,6 +1,8 @@
 package schemautil
 
 import (
+	"bytes"
+	"encoding/json"
 	"iter"
 	"slices"
 
@@ -75,4 +77,28 @@ func OrderedPropertyNames(schema *jsonschema.Schema) iter.Seq[string] {
 			}
 		}
 	}
+}
+
+// TrueSchema returns a Schema that validates any JSON value.
+// It is equivalent to the empty schema ({}), which marshals to the JSON literal true.
+func TrueSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{}
+}
+
+// FalseSchema returns a Schema that validates no JSON value.
+// It is equivalent to the schema {"not": {}}, which marshals to the JSON literal false.
+func FalseSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{Not: TrueSchema()}
+}
+
+// IsTrueSchema reports whether the schema is the true schema, as defined by TrueSchema.
+func IsTrueSchema(schema *jsonschema.Schema) bool {
+	data, _ := json.Marshal(schema) //nolint:errchkjson // if this fails, the schema is not the true schema
+	return bytes.Equal(data, []byte(`true`))
+}
+
+// IsFalseSchema reports whether the schema is the false schema, as defined by FalseSchema.
+func IsFalseSchema(schema *jsonschema.Schema) bool {
+	data, _ := json.Marshal(schema) //nolint:errchkjson // if this fails, the schema is not the false schema
+	return bytes.Equal(data, []byte(`false`))
 }

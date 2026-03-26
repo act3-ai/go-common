@@ -9,6 +9,8 @@ import (
 	gschema "github.com/google/jsonschema-go/jsonschema"
 	ischema "github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
+
+	"github.com/act3-ai/go-common/pkg/schemautil"
 )
 
 // ToGoogleJSONSchema converts a schema from [github.com/invopop/jsonschema] to [github.com/google/jsonschema-go/jsonschema].
@@ -17,6 +19,13 @@ import (
 func ToGoogleJSONSchema(in *ischema.Schema) *gschema.Schema {
 	if in == nil {
 		return nil
+	}
+	// Special cases for the "true" or "false" schema
+	switch in {
+	case ischema.TrueSchema:
+		return schemautil.TrueSchema()
+	case ischema.FalseSchema:
+		return schemautil.FalseSchema()
 	}
 	out := &gschema.Schema{
 		ID:      string(in.ID),

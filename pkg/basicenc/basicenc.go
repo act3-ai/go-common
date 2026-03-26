@@ -13,10 +13,12 @@ type BasicEncoding struct {
 
 // NewBasicEncoding creates a basic encoding using the given encoding
 // replacements to encode/decode values.
-func NewBasicEncoding(encodings ...[2]string) *BasicEncoding {
+// The replacements must be provided in the order of application
+// for encoding a value.
+func NewBasicEncoding(replacements [][2]string) *BasicEncoding {
 	return &BasicEncoding{
-		encoder: newBasicEncoder(encodings...),
-		decoder: newBasicDecoder(encodings...),
+		encoder: newBasicEncoder(replacements),
+		decoder: newBasicDecoder(replacements),
 	}
 }
 
@@ -32,10 +34,10 @@ func (enc *BasicEncoding) Decode(value string) string {
 
 // newBasicEncoder produces a [strings.Replacer] that
 // encodes values by performing the given replacements.
-func newBasicEncoder(encodings ...[2]string) *strings.Replacer {
-	values := make([]string, 0, len(encodings)*2)
+func newBasicEncoder(replacements [][2]string) *strings.Replacer {
+	values := make([]string, 0, len(replacements)*2)
 	// Add replacements in forward order
-	for _, replace := range encodings {
+	for _, replace := range replacements {
 		values = append(values, replace[0], replace[1])
 	}
 	return strings.NewReplacer(values...)
@@ -43,11 +45,11 @@ func newBasicEncoder(encodings ...[2]string) *strings.Replacer {
 
 // newBasicDecoder produces a [strings.Replacer] that
 // decodes values by reversing the given replacements.
-func newBasicDecoder(encodings ...[2]string) *strings.Replacer {
-	values := make([]string, 0, len(encodings)*2)
+func newBasicDecoder(replacements [][2]string) *strings.Replacer {
+	values := make([]string, 0, len(replacements)*2)
 	// Add replacements in reverse order
-	for _, replace := range slices.Backward(encodings) {
-		values = append(values, replace[1], replace[0]) // reverse the replacement
+	for _, replacement := range slices.Backward(replacements) {
+		values = append(values, replacement[1], replacement[0]) // reverse the replacement
 	}
 	return strings.NewReplacer(values...)
 }

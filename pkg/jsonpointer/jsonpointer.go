@@ -62,4 +62,4 @@ func Unescape(s string) string {
 var encoder = basicenc.NewBasicEncoding([][2]string{
 	{"~", "~0"},
 	{"/", "~1"},
-}...)
+})
