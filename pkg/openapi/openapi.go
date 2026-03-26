@@ -396,109 +396,109 @@ type PathItem struct {
 }
 
 // Reference produces a reference object if the object is a reference.
-func (pathItem *PathItem) Reference() *Reference {
-	if pathItem == nil || pathItem.Ref == "" {
+func (item *PathItem) Reference() *Reference {
+	if item == nil || item.Ref == "" {
 		return nil
 	}
 	return &Reference{
-		Ref:         pathItem.Ref,
-		Summary:     pathItem.Summary,
-		Description: pathItem.Description,
+		Ref:         item.Ref,
+		Summary:     item.Summary,
+		Description: item.Description,
 	}
 }
 
 // GetOperationForMethod returns the operation for the given HTTP method, or nil if no operation is defined.
-func (pathItem *PathItem) GetOperationForMethod(method string) *Operation {
+func (item *PathItem) GetOperationForMethod(method string) *Operation {
 	switch strings.ToUpper(method) {
 	case http.MethodGet, "":
-		return pathItem.Get
+		return item.Get
 	case http.MethodPut:
-		return pathItem.Put
+		return item.Put
 	case http.MethodPost:
-		return pathItem.Post
+		return item.Post
 	case http.MethodDelete:
-		return pathItem.Delete
+		return item.Delete
 	case http.MethodOptions:
-		return pathItem.Options
+		return item.Options
 	case http.MethodHead:
-		return pathItem.Head
+		return item.Head
 	case http.MethodPatch:
-		return pathItem.Patch
+		return item.Patch
 	case http.MethodTrace:
-		return pathItem.Trace
+		return item.Trace
 	case "QUERY":
-		return pathItem.Query
+		return item.Query
 	default:
-		if pathItem.AdditionalOperations != nil {
-			return pathItem.AdditionalOperations[strings.ToLower(method)]
+		if item.AdditionalOperations != nil {
+			return item.AdditionalOperations[strings.ToLower(method)]
 		}
 		return nil
 	}
 }
 
 // SetOperationForMethod sets the operation for the given HTTP method.
-func (pathItem *PathItem) SetOperationForMethod(method string, op *Operation) {
+func (item *PathItem) SetOperationForMethod(method string, op *Operation) {
 	switch method {
 	case http.MethodGet, "":
-		pathItem.Get = op
+		item.Get = op
 	case http.MethodPut:
-		pathItem.Put = op
+		item.Put = op
 	case http.MethodPost:
-		pathItem.Post = op
+		item.Post = op
 	case http.MethodDelete:
-		pathItem.Delete = op
+		item.Delete = op
 	case http.MethodOptions:
-		pathItem.Options = op
+		item.Options = op
 	case http.MethodHead:
-		pathItem.Head = op
+		item.Head = op
 	case http.MethodPatch:
-		pathItem.Patch = op
+		item.Patch = op
 	case http.MethodTrace:
-		pathItem.Trace = op
+		item.Trace = op
 	case "QUERY":
-		pathItem.Query = op
+		item.Query = op
 	default:
-		if pathItem.AdditionalOperations == nil {
-			pathItem.AdditionalOperations = make(map[string]*Operation, 1)
+		if item.AdditionalOperations == nil {
+			item.AdditionalOperations = make(map[string]*Operation, 1)
 		}
-		pathItem.AdditionalOperations[strings.ToLower(method)] = op
+		item.AdditionalOperations[strings.ToLower(method)] = op
 	}
 }
 
 // AllOperations returns an iterator over all operations defined on the path item.
-func (pathItem *PathItem) AllOperations() iter.Seq2[string, *Operation] {
+func (item *PathItem) AllOperations() iter.Seq2[string, *Operation] {
 	return func(yield func(string, *Operation) bool) {
-		if pathItem == nil {
+		if item == nil {
 			return
 		}
-		if pathItem.Get != nil && !yield(http.MethodGet, pathItem.Get) {
+		if item.Get != nil && !yield(http.MethodGet, item.Get) {
 			return
 		}
-		if pathItem.Put != nil && !yield(http.MethodPut, pathItem.Put) {
+		if item.Put != nil && !yield(http.MethodPut, item.Put) {
 			return
 		}
-		if pathItem.Post != nil && !yield(http.MethodPost, pathItem.Post) {
+		if item.Post != nil && !yield(http.MethodPost, item.Post) {
 			return
 		}
-		if pathItem.Delete != nil && !yield(http.MethodDelete, pathItem.Delete) {
+		if item.Delete != nil && !yield(http.MethodDelete, item.Delete) {
 			return
 		}
-		if pathItem.Options != nil && !yield(http.MethodOptions, pathItem.Options) {
+		if item.Options != nil && !yield(http.MethodOptions, item.Options) {
 			return
 		}
-		if pathItem.Head != nil && !yield(http.MethodHead, pathItem.Head) {
+		if item.Head != nil && !yield(http.MethodHead, item.Head) {
 			return
 		}
-		if pathItem.Patch != nil && !yield(http.MethodPatch, pathItem.Patch) {
+		if item.Patch != nil && !yield(http.MethodPatch, item.Patch) {
 			return
 		}
-		if pathItem.Trace != nil && !yield(http.MethodTrace, pathItem.Trace) {
+		if item.Trace != nil && !yield(http.MethodTrace, item.Trace) {
 			return
 		}
-		if pathItem.Query != nil && !yield("QUERY", pathItem.Query) {
+		if item.Query != nil && !yield("QUERY", item.Query) {
 			return
 		}
-		for method, op := range pathItem.AdditionalOperations {
+		for method, op := range item.AdditionalOperations {
 			if !yield(method, op) {
 				return
 			}
@@ -698,14 +698,14 @@ type Parameter struct {
 }
 
 // Reference produces a reference object if the object is a reference.
-func (p *Parameter) Reference() *Reference {
-	if p == nil || p.Ref == "" {
+func (parameter *Parameter) Reference() *Reference {
+	if parameter == nil || parameter.Ref == "" {
 		return nil
 	}
 	return &Reference{
-		Ref:         p.Ref,
+		Ref:         parameter.Ref,
 		Summary:     "",
-		Description: p.Description,
+		Description: parameter.Description,
 	}
 }
 
@@ -919,14 +919,14 @@ type Response struct {
 }
 
 // Reference produces a reference object if the object is a reference.
-func (r *Response) Reference() *Reference {
-	if r == nil || r.Ref == "" {
+func (response *Response) Reference() *Reference {
+	if response == nil || response.Ref == "" {
 		return nil
 	}
 	return &Reference{
-		Ref:         r.Ref,
+		Ref:         response.Ref,
 		Summary:     "",
-		Description: r.Description,
+		Description: response.Description,
 	}
 }
 
@@ -1004,14 +1004,14 @@ type Example struct {
 }
 
 // Reference produces a reference object if the object is a reference.
-func (e *Example) Reference() *Reference {
-	if e == nil || e.Ref == "" {
+func (example *Example) Reference() *Reference {
+	if example == nil || example.Ref == "" {
 		return nil
 	}
 	return &Reference{
-		Ref:         e.Ref,
-		Summary:     e.Summary,
-		Description: e.Description,
+		Ref:         example.Ref,
+		Summary:     example.Summary,
+		Description: example.Description,
 	}
 }
 
@@ -1066,14 +1066,14 @@ type Link struct {
 }
 
 // Reference produces a reference object if the object is a reference.
-func (l *Link) Reference() *Reference {
-	if l == nil || l.Ref == "" {
+func (link *Link) Reference() *Reference {
+	if link == nil || link.Ref == "" {
 		return nil
 	}
 	return &Reference{
-		Ref:         l.Ref,
+		Ref:         link.Ref,
 		Summary:     "",
-		Description: l.Description,
+		Description: link.Description,
 	}
 }
 
@@ -1134,14 +1134,14 @@ type Header struct {
 }
 
 // Reference produces a reference object if the object is a reference.
-func (h *Header) Reference() *Reference {
-	if h == nil || h.Ref == "" {
+func (header *Header) Reference() *Reference {
+	if header == nil || header.Ref == "" {
 		return nil
 	}
 	return &Reference{
-		Ref:         h.Ref,
+		Ref:         header.Ref,
 		Summary:     "",
-		Description: h.Description,
+		Description: header.Description,
 	}
 }
 
@@ -1492,14 +1492,14 @@ type SecurityScheme struct {
 }
 
 // Reference produces a reference object if the object is a reference.
-func (s *SecurityScheme) Reference() *Reference {
-	if s == nil || s.Ref == "" {
+func (scheme *SecurityScheme) Reference() *Reference {
+	if scheme == nil || scheme.Ref == "" {
 		return nil
 	}
 	return &Reference{
-		Ref:         s.Ref,
+		Ref:         scheme.Ref,
 		Summary:     "",
-		Description: s.Description,
+		Description: scheme.Description,
 	}
 }
 

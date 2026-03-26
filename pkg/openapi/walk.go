@@ -17,9 +17,9 @@ func (doc *Document) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 			return
 		}
 		for loc, schema := range concatSeq2(
-			withPrefix("#/paths", doc.Paths.AllSchemas()),
-			withPrefix("#/webhooks", schemasFromMap(doc.Webhooks)),
-			withPrefix("#/components", doc.Components.AllSchemas()),
+			withPrefix("/paths", doc.Paths.AllSchemas()),
+			withPrefix("/webhooks", schemasFromMap(doc.Webhooks)),
+			withPrefix("/components", doc.Components.AllSchemas()),
 		) {
 			if !yield(loc, schema) {
 				return
@@ -64,17 +64,17 @@ func (c *Components) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
 // The first argument is an RFC6901 JSON Pointer to the schema within the object.
-func (pathItem *PathItem) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
+func (item *PathItem) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
-		if pathItem == nil {
+		if item == nil {
 			return
 		}
-		for loc, schema := range withPrefix("/parameters", schemasFromSlice(pathItem.Parameters)) {
+		for loc, schema := range withPrefix("/parameters", schemasFromSlice(item.Parameters)) {
 			if !yield(loc, schema) {
 				return
 			}
 		}
-		for method, op := range pathItem.AllOperations() {
+		for method, op := range item.AllOperations() {
 			for loc, schema := range op.AllSchemas() {
 				if !yield("/"+jsonpointer.Escape(method)+loc, schema) {
 					return
@@ -106,12 +106,12 @@ func (op *Operation) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
 // The first argument is an RFC6901 JSON Pointer to the schema within the object.
-func (callback *Callback) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
+func (cb *Callback) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
-		if callback == nil {
+		if cb == nil {
 			return
 		}
-		for loc, schema := range withPrefix("/paths", schemasFromMap(callback.Paths)) {
+		for loc, schema := range withPrefix("/paths", schemasFromMap(cb.Paths)) {
 			if !yield(loc, schema) {
 				return
 			}
@@ -135,12 +135,12 @@ func (parameter *Parameter) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
 // The first argument is an RFC6901 JSON Pointer to the schema within the object.
-func (body *RequestBody) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
+func (rb *RequestBody) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
-		if body == nil {
+		if rb == nil {
 			return
 		}
-		for loc, schema := range withPrefix("/content", schemasFromMap(body.Content)) {
+		for loc, schema := range withPrefix("/content", schemasFromMap(rb.Content)) {
 			if !yield(loc, schema) {
 				return
 			}
@@ -150,25 +150,25 @@ func (body *RequestBody) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
 // The first argument is an RFC6901 JSON Pointer to the schema within the object.
-func (content *MediaType) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
+func (mt *MediaType) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
-		if content == nil {
+		if mt == nil {
 			return
 		}
-		if content.Schema != nil {
-			if !yield("/schema", content.Schema) {
+		if mt.Schema != nil {
+			if !yield("/schema", mt.Schema) {
 				return
 			}
 		}
-		if content.ItemSchema != nil {
-			if !yield("/itemSchema", content.ItemSchema) {
+		if mt.ItemSchema != nil {
+			if !yield("/itemSchema", mt.ItemSchema) {
 				return
 			}
 		}
 		for loc, schema := range concatSeq2(
-			withPrefix("/encoding", schemasFromMap(content.Encoding)),
-			withPrefix("/prefixEncoding", schemasFromSlice(content.PrefixEncoding)),
-			withPrefix("/itemEncoding", content.ItemEncoding.AllSchemas()),
+			withPrefix("/encoding", schemasFromMap(mt.Encoding)),
+			withPrefix("/prefixEncoding", schemasFromSlice(mt.PrefixEncoding)),
+			withPrefix("/itemEncoding", mt.ItemEncoding.AllSchemas()),
 		) {
 			if !yield(loc, schema) {
 				return
@@ -194,8 +194,8 @@ func (enc *Encoding) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
 // The first argument is an RFC6901 JSON Pointer to the schema within the object.
-func (responses Responses) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
-	return schemasFromMap(responses)
+func (r Responses) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
+	return schemasFromMap(r)
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.

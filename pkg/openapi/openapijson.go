@@ -82,12 +82,12 @@ func unmarshalWithExtensions(data []byte, v any, ext *map[string]json.RawMessage
 
 type documentAlias Document
 
-func (d Document) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(documentAlias(d), d.Extensions)
+func (doc Document) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(documentAlias(doc), doc.Extensions)
 }
 
-func (d *Document) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*documentAlias)(d), &d.Extensions)
+func (doc *Document) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*documentAlias)(doc), &doc.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,12 +96,12 @@ func (d *Document) UnmarshalJSON(data []byte) error {
 
 type infoAlias Info
 
-func (i Info) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(infoAlias(i), i.Extensions)
+func (info Info) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(infoAlias(info), info.Extensions)
 }
 
-func (i *Info) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*infoAlias)(i), &i.Extensions)
+func (info *Info) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*infoAlias)(info), &info.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,12 +110,12 @@ func (i *Info) UnmarshalJSON(data []byte) error {
 
 type contactAlias Contact
 
-func (c Contact) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(contactAlias(c), c.Extensions)
+func (contact Contact) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(contactAlias(contact), contact.Extensions)
 }
 
-func (c *Contact) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*contactAlias)(c), &c.Extensions)
+func (contact *Contact) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*contactAlias)(contact), &contact.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -124,12 +124,12 @@ func (c *Contact) UnmarshalJSON(data []byte) error {
 
 type licenseAlias License
 
-func (l License) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(licenseAlias(l), l.Extensions)
+func (license License) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(licenseAlias(license), license.Extensions)
 }
 
-func (l *License) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*licenseAlias)(l), &l.Extensions)
+func (license *License) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*licenseAlias)(license), &license.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,12 +138,12 @@ func (l *License) UnmarshalJSON(data []byte) error {
 
 type serverAlias Server
 
-func (s Server) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(serverAlias(s), s.Extensions)
+func (server Server) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(serverAlias(server), server.Extensions)
 }
 
-func (s *Server) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*serverAlias)(s), &s.Extensions)
+func (server *Server) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*serverAlias)(server), &server.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -180,15 +180,15 @@ func (c *Components) UnmarshalJSON(data []byte) error {
 
 type pathItemAlias PathItem
 
-func (p PathItem) MarshalJSON() ([]byte, error) {
-	if ref := p.Reference(); ref != nil {
+func (item PathItem) MarshalJSON() ([]byte, error) {
+	if ref := item.Reference(); ref != nil {
 		return json.Marshal(ref)
 	}
-	return marshalWithExtensions(pathItemAlias(p), p.Extensions)
+	return marshalWithExtensions(pathItemAlias(item), item.Extensions)
 }
 
-func (p *PathItem) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*pathItemAlias)(p), &p.Extensions)
+func (item *PathItem) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*pathItemAlias)(item), &item.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -197,12 +197,12 @@ func (p *PathItem) UnmarshalJSON(data []byte) error {
 
 type operationAlias Operation
 
-func (o Operation) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(operationAlias(o), o.Extensions)
+func (op Operation) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(operationAlias(op), op.Extensions)
 }
 
-func (o *Operation) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*operationAlias)(o), &o.Extensions)
+func (op *Operation) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*operationAlias)(op), &op.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -211,12 +211,12 @@ func (o *Operation) UnmarshalJSON(data []byte) error {
 
 type externalDocumentationAlias ExternalDocumentation
 
-func (e ExternalDocumentation) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(externalDocumentationAlias(e), e.Extensions)
+func (docs ExternalDocumentation) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(externalDocumentationAlias(docs), docs.Extensions)
 }
 
-func (e *ExternalDocumentation) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*externalDocumentationAlias)(e), &e.Extensions)
+func (docs *ExternalDocumentation) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*externalDocumentationAlias)(docs), &docs.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -225,15 +225,15 @@ func (e *ExternalDocumentation) UnmarshalJSON(data []byte) error {
 
 type parameterAlias Parameter
 
-func (p Parameter) MarshalJSON() ([]byte, error) {
-	if ref := p.Reference(); ref != nil {
+func (parameter Parameter) MarshalJSON() ([]byte, error) {
+	if ref := parameter.Reference(); ref != nil {
 		return json.Marshal(ref)
 	}
-	return marshalWithExtensions(parameterAlias(p), p.Extensions)
+	return marshalWithExtensions(parameterAlias(parameter), parameter.Extensions)
 }
 
-func (p *Parameter) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*parameterAlias)(p), &p.Extensions)
+func (parameter *Parameter) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*parameterAlias)(parameter), &parameter.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -259,12 +259,12 @@ func (rb *RequestBody) UnmarshalJSON(data []byte) error {
 
 type mediaTypeAlias MediaType
 
-func (m MediaType) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(mediaTypeAlias(m), m.Extensions)
+func (mt MediaType) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(mediaTypeAlias(mt), mt.Extensions)
 }
 
-func (m *MediaType) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*mediaTypeAlias)(m), &m.Extensions)
+func (mt *MediaType) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*mediaTypeAlias)(mt), &mt.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -273,12 +273,12 @@ func (m *MediaType) UnmarshalJSON(data []byte) error {
 
 type encodingAlias Encoding
 
-func (e Encoding) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(encodingAlias(e), e.Extensions)
+func (enc Encoding) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(encodingAlias(enc), enc.Extensions)
 }
 
-func (e *Encoding) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*encodingAlias)(e), &e.Extensions)
+func (enc *Encoding) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*encodingAlias)(enc), &enc.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -287,15 +287,15 @@ func (e *Encoding) UnmarshalJSON(data []byte) error {
 
 type responseAlias Response
 
-func (r Response) MarshalJSON() ([]byte, error) {
-	if ref := r.Reference(); ref != nil {
+func (response Response) MarshalJSON() ([]byte, error) {
+	if ref := response.Reference(); ref != nil {
 		return json.Marshal(ref)
 	}
-	return marshalWithExtensions(responseAlias(r), r.Extensions)
+	return marshalWithExtensions(responseAlias(response), response.Extensions)
 }
 
-func (r *Response) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*responseAlias)(r), &r.Extensions)
+func (response *Response) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*responseAlias)(response), &response.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -338,15 +338,15 @@ func (cb *Callback) UnmarshalJSON(data []byte) error {
 
 type exampleAlias Example
 
-func (e Example) MarshalJSON() ([]byte, error) {
-	if ref := e.Reference(); ref != nil {
+func (example Example) MarshalJSON() ([]byte, error) {
+	if ref := example.Reference(); ref != nil {
 		return json.Marshal(ref)
 	}
-	return marshalWithExtensions(exampleAlias(e), e.Extensions)
+	return marshalWithExtensions(exampleAlias(example), example.Extensions)
 }
 
-func (e *Example) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*exampleAlias)(e), &e.Extensions)
+func (example *Example) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*exampleAlias)(example), &example.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -355,15 +355,15 @@ func (e *Example) UnmarshalJSON(data []byte) error {
 
 type linkAlias Link
 
-func (l Link) MarshalJSON() ([]byte, error) {
-	if ref := l.Reference(); ref != nil {
+func (link Link) MarshalJSON() ([]byte, error) {
+	if ref := link.Reference(); ref != nil {
 		return json.Marshal(ref)
 	}
-	return marshalWithExtensions(linkAlias(l), l.Extensions)
+	return marshalWithExtensions(linkAlias(link), link.Extensions)
 }
 
-func (l *Link) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*linkAlias)(l), &l.Extensions)
+func (link *Link) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*linkAlias)(link), &link.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -372,15 +372,15 @@ func (l *Link) UnmarshalJSON(data []byte) error {
 
 type headerAlias Header
 
-func (h Header) MarshalJSON() ([]byte, error) {
-	if ref := h.Reference(); ref != nil {
+func (header Header) MarshalJSON() ([]byte, error) {
+	if ref := header.Reference(); ref != nil {
 		return json.Marshal(ref)
 	}
-	return marshalWithExtensions(headerAlias(h), h.Extensions)
+	return marshalWithExtensions(headerAlias(header), header.Extensions)
 }
 
-func (h *Header) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*headerAlias)(h), &h.Extensions)
+func (header *Header) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*headerAlias)(header), &header.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -389,12 +389,12 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 
 type tagAlias Tag
 
-func (t Tag) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(tagAlias(t), t.Extensions)
+func (tag Tag) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(tagAlias(tag), tag.Extensions)
 }
 
-func (t *Tag) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*tagAlias)(t), &t.Extensions)
+func (tag *Tag) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*tagAlias)(tag), &tag.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -403,15 +403,15 @@ func (t *Tag) UnmarshalJSON(data []byte) error {
 
 type securitySchemeAlias SecurityScheme
 
-func (s SecurityScheme) MarshalJSON() ([]byte, error) {
-	if ref := s.Reference(); ref != nil {
+func (scheme SecurityScheme) MarshalJSON() ([]byte, error) {
+	if ref := scheme.Reference(); ref != nil {
 		return json.Marshal(ref)
 	}
-	return marshalWithExtensions(securitySchemeAlias(s), s.Extensions)
+	return marshalWithExtensions(securitySchemeAlias(scheme), scheme.Extensions)
 }
 
-func (s *SecurityScheme) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*securitySchemeAlias)(s), &s.Extensions)
+func (scheme *SecurityScheme) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*securitySchemeAlias)(scheme), &scheme.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -420,12 +420,12 @@ func (s *SecurityScheme) UnmarshalJSON(data []byte) error {
 
 type oauthFlowsAlias OAuthFlows
 
-func (o OAuthFlows) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(oauthFlowsAlias(o), o.Extensions)
+func (flows OAuthFlows) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(oauthFlowsAlias(flows), flows.Extensions)
 }
 
-func (o *OAuthFlows) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*oauthFlowsAlias)(o), &o.Extensions)
+func (flows *OAuthFlows) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*oauthFlowsAlias)(flows), &flows.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -434,12 +434,12 @@ func (o *OAuthFlows) UnmarshalJSON(data []byte) error {
 
 type oauthFlowAlias OAuthFlow
 
-func (o OAuthFlow) MarshalJSON() ([]byte, error) {
-	return marshalWithExtensions(oauthFlowAlias(o), o.Extensions)
+func (flow OAuthFlow) MarshalJSON() ([]byte, error) {
+	return marshalWithExtensions(oauthFlowAlias(flow), flow.Extensions)
 }
 
-func (o *OAuthFlow) UnmarshalJSON(data []byte) error {
-	return unmarshalWithExtensions(data, (*oauthFlowAlias)(o), &o.Extensions)
+func (flow *OAuthFlow) UnmarshalJSON(data []byte) error {
+	return unmarshalWithExtensions(data, (*oauthFlowAlias)(flow), &flow.Extensions)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

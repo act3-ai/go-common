@@ -10,6 +10,7 @@ import (
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/act3-ai/go-common/pkg/jsonpointer"
+	"github.com/act3-ai/go-common/pkg/logger/logutil"
 )
 
 // NewExampleGenerator creates a new ExampleGenerator for a schema registry.
@@ -52,7 +53,11 @@ func (gen *ExampleGenerator) GetExample(ref string) (any, bool) {
 func (gen *ExampleGenerator) generateSchemaExample(loc string, schema *jsonschema.Schema) (any, bool) { //nolint:gocognit
 	// Empty value, dead end
 	if schema == nil {
-		slog.Error("empty schema", slog.String("location", loc))
+		slog.Error("empty schema", slog.String("loc", loc))
+		return nil, false
+	}
+	// Special case for "true" and "false" schemas
+	if IsFalseSchema(schema) || IsTrueSchema(schema) {
 		return nil, false
 	}
 	// Schema references another schema
@@ -78,40 +83,54 @@ func (gen *ExampleGenerator) generateSchemaExample(loc string, schema *jsonschem
 		return schema.Enum[0], true
 	}
 
+	// Get the schema's type
+	var schemaType string
+	switch {
+	case schema.Type != "":
+		schemaType = schema.Type
+	case len(schema.Types) > 0:
+		// Multiple types specified, grab first type that is not "null" or ""
+		// Fallback to "null" if it is the only option
+		schemaType = schema.Types[0]
+		for _, t := range schema.Types {
+			switch {
+			case t == "":
+				// skip empty type values
+				continue
+			case schemaType == "":
+				// Always use this type if unset
+				schemaType = t
+			case schemaType == TypeNull &&
+				t != TypeNull:
+				// Overwrite null types with non-null types
+				schemaType = t
+			}
+		}
+	}
+
 	// Schema type switch
-	switch schema.Type {
+	switch schemaType {
+	// Return nil as null example
+	case TypeNull:
+		return nil, true
+	// Return false as boolean example
+	case TypeBoolean:
+		return false, true
+	// Return string examples
+	case TypeString:
+		return gen.generateStringExample(loc, schema)
+	// Return number examples
+	case TypeNumber:
+		return gen.generateNumberExample(loc, schema)
+	// Return number examples
+	case TypeInteger:
+		return gen.generateIntegerExample(loc, schema)
 	// Generate array element example and return a single-element array
 	case TypeArray:
 		return gen.generateArrayExample(loc, schema)
 	// Generate field examples and return a map
 	case TypeObject:
 		return gen.generateObjectExample(loc, schema)
-	// Return false as boolean example
-	case TypeBoolean:
-		return false, true
-	// Return string examples
-	case TypeString:
-		switch schema.Format {
-		case FormatDate:
-			return "2006-01-02", true
-		case FormatDateTime:
-			return "2006-01-02T15:04:05Z", true
-		case FormatTime:
-			return "15:04:05Z", true
-		default:
-			return "string", true
-		}
-	// Return number examples
-	case TypeNumber:
-		switch schema.Format {
-		case FormatFloat, FormatDouble:
-			return "1000.123", true
-		default:
-			return "1", true
-		}
-	// Return number examples
-	case TypeInteger:
-		return "1", true
 	}
 
 	// Basic support for following "allOf" schemas:
@@ -128,7 +147,7 @@ func (gen *ExampleGenerator) generateSchemaExample(loc string, schema *jsonschem
 	}
 
 	// Log error and return false
-	slog.Error("empty example for schema", slog.String("location", loc))
+	slog.Error("empty example for schema", slog.String("loc", loc))
 	return nil, false
 }
 
@@ -139,11 +158,134 @@ func getExtraKey(schema *jsonschema.Schema, key string) any {
 	return schema.Extra[key]
 }
 
+// generateStringExample generates an example value for a string schema.
+func (gen *ExampleGenerator) generateStringExample(loc string, schema *jsonschema.Schema) (string, bool) {
+	// Start with an example value
+	example := "string"
+
+	// Create examples using "format"
+	if schema.Format != "" {
+		switch schema.Format {
+		case FormatDate:
+			example = "2006-01-02"
+		case FormatDateTime:
+			example = "2006-01-02T15:04:05Z"
+		case FormatTime:
+			example = "15:04:05Z"
+		default:
+			// Log all other formats
+			slog.Warn("unsupported format",
+				slog.String("loc", loc),
+				slog.String("format", schema.Format),
+			)
+		}
+	}
+
+	// Validate the example, returning false if validation fails
+	if !isValid(loc, schema, example) {
+		return "", false
+	}
+
+	// Return the generated example
+	return example, true
+}
+
+// generateNumberExample generates an example value for a number schema.
+func (gen *ExampleGenerator) generateNumberExample(loc string, schema *jsonschema.Schema) (float64, bool) {
+	// Start with an example value
+	example := 1000.123
+
+	// Set above the minimum value if too low
+	switch {
+	case schema.Minimum != nil:
+		example = max(example, *schema.Minimum)
+	case schema.ExclusiveMinimum != nil:
+		example = max(example, *schema.ExclusiveMinimum+0.123)
+	}
+
+	// Set below the maximum value if too high
+	switch {
+	case schema.Maximum != nil:
+		example = min(example, *schema.Maximum)
+	case schema.ExclusiveMaximum != nil:
+		example = min(example, *schema.ExclusiveMaximum-1+0.123)
+	}
+
+	// Obey multipleOf
+	if schema.MultipleOf != nil {
+		example = *schema.MultipleOf
+	}
+
+	// Validate the example, returning false if validation fails
+	if !isValid(loc, schema, example) {
+		return 0, false
+	}
+
+	// Return the generated example
+	return example, true
+}
+
+// generateIntegerExample generates an example value for a number schema.
+func (gen *ExampleGenerator) generateIntegerExample(loc string, schema *jsonschema.Schema) (float64, bool) {
+	// Start with an example value
+	example := float64(1)
+
+	// Set above the minimum value if too low
+	switch {
+	case schema.Minimum != nil:
+		example = max(example, *schema.Minimum)
+	case schema.ExclusiveMinimum != nil:
+		example = max(example, *schema.ExclusiveMinimum+1)
+	}
+
+	// Set below the maximum value if too high
+	switch {
+	case schema.Maximum != nil:
+		example = min(example, *schema.Maximum)
+	case schema.ExclusiveMaximum != nil:
+		example = min(example, *schema.ExclusiveMaximum-1)
+	}
+
+	// Obey multipleOf
+	if schema.MultipleOf != nil {
+		example = *schema.MultipleOf
+	}
+
+	// Validate the example, returning false if validation fails
+	if !isValid(loc, schema, example) {
+		return 0, false
+	}
+
+	// Return the generated example
+	return example, true
+}
+
+// isValid reports if the example is valid according to the JSON Schema.
+// NOTE: only use for basic JSON Schema types (string, number, integer)
+func isValid(loc string, schema *jsonschema.Schema, example any) bool {
+	res, err := schema.Resolve(&jsonschema.ResolveOptions{})
+	if err != nil {
+		slog.Warn("failed to resolve schema for validation",
+			slog.String("loc", loc),
+			logutil.Err(err),
+		)
+		return false
+	}
+	if err := res.Validate(example); err != nil {
+		slog.Warn("generated example failed validation",
+			slog.String("loc", loc),
+			logutil.Err(err),
+		)
+		return false
+	}
+	return true
+}
+
 // generateArrayExample generates an example value for an array schema.
 func (gen *ExampleGenerator) generateArrayExample(loc string, schema *jsonschema.Schema) ([]any, bool) {
 	example, ok := gen.generateSchemaExample(loc+"/items", schema.Items)
 	if !ok {
-		slog.Error("generating example for array element", slog.String("location", loc))
+		slog.Error("generating example for array element", slog.String("loc", loc))
 		// Return nil array
 		return nil, false
 	}
@@ -173,7 +315,7 @@ func (gen *ExampleGenerator) generateObjectExample(loc string, schema *jsonschem
 		if !ok {
 			if required[propName] {
 				slog.Error("no example for required property",
-					slog.String("location", loc),
+					slog.String("loc", loc),
 					slog.String("property", propName),
 				)
 			}
@@ -183,11 +325,9 @@ func (gen *ExampleGenerator) generateObjectExample(loc string, schema *jsonschem
 	}
 
 	// Add example for additional properties
-	if addPropSchema := schema.AdditionalProperties; addPropSchema != nil {
-		addPropName, addPropExample, ok := gen.generateAdditionalPropertiesExample(loc+"/additionalProperties", addPropSchema)
-		if ok {
-			example.Set(addPropName, addPropExample)
-		}
+	addPropName, addPropExample, ok := gen.generateAdditionalPropertiesExample(loc+"/additionalProperties", schema.AdditionalProperties)
+	if ok {
+		example.Set(addPropName, addPropExample)
 	}
 
 	return example, true
@@ -195,12 +335,16 @@ func (gen *ExampleGenerator) generateObjectExample(loc string, schema *jsonschem
 
 // generateAdditionalPropertiesExample generates an example value for an additionalProperties schema.
 func (gen *ExampleGenerator) generateAdditionalPropertiesExample(loc string, addPropSchema *jsonschema.Schema) (addPropName string, addPropExample any, ok bool) {
+	if addPropSchema == nil || IsFalseSchema(addPropSchema) || IsTrueSchema(addPropSchema) {
+		return "", "", false
+	}
+
 	// Support for the "x-additionalPropertiesName" extension
 	addPropName = cmp.Or(GetXAdditionalPropertiesName(addPropSchema), "additionalProp1")
 	addPropExample, ok = gen.generateSchemaExample(loc, addPropSchema)
 	if !ok {
 		slog.Error("no example for additional property schema",
-			slog.String("location", loc),
+			slog.String("loc", loc),
 		)
 	}
 	return addPropName, addPropExample, ok
@@ -215,7 +359,7 @@ func (gen *ExampleGenerator) generateAllOfExample(loc string, schema *jsonschema
 	subLoc := loc + "/allOf/" + strconv.Itoa(index)
 	example, ok := gen.generateSchemaExample(subLoc, allOfSchema)
 	if !ok {
-		slog.Error("empty example for allOf schema", slog.String("location", subLoc))
+		slog.Error("empty example for allOf schema", slog.String("loc", subLoc))
 	}
 	return example, ok
 }
@@ -229,7 +373,7 @@ func (gen *ExampleGenerator) generateAnyOfExample(loc string, schema *jsonschema
 	subLoc := loc + "/anyOf/" + strconv.Itoa(index)
 	example, ok := gen.generateSchemaExample(subLoc, anyOfSchema)
 	if !ok {
-		slog.Error("empty example for anyOf schema", slog.String("location", subLoc))
+		slog.Error("empty example for anyOf schema", slog.String("loc", subLoc))
 	}
 	return example, ok
 }
@@ -243,7 +387,7 @@ func (gen *ExampleGenerator) generateOneOfExample(loc string, schema *jsonschema
 	subLoc := loc + "/oneOf/" + strconv.Itoa(index)
 	example, ok := gen.generateSchemaExample(subLoc, oneOfSchema)
 	if !ok {
-		slog.Error("empty example for oneOf schema", slog.String("location", subLoc))
+		slog.Error("empty example for oneOf schema", slog.String("loc", subLoc))
 	}
 	return example, ok
 }
@@ -268,7 +412,7 @@ func enterAllOf(loc string, schema *jsonschema.Schema) (int, *jsonschema.Schema)
 	default:
 		// Cannot use the enterSubschemaList function because allOf is different
 		slog.Warn("ignoring multiple allOf schemas for example",
-			slog.String("location", loc+"/allOf"),
+			slog.String("loc", loc+"/allOf"),
 			slog.Int("length", len(schema.AllOf)),
 		)
 		return 0, schema.AllOf[0]
@@ -322,7 +466,7 @@ func enterSubschemaList(loc string, key string, schemas []*jsonschema.Schema) (i
 	}
 	if selectedSchema != nil {
 		slog.Info("selecting "+key+" schema for example",
-			slog.String("location", loc+"/"+key+"/"+strconv.Itoa(selectedIndex)),
+			slog.String("loc", loc+"/"+key+"/"+strconv.Itoa(selectedIndex)),
 			slog.Int("length", len(schemas)),
 		)
 	}

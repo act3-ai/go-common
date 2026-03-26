@@ -1,3 +1,4 @@
+// package schemautil contains utilities for working with JSON Schemas.
 package schemautil
 
 import (
