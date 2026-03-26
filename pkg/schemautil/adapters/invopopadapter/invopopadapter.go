@@ -33,7 +33,7 @@ func ToGoogleJSONSchema(in *ischema.Schema) *gschema.Schema {
 		// Vocabulary: N/A,
 		Title:       in.Title,
 		Description: in.Description,
-		Default:     mustMarshalJSON(in.Default),
+		Default:     must(jsonMarshalIfNotNil(in.Default)),
 		Deprecated:  in.Deprecated,
 		ReadOnly:    in.ReadOnly,
 		WriteOnly:   in.WriteOnly,
@@ -132,13 +132,12 @@ func keysFromOrderedMap(in *orderedmap.OrderedMap[string, *ischema.Schema]) []st
 	return out
 }
 
-// mustMarshalJSON calls json.Marshal on the value and panics on error.
-func mustMarshalJSON(v any) []byte {
-	data, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
+// jsonMarshalIfNotNil calls json.Marshal on the value if it is not nil.
+func jsonMarshalIfNotNil(v any) ([]byte, error) {
+	if v == nil {
+		return nil, nil
 	}
-	return data
+	return json.Marshal(v)
 }
 
 // ptrIfNotNil returns a pointer to the value if it is non-nil.
