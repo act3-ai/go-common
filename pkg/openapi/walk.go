@@ -10,6 +10,7 @@ import (
 )
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (doc *Document) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if doc == nil {
@@ -28,11 +29,13 @@ func (doc *Document) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (paths Paths) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return schemasFromMap(paths)
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (c *Components) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if c == nil {
@@ -59,7 +62,8 @@ func (c *Components) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	}
 }
 
-// allSchemas returns an iterator over all contained JSON Schemas.
+// AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (pathItem *PathItem) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if pathItem == nil {
@@ -81,6 +85,7 @@ func (pathItem *PathItem) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (op *Operation) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if op == nil {
@@ -100,6 +105,7 @@ func (op *Operation) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (callback *Callback) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if callback == nil {
@@ -114,6 +120,7 @@ func (callback *Callback) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (parameter *Parameter) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if parameter == nil {
@@ -127,6 +134,7 @@ func (parameter *Parameter) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (body *RequestBody) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if body == nil {
@@ -141,6 +149,7 @@ func (body *RequestBody) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (content *MediaType) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if content == nil {
@@ -169,6 +178,7 @@ func (content *MediaType) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (enc *Encoding) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if enc == nil {
@@ -183,11 +193,13 @@ func (enc *Encoding) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (responses Responses) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return schemasFromMap(responses)
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (header *Header) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if header == nil {
@@ -201,6 +213,7 @@ func (header *Header) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 }
 
 // AllSchemas returns an iterator over all contained JSON Schemas.
+// The first argument is an RFC6901 JSON Pointer to the schema within the object.
 func (response *Response) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	return func(yield func(loc string, schema *jsonschema.Schema) bool) {
 		if response == nil {
@@ -217,11 +230,6 @@ func (response *Response) AllSchemas() iter.Seq2[string, *jsonschema.Schema] {
 	}
 }
 
-// private interface for use in the iteration helpers below.
-type schemaWalker interface {
-	AllSchemas() iter.Seq2[string, *jsonschema.Schema]
-}
-
 // withPrefix prepends a prefix to each value produced by the iterator.
 func withPrefix[T1 ~string, T2 any](prefix T1, values iter.Seq2[T1, T2]) iter.Seq2[T1, T2] {
 	return func(yield func(T1, T2) bool) {
@@ -231,6 +239,11 @@ func withPrefix[T1 ~string, T2 any](prefix T1, values iter.Seq2[T1, T2]) iter.Se
 			}
 		}
 	}
+}
+
+// private interface for use in the iteration helpers below.
+type schemaWalker interface {
+	AllSchemas() iter.Seq2[string, *jsonschema.Schema]
 }
 
 // schemasFromMap returns an iterator over all JSON Schemas contained in the map values.

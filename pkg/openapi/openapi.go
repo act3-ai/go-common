@@ -96,15 +96,16 @@ type Document struct {
 }
 
 // GetSchema produces the schema at the given reference.
-func (doc *Document) GetSchema(ref string) *jsonschema.Schema {
+func (doc *Document) GetSchema(ref string) (*jsonschema.Schema, bool) {
 	if doc == nil || doc.Components.Schemas == nil {
-		return nil
+		return nil, false
 	}
-	schemaName, ok := strings.CutPrefix(ref, "#/components/schemas/")
+	name, ok := strings.CutPrefix(ref, "#/components/schemas/")
 	if !ok {
-		return nil
+		return nil, false
 	}
-	return doc.Components.Schemas[schemaName]
+	schema, ok := doc.Components.Schemas[name]
+	return schema, ok
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -259,7 +260,7 @@ type ServerVariable struct {
 // https://spec.openapis.org/oas/v3.2.0#components-object
 type Components struct {
 	// An object to hold reusable Schema Objects.
-	Schemas map[string]*jsonschema.Schema `json:"schemas,omitempty"`
+	Schemas map[string]*Schema `json:"schemas,omitempty"`
 
 	// An object to hold reusable Response Objects.
 	Responses map[string]*Response `json:"responses,omitempty"`
@@ -685,7 +686,7 @@ type Parameter struct {
 	AllowReserved bool `json:"allowReserved,omitempty"`
 
 	// The schema defining the type used for the parameter.
-	Schema *jsonschema.Schema `json:"schema,omitempty"`
+	Schema *Schema `json:"schema,omitempty"`
 
 	// A map containing the representations for the parameter. The key is the
 	// media type and the value describes it. The map MUST only contain one
@@ -798,10 +799,10 @@ func (rb *RequestBody) Reference() *Reference {
 type MediaType struct {
 	// A schema describing the complete content of the request, response,
 	// parameter, or header.
-	Schema *jsonschema.Schema `json:"schema,omitempty"`
+	Schema *Schema `json:"schema,omitempty"`
 
 	// A schema describing each item within a sequential media type.
-	ItemSchema *jsonschema.Schema `json:"itemSchema,omitempty"`
+	ItemSchema *Schema `json:"itemSchema,omitempty"`
 
 	// Example of the media type; see Working With Examples.
 	Example json.RawMessage `json:"example,omitempty"`
@@ -1115,7 +1116,7 @@ type Header struct {
 	Explode *bool `json:"explode,omitempty"`
 
 	// The schema defining the type used for the header.
-	Schema *jsonschema.Schema `json:"schema,omitempty"`
+	Schema *Schema `json:"schema,omitempty"`
 
 	// Example of the header's potential value; see Working With Examples.
 	Example json.RawMessage `json:"example,omitempty"`
@@ -1270,7 +1271,7 @@ var (
 )
 
 // SchemaReference produces a reference object if the schema object is a reference.
-func SchemaReference(schema *jsonschema.Schema) *Reference {
+func SchemaReference(schema *Schema) *Reference {
 	if schema == nil || schema.Ref == "" {
 		return nil
 	}
@@ -1280,6 +1281,22 @@ func SchemaReference(schema *jsonschema.Schema) *Reference {
 		Description: schema.Description,
 	}
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Schema Object
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Schema allows the definition of input and output data types. These types can
+// be objects, but also primitives and arrays. This object is a superset of the
+// [JSON Schema Specification Draft 2020-12]. The empty schema (which allows
+// any instance to validate) MAY be represented by the boolean value true and a
+// schema which allows no instance to validate MAY be represented by the boolean
+// value false.
+//
+// https://spec.openapis.org/oas/v3.2.0#schema-object
+//
+// [JSON Schema Specification Draft 2020-12]: https://json-schema.org/draft/2020-12
+type Schema = jsonschema.Schema
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Discriminator Object

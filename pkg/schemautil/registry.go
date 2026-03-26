@@ -1,20 +1,13 @@
 package schemautil
 
 import (
-	"errors"
-
 	"github.com/google/jsonschema-go/jsonschema"
 )
 
-var (
-	// ErrSchemaNotFound is returned when a schema is not found.
-	ErrSchemaNotFound = errors.New("schema not found")
-)
-
-// Registry defines schema retrieval.
+// Registry defines a registry of JSON Schemas.
 type Registry interface {
-	// GetSchema returns the schema at the given reference.
-	GetSchema(ref string) *jsonschema.Schema
+	// GetSchema returns the JSON Schema at the given reference.
+	GetSchema(ref string) (*jsonschema.Schema, bool)
 }
 
 var _ Registry = MapRegistry(nil)
@@ -23,9 +16,10 @@ var _ Registry = MapRegistry(nil)
 type MapRegistry map[string]*jsonschema.Schema
 
 // GetSchema implements Registry.
-func (reg MapRegistry) GetSchema(ref string) *jsonschema.Schema {
+func (reg MapRegistry) GetSchema(ref string) (*jsonschema.Schema, bool) {
 	if len(reg) == 0 {
-		return nil
+		return nil, false
 	}
-	return reg[ref]
+	schema, ok := reg[ref]
+	return schema, ok
 }

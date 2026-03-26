@@ -35,8 +35,13 @@ type result struct {
 // GetExample gets the example value for the reference.
 func (gen *ExampleGenerator) GetExample(ref string) (any, bool) {
 	if _, ok := gen.results[ref]; !ok {
+		// Resolve the reference
+		schema, ok := gen.reg.GetSchema(ref)
+		if !ok {
+			return nil, false
+		}
 		// Generate example if not generated yet
-		example, ok := gen.generateSchemaExample(ref, gen.reg.GetSchema(ref))
+		example, ok := gen.generateSchemaExample(ref, schema)
 		gen.results[ref] = result{example, ok}
 	}
 	// Return generated example
