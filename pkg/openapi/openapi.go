@@ -55,7 +55,7 @@ type Document struct {
 	// target server. If the servers field is not provided, or is an empty array,
 	// the default value would be an array consisting of a single Server Object
 	// with a url value of "/".
-	Servers []Server `json:"servers,omitempty"`
+	Servers []*Server `json:"servers,omitempty"`
 
 	// The available paths and operations for the API.
 	Paths Paths `json:"paths,omitempty"`
@@ -86,7 +86,7 @@ type Document struct {
 	// tools. Not all tags that are used by the Operation Object must be declared.
 	// The tags that are not declared MAY be organized randomly or based on the
 	// tools' logic. Each tag name in the list MUST be unique.
-	Tags []Tag `json:"tags,omitempty"`
+	Tags []*Tag `json:"tags,omitempty"`
 
 	// Additional external documentation.
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
@@ -381,7 +381,7 @@ type PathItem struct {
 	// An alternative servers array to service all operations in this path. If a
 	// servers array is specified at the OpenAPI Object level, it will be
 	// overridden by this value.
-	Servers []Server `json:"servers,omitempty"`
+	Servers []*Server `json:"servers,omitempty"`
 
 	// A list of parameters that are applicable for all the operations described
 	// under this path. These parameters can be overridden at the operation
@@ -572,12 +572,12 @@ type Operation struct {
 	// security requirement ({}) can be included in the array. This definition
 	// overrides any declared top-level security. To remove a top-level security
 	// declaration, an empty array can be used.
-	Security []SecurityRequirement `json:"security,omitempty"`
+	Security []*SecurityRequirement `json:"security,omitempty"`
 
 	// An alternative servers array to service this operation. If a servers
 	// array is specified at the Path Item Object or OpenAPI Object level, it
 	// will be overridden by this value.
-	Servers []Server `json:"servers,omitempty"`
+	Servers []*Server `json:"servers,omitempty"`
 
 	// Specification extensions (keys MUST begin with "x-").
 	Extensions map[string]json.RawMessage `json:"-"`
