@@ -1,10 +1,14 @@
 package jsonpointer
 
 import (
+	"math"
 	"slices"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/act3-ai/go-common/pkg/testutil"
 )
 
 func TestEncoding(t *testing.T) {
@@ -218,6 +222,133 @@ func TestPopToken(t *testing.T) {
 			assert.Equal(t, tt.token, token)
 			assert.Equal(t, tt.remainder, remainder)
 			assert.Equal(t, tt.ok, ok)
+		})
+	}
+}
+
+func TestParseArrayIndexToken(t *testing.T) {
+	tests := []struct {
+		name       string
+		token      string
+		index      int
+		isNewIndex bool
+		wantErr    string
+	}{
+		{
+			name:       "empty string",
+			token:      "",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing "": empty value`,
+		},
+		{
+			name:       "non-numeric string",
+			token:      "this",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing "this": invalid syntax`,
+		},
+		{
+			name:       "dash token",
+			token:      "-",
+			index:      0,
+			isNewIndex: true,
+			wantErr:    "",
+		},
+		{
+			name:       "dash token with leading space",
+			token:      " -",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing " -": invalid syntax`,
+		},
+		{
+			name:       "dash token with trailing space",
+			token:      "- ",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing "- ": invalid syntax`,
+		},
+		{
+			name:       "zero",
+			token:      "0",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    ``,
+		},
+		{
+			name:       "zero with leading space",
+			token:      " 0",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing " 0": invalid syntax`,
+		},
+		{
+			name:       "zero with trailing space",
+			token:      "0 ",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing "0 ": invalid syntax`,
+		},
+		{
+			name:       "number",
+			token:      "17",
+			index:      17,
+			isNewIndex: false,
+			wantErr:    ``,
+		},
+		{
+			name:       "number with leading zero",
+			token:      "017",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing "017": invalid syntax`,
+		},
+		{
+			name:       "number with multiple leading zeros",
+			token:      "0017",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing "0017": invalid syntax`,
+		},
+		{
+			name:       "number with leading space",
+			token:      " 17",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing " 17": invalid syntax`,
+		},
+		{
+			name:       "number with trailing space",
+			token:      "17 ",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: parsing "17 ": invalid syntax`,
+		},
+		{
+			name:       "MaxUint64 overflow",
+			token:      strconv.FormatUint(math.MaxUint64, 10) + "0",
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: strconv.Atoi: parsing "184467440737095516150": value out of range`,
+		},
+		{
+			name:       "MaxInt overflow",
+			token:      strconv.FormatUint(math.MaxInt+1, 10),
+			index:      0,
+			isNewIndex: false,
+			wantErr:    `invalid array index: strconv.Atoi: parsing "9223372036854775808": value out of range`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			index, isNewIndex, err := ParseArrayIndexToken(tt.token)
+			assert.Equal(t, tt.index, index, "ParseArrayIndexToken() index")
+			assert.Equal(t, tt.isNewIndex, isNewIndex, "ParseArrayIndexToken() isNewIndex")
+			testutil.AssertErrorIf(t, tt.wantErr != "", err, "ParseArrayIndexToken() error")
+			if tt.wantErr != "" && err != nil {
+				assert.Equal(t, tt.wantErr, err.Error(), "ParseArrayIndexToken() error content")
+			}
 		})
 	}
 }

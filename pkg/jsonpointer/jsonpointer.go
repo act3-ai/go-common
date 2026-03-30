@@ -4,7 +4,11 @@
 package jsonpointer
 
 import (
+	"errors"
+	"fmt"
 	"iter"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/act3-ai/go-common/pkg/basicenc"
@@ -109,3 +113,55 @@ func IsValid(p string) bool {
 	// "/" refers to the value of the field named ""
 	return p == "" || p[0] == '/'
 }
+
+var (
+	// ErrInvalidArrayIndex is returned when a token is an invalid index.
+	ErrInvalidArrayIndex = errors.New("invalid array index")
+)
+
+// ParseArrayIndexToken parses the unescaped token from a JSON Pointer as a
+// JSON array index.
+//
+// Returns the parsed index, a boolean indicating if the token is the
+// sentinel value "-" which references a (nonexistent) member after the last
+// array element, and any error encountered during parsing.
+//
+// RFC6901 states that if the currently referenced value is a JSON array,
+// the reference token MUST contain either:
+//
+//   - characters comprised of digits (see ABNF below; note that
+//     leading zeros are not allowed) that represent an unsigned
+//     base-10 integer value, making the new referenced value the
+//     array element with the zero-based index identified by the
+//     token, or
+//   - exactly the single character "-", making the new referenced
+//     value the (nonexistent) member after the last array element.
+func ParseArrayIndexToken(token string) (index int, isNewIndex bool, err error) {
+	switch token {
+	case "":
+		// Empty string is an error
+		return 0, false, fmt.Errorf("%w: parsing %q: empty value", ErrInvalidArrayIndex, token)
+	case "-":
+		// Reference the (nonexistent) member after the last array element
+		return 0, true, nil
+	default:
+		// Parse as digits using stricter function than strconv.Atoi
+		index, err := parseUnsignedIntegerStrict(token)
+		if err != nil {
+			return 0, false, fmt.Errorf("%w: %w", ErrInvalidArrayIndex, err)
+		}
+		return index, false, nil
+	}
+}
+
+// parseUnsignedIntegerStrict parses an unsigned integer without leading zeros.
+func parseUnsignedIntegerStrict(s string) (int, error) {
+	if len(regexIntNoLeadingZero.FindStringIndex(s)) == 0 {
+		return 0, fmt.Errorf("parsing %q: %w", s, strconv.ErrSyntax)
+	}
+	// Parse into int
+	return strconv.Atoi(s)
+}
+
+// regexIntNoLeadingZero validates strings as unsigned integers without leading zeros.
+var regexIntNoLeadingZero = regexp.MustCompile(`^(0|[1-9][0-9]*)$`)
