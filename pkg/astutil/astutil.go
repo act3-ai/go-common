@@ -1,6 +1,7 @@
 package astutil
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"go/ast"
@@ -14,9 +15,10 @@ import (
 
 // PackageInfo stores Go package information.
 type PackageInfo struct {
-	Pkgs       []*packages.Package
-	Fset       *token.FileSet
-	Inspectors []*inspector.Inspector // per-package
+	Pkgs []*packages.Package
+	Fset *token.FileSet
+	// Inspectors []*inspector.Inspector
+	inspectors map[string]*inspector.Inspector // per-package inspectors
 }
 
 // LoadPackageInfo loads all packages matching any of the given patterns and
@@ -60,13 +62,13 @@ func LoadPackageInfo(ctx context.Context, patterns ...string) (*PackageInfo, err
 	return &PackageInfo{
 		Pkgs:       pkgs,
 		Fset:       fset,
-		Inspectors: inspectors,
+		inspectors: make(map[string]*inspector.Inspector, len(pkgs)),
 	}, nil
 }
 
 // TypeComment produces the ast.CommentGroup for the
 func (info *PackageInfo) TypeComment(pkgPath, typeName string) (*ast.CommentGroup, error) {
-	_, typeCursor, err := info.getType(pkgPath, typeName)
+	typeCursor, _, err := info.getType(pkgPath, typeName)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +76,7 @@ func (info *PackageInfo) TypeComment(pkgPath, typeName string) (*ast.CommentGrou
 }
 
 func (info *PackageInfo) FieldComment(pkgPath, typeName, fieldName string) (*ast.CommentGroup, error) {
-	_, typeCursor, err := info.getType(pkgPath, typeName)
+	typeCursor, _, err := info.getType(pkgPath, typeName)
 	if err != nil {
 		return nil, err
 	}
@@ -90,30 +92,34 @@ func (info *PackageInfo) FieldComment(pkgPath, typeName, fieldName string) (*ast
 	return nil, fmt.Errorf("field %s.%s.%s not found", pkgPath, typeName, fieldName)
 }
 
-func (info *PackageInfo) getPackage(pkgPath string) (*inspector.Inspector, error) {
-	for i, pkg := range info.Pkgs {
+func (info *PackageInfo) getPackage(pkgPath string) (inspector.Cursor, *packages.Package, error) {
+	for _, pkg := range info.Pkgs {
 		if pkg.PkgPath == pkgPath {
-			return info.Inspectors[i], nil
+			if _, ok := info.inspectors[pkgPath]; !ok {
+				// Create inspector if not yet initialized
+				info.inspectors[pkgPath] = inspector.New(pkg.Syntax)
+			}
+			return info.inspectors[pkgPath].Root(), pkg, nil
 		}
 	}
-	return nil, fmt.Errorf("package %s not found", pkgPath)
+	return inspector.Cursor{}, nil, fmt.Errorf("package %s not found", pkgPath)
 }
 
-func (info *PackageInfo) getType(pkgPath, typeName string) (*ast.TypeSpec, inspector.Cursor, error) {
-	in, err := info.getPackage(pkgPath)
+func (info *PackageInfo) getType(pkgPath, typeName string) (inspector.Cursor, *ast.TypeSpec, error) {
+	pkgCursor, _, err := info.getPackage(pkgPath)
 	if err != nil {
-		return nil, inspector.Cursor{}, err
+		return inspector.Cursor{}, nil, err
 	}
 
 	// Search all TypeSpecs for matching name
-	for typeCursor, typeSpec := range allTypeSpecs(in) {
+	for typeCursor, typeSpec := range allTypeSpecs(pkgCursor) {
 		// Return cursor if found
 		if typeSpec.Name.Name == typeName {
-			return typeSpec, typeCursor, nil
+			return typeCursor, typeSpec, nil
 		}
 	}
 
-	return nil, inspector.Cursor{}, fmt.Errorf("type %s.%s not found", pkgPath, typeName)
+	return inspector.Cursor{}, nil, fmt.Errorf("type %s.%s not found", pkgPath, typeName)
 }
 
 type ExtractedComment struct {
@@ -126,8 +132,9 @@ type ExtractedComment struct {
 
 func (info *PackageInfo) AllComments() []ExtractedComment {
 	result := []ExtractedComment{}
-	for i, pkg := range info.Pkgs {
-		for typeCursor, typeSpec := range allTypeSpecs(info.Inspectors[i]) {
+	for _, pkg := range info.Pkgs {
+		pkgCursor, _, _ := info.getPackage(pkg.PkgPath)
+		for typeCursor, typeSpec := range allTypeSpecs(pkgCursor) {
 			typeComment := getTypeComment(typeCursor)
 
 			// Add type comment
@@ -165,9 +172,9 @@ func commentGroupText(cg *ast.CommentGroup) *string {
 	return &text
 }
 
-func allTypeSpecs(in *inspector.Inspector) iter.Seq2[inspector.Cursor, *ast.TypeSpec] {
+func allTypeSpecs(pkgCursor inspector.Cursor) iter.Seq2[inspector.Cursor, *ast.TypeSpec] {
 	return func(yield func(inspector.Cursor, *ast.TypeSpec) bool) {
-		for typeCursor := range in.Root().Preorder((*ast.TypeSpec)(nil)) {
+		for typeCursor := range pkgCursor.Preorder((*ast.TypeSpec)(nil)) {
 			if !yield(typeCursor, typeCursor.Node().(*ast.TypeSpec)) {
 				return
 			}
@@ -214,4 +221,94 @@ func getFieldComment(field *ast.Field) *ast.CommentGroup {
 	default:
 		return nil
 	}
+}
+
+// TypeSpecNodes calls the function f for all TypeSpec nodes found under root.
+func TypeSpecNodes(root ast.Node, stack []ast.Node, f func(typeSpec *ast.TypeSpec, stack []ast.Node) bool) {
+	ast.PreorderStack(root, stack, func(n ast.Node, stack []ast.Node) bool {
+		typeSpec, ok := n.(*ast.TypeSpec)
+		if !ok {
+			return true
+		}
+		return f(typeSpec, stack)
+	})
+}
+
+// GetTypeSpecComment inspects the stack at an *ast.TypeSpec node to locate the comment
+// for the type spec, which is defined on the parent declaration group.
+func GetTypeSpecComment(stack []ast.Node) *ast.CommentGroup {
+	if len(stack) < 1 {
+		return nil
+	}
+	genDecl, ok := stack[len(stack)-1].(*ast.GenDecl)
+	if !ok {
+		return nil
+	}
+	return genDecl.Doc
+}
+
+// ExtractComments extracts type and struct field comments from the provided packages.
+func ExtractComments(pkgs []*packages.Package) []ExtractedComment {
+	result := []ExtractedComment{}
+	for _, pkg := range pkgs {
+		for _, file := range pkg.Syntax {
+			TypeSpecNodes(file, nil, func(typeSpec *ast.TypeSpec, stack []ast.Node) bool {
+				// Add type comment
+				typeComment := GetTypeSpecComment(stack)
+				result = append(result, ExtractedComment{
+					PkgPath:      pkg.PkgPath,
+					TypeName:     typeSpec.Name.Name,
+					FieldName:    nil,
+					Comment:      commentGroupText(typeComment),
+					CommentGroup: typeComment,
+				})
+
+				StructFieldNodes(typeSpec, stack, func(field *ast.Field, stack []ast.Node) bool {
+					// Add field comment
+					fieldComment := cmp.Or(field.Doc, field.Comment)
+					for _, fieldName := range field.Names {
+						result = append(result, ExtractedComment{
+							PkgPath:      pkg.PkgPath,
+							TypeName:     typeSpec.Name.Name,
+							FieldName:    &fieldName.Name,
+							Comment:      commentGroupText(fieldComment),
+							CommentGroup: fieldComment,
+						})
+					}
+					return true
+				})
+
+				return true
+			})
+		}
+	}
+	return result
+}
+
+// StructFieldNodes calls the function f for all struct field nodes found under root.
+func StructFieldNodes(root ast.Node, stack []ast.Node, f func(field *ast.Field, stack []ast.Node) bool) {
+	ast.PreorderStack(root, stack, func(n ast.Node, stack []ast.Node) bool {
+		field, ok := n.(*ast.Field)
+		if !ok {
+			return true
+		}
+		if stackIsFieldOnStruct(stack) {
+			return f(field, stack)
+		}
+		return true
+	})
+}
+
+// Direct parent is FieldList, grandparent is StructType.
+func stackIsFieldOnStruct(stack []ast.Node) bool {
+	if len(stack) < 2 {
+		return false
+	}
+	if _, ok := stack[len(stack)-1].(*ast.FieldList); !ok {
+		return false
+	}
+	if _, ok := stack[len(stack)-2].(*ast.StructType); !ok {
+		return false
+	}
+	return true
 }

@@ -26,7 +26,8 @@ func mainE(ctx context.Context) error {
 		return err
 	}
 
-	comments := info.AllComments()
+	// comments := info.AllComments()
+	comments := astutil.ExtractComments(info.Pkgs)
 
 	e := json.NewEncoder(os.Stdout)
 	e.SetEscapeHTML(false)
