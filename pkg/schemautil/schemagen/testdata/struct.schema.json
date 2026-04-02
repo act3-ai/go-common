@@ -1,0 +1,18 @@
+{
+	"type": "object",
+	"description": "A struct type.",
+	"properties": {
+		"cFirst": {
+			"type": "string",
+			"description": "A string field."
+		},
+		"bSecond": {
+			"type": "string",
+			"description": "Another string field."
+		},
+		"aThird": {
+			"type": "string",
+			"description": "Yet another string field."
+		}
+	}
+}

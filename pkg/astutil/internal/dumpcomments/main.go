@@ -21,7 +21,7 @@ func mainE(ctx context.Context) error {
 		return fmt.Errorf("usage: dumpcomments PATTERN...")
 	}
 
-	info, err := astutil.LoadPackageInfo(ctx, os.Args[1:]...)
+	info, err := astutil.LoadPackageInfo(ctx, os.Args[1:])
 	if err != nil {
 		return err
 	}

@@ -26,7 +26,7 @@ type PackageInfo struct {
 //
 // The patterns follow the same syntax as `go list`
 // (e.g. "./...", "std", "github.com/foo/bar/...").
-func LoadPackageInfo(ctx context.Context, patterns ...string) (*PackageInfo, error) {
+func LoadPackageInfo(ctx context.Context, patterns []string, opts ...func(*packages.Config)) (*PackageInfo, error) {
 	// Create new FileSet
 	fset := token.NewFileSet()
 
@@ -42,6 +42,11 @@ func LoadPackageInfo(ctx context.Context, patterns ...string) (*PackageInfo, err
 		ParseFile: func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
 			return parser.ParseFile(fset, filename, src, parser.ParseComments)
 		},
+	}
+
+	// Apply the options.
+	for _, opt := range opts {
+		opt(cfg)
 	}
 
 	// Load the packages matching the patterns
