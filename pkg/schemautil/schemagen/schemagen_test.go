@@ -1,6 +1,8 @@
 package schemagen_test
 
 import (
+	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -35,6 +37,14 @@ func RunTestCase(t *testing.T, tt TestCase) {
 		assert.ErrorContains(t, err, tt.WantErr)
 	}
 	assert.Equal(t, tt.Schema, got)
+
+	gotDefs := gen.Definitions()
+	data, err := json.MarshalIndent(gotDefs, "", "  ")
+	require.NoError(t, err)
+
+	t.Fail()
+
+	fmt.Println(string(data))
 }
 
 // A struct type to be embedded.
@@ -56,14 +66,23 @@ type TestStruct struct {
 	BSecond string `json:"bSecond,omitempty"`
 
 	// This is yet another string field.
+	//
+	//jsonschema:set "$comment" "This is set by a directive"
 	AThird string `json:"aThird,omitzero"`
 
 	FieldWithOmitemptyOmitzero string `json:"fieldWithOmitemptyOmitzero,omitempty,omitzero"`
+
+	NoComments string `json:"noComments,omitzero"`
+
+	//tool:name args args args
+	OnlyDirectiveComments string `json:"OnlyDirectiveComments,omitzero"`
 
 	// This field will not be included in the schema.
 	IgnoredField int64 `json:"-"`
 
 	// This field is named -.
+	//
+	//jsonschema:set maximum 5
 	DashField int64 `json:"-,"`
 
 	// This field is an array.
@@ -74,6 +93,21 @@ type TestStruct struct {
 
 	// This is an embedded field.
 	EmbeddedStruct
+
+	// This is a required field with omitempty.
+	//
+	//jsonschema:required
+	RequiredWithOmitempty string `json:"requiredWithOmitempty,omitempty"`
+
+	// This is a required field with omitzero.
+	//
+	//jsonschema:required true
+	RequiredWithOmitzero string `json:"requiredWithOmitzero,omitzero"`
+
+	// This field has been manually set to be optional.
+	//
+	//jsonschema:required false
+	ManuallyNotRequired string `json:"ManuallyNotRequired"`
 }
 
 func TestGenerateSchema(t *testing.T) {
@@ -101,14 +135,22 @@ func TestGenerateSchema(t *testing.T) {
 							"aThird": {
 								Type:        "string",
 								Description: "This is yet another string field.",
+								Comment:     "This is set by a directive",
 							},
 							"fieldWithOmitemptyOmitzero": {
+								Type: "string",
+							},
+							"noComments": {
+								Type: "string",
+							},
+							"OnlyDirectiveComments": {
 								Type: "string",
 							},
 							"-": {
 								Type:        "integer",
 								Format:      "int64",
 								Description: "This field is named -.",
+								Maximum:     new(5.),
 							},
 							"arrayField": {
 								Type:        "array",
@@ -124,9 +166,40 @@ func TestGenerateSchema(t *testing.T) {
 								Type:        "string",
 								Description: "This field does not have a struct tag.",
 							},
+							"requiredWithOmitempty": {
+								Type:        "string",
+								Description: "This is a required field with omitempty.",
+							},
+							"requiredWithOmitzero": {
+								Type:        "string",
+								Description: "This is a required field with omitzero.",
+							},
+							"ManuallyNotRequired": {
+								Type:        "string",
+								Description: "This field has been manually set to be optional.",
+							},
 						},
-						PropertyOrder: []string{"cFirst", "bSecond", "aThird", "fieldWithOmitemptyOmitzero", "-", "arrayField", "NoStructTag"},
-						Required:      []string{"cFirst", "-", "NoStructTag"},
+						PropertyOrder: []string{
+							"cFirst",
+							"bSecond",
+							"aThird",
+							"fieldWithOmitemptyOmitzero",
+							"noComments",
+							"OnlyDirectiveComments",
+							"-",
+							"arrayField",
+							"NoStructTag",
+							"requiredWithOmitempty",
+							"requiredWithOmitzero",
+							"ManuallyNotRequired",
+						},
+						Required: []string{
+							"cFirst",
+							"-",
+							"NoStructTag",
+							"requiredWithOmitempty",
+							"requiredWithOmitzero",
+						},
 					},
 				},
 			},

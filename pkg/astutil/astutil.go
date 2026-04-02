@@ -352,3 +352,32 @@ func stackIsFieldOnStruct(stack []ast.Node) bool {
 	}
 	return true
 }
+
+// AllDirectives iterates over all directives found in the comment group.
+func AllDirectives(comments *ast.CommentGroup) iter.Seq2[*ast.Comment, ast.Directive] {
+	return func(yield func(*ast.Comment, ast.Directive) bool) {
+		if comments == nil {
+			return
+		}
+		for _, comment := range comments.List {
+			dir, ok := ast.ParseDirective(comment.Pos(), comment.Text)
+			if ok && !yield(comment, dir) {
+				return
+			}
+		}
+	}
+}
+
+// AllDirectivesForTool iterates over all directives for the named tool found in the comment group.
+func AllDirectivesForTool(tool string, comments *ast.CommentGroup) iter.Seq2[*ast.Comment, ast.Directive] {
+	return func(yield func(*ast.Comment, ast.Directive) bool) {
+		for comment, dir := range AllDirectives(comments) {
+			if dir.Tool != tool {
+				continue // skip directives for other tools
+			}
+			if !yield(comment, dir) {
+				return
+			}
+		}
+	}
+}
