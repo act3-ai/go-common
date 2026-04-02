@@ -158,25 +158,59 @@ func generateSchemaForMap(gen *Generator, t reflect.Type) (*jsonschema.Schema, e
 }
 
 func generateSchemaForStruct(gen *Generator, t reflect.Type) (*jsonschema.Schema, error) {
-	// var err error
+	// Generate schema for each field
+	props, err := generateObjectPropertiesForStruct(gen, t)
+	if err != nil {
+		return nil, err
+	}
+
 	schema := &jsonschema.Schema{
 		Type:          schemautil.TypeObject,
+		Required:      props.Required,
+		Properties:    props.Properties,
+		PropertyOrder: props.PropertyOrder,
+	}
+
+	switch {
+	case len(props.Embedded) > 0 && len(schema.Properties) > 0:
+		// Embedded schemas and object schema
+		return &jsonschema.Schema{
+			AllOf: append(props.Embedded, schema),
+		}, nil
+	case len(props.Embedded) > 0:
+		// Only embedded schemas
+		return &jsonschema.Schema{
+			AllOf: props.Embedded,
+		}, nil
+	default:
+		// Regular object schema
+		return schema, nil
+	}
+}
+
+type objectProperties struct {
+	Required      []string
+	Properties    map[string]*jsonschema.Schema
+	PropertyOrder []string
+	Embedded      []*jsonschema.Schema
+}
+
+func generateObjectPropertiesForStruct(gen *Generator, t reflect.Type) (*objectProperties, error) {
+	props := &objectProperties{
 		Properties:    make(map[string]*jsonschema.Schema, t.NumField()),
 		PropertyOrder: make([]string, 0, t.NumField()),
 	}
-
 	// Generate schema for each field
 	for field := range t.Fields() {
-		if err := addSchemaForStructField(gen, t, schema, field); err != nil {
+		if err := addSchemaForStructField(gen, t, props, field); err != nil {
 			return nil, fmt.Errorf("adding schema for struct field %s: %w", field.Name, err)
 		}
 	}
-
-	return schema, nil
+	return props, nil
 }
 
 // addSchemaForStructField generates a schema for a struct field and adds it to the object schema.
-func addSchemaForStructField(gen *Generator, t reflect.Type, schema *jsonschema.Schema, field reflect.StructField) error {
+func addSchemaForStructField(gen *Generator, t reflect.Type, props *objectProperties, field reflect.StructField) error {
 	// Property name
 	propName := field.Name
 
@@ -203,16 +237,21 @@ func addSchemaForStructField(gen *Generator, t reflect.Type, schema *jsonschema.
 	// Add description
 	propSchema.Description = formatCommentAsDescription(comment)
 
-	// Add to required properties if neither omitempty/omitzero are set
-	if !(tagInfo.Omitempty || tagInfo.Omitzero) {
-		schema.Required = append(schema.Required, propName)
+	if field.Anonymous {
+		// Add embedded fields to list
+		props.Embedded = append(props.Embedded, propSchema)
+	} else {
+		// Add to required properties if neither omitempty/omitzero are set
+		if !(tagInfo.Omitempty || tagInfo.Omitzero) {
+			props.Required = append(props.Required, propName)
+		}
+
+		// Add to property order
+		props.PropertyOrder = append(props.PropertyOrder, propName)
+
+		// Add to properties
+		props.Properties[propName] = propSchema
 	}
-
-	// Add to property order
-	schema.PropertyOrder = append(schema.PropertyOrder, propName)
-
-	// Add to properties
-	schema.Properties[propName] = propSchema
 
 	return nil
 }

@@ -26,7 +26,7 @@ type PackageInfo struct {
 //
 // The patterns follow the same syntax as `go list`
 // (e.g. "./...", "std", "github.com/foo/bar/...").
-func LoadPackageInfo(ctx context.Context, patterns []string, opts ...func(*packages.Config)) (*PackageInfo, error) {
+func LoadPackageInfo(ctx context.Context, patterns []string, opts ...func(cfg *packages.Config)) (*PackageInfo, error) {
 	// Create new FileSet
 	fset := token.NewFileSet()
 
@@ -91,6 +91,9 @@ func (info *PackageInfo) FieldComment(pkgPath, typeName, fieldName string) (*ast
 			if ident.Name == fieldName {
 				return getFieldComment(field), nil
 			}
+		}
+		if len(field.Names) == 0 && getEmbeddedFieldName(field) == fieldName {
+			return getFieldComment(field), nil
 		}
 	}
 
@@ -163,6 +166,16 @@ func (info *PackageInfo) AllComments() []ExtractedComment {
 						CommentGroup: fieldComment,
 					})
 				}
+				if len(field.Names) == 0 {
+					fieldName := getEmbeddedFieldName(field)
+					result = append(result, ExtractedComment{
+						PkgPath:      pkg.PkgPath,
+						TypeName:     typeSpec.Name.Name,
+						FieldName:    &fieldName,
+						Comment:      commentGroupText(fieldComment),
+						CommentGroup: fieldComment,
+					})
+				}
 			}
 		}
 	}
@@ -228,6 +241,18 @@ func getFieldComment(field *ast.Field) *ast.CommentGroup {
 	}
 }
 
+func getEmbeddedFieldName(field *ast.Field) string {
+	fieldType := field.Type
+	if v, ok := fieldType.(*ast.StarExpr); ok {
+		fieldType = v.X
+	}
+	ident, ok := fieldType.(*ast.Ident)
+	if !ok {
+		return ""
+	}
+	return ident.Name
+}
+
 // TypeSpecNodes calls the function f for all TypeSpec nodes found under root.
 func TypeSpecNodes(root ast.Node, stack []ast.Node, f func(typeSpec *ast.TypeSpec, stack []ast.Node) bool) {
 	ast.PreorderStack(root, stack, func(n ast.Node, stack []ast.Node) bool {
@@ -276,6 +301,16 @@ func ExtractComments(pkgs []*packages.Package) []ExtractedComment {
 							PkgPath:      pkg.PkgPath,
 							TypeName:     typeSpec.Name.Name,
 							FieldName:    &fieldName.Name,
+							Comment:      commentGroupText(fieldComment),
+							CommentGroup: fieldComment,
+						})
+					}
+					if len(field.Names) == 0 {
+						fieldName := getEmbeddedFieldName(field)
+						result = append(result, ExtractedComment{
+							PkgPath:      pkg.PkgPath,
+							TypeName:     typeSpec.Name.Name,
+							FieldName:    &fieldName,
 							Comment:      commentGroupText(fieldComment),
 							CommentGroup: fieldComment,
 						})

@@ -37,6 +37,12 @@ func RunTestCase(t *testing.T, tt TestCase) {
 	assert.Equal(t, tt.Schema, got)
 }
 
+// A struct type to be embedded.
+type EmbeddedStruct struct {
+	// An embedded field.
+	EmbeddedField []string `json:"embeddedField"`
+}
+
 // A struct type.
 //
 //directive:command args args args
@@ -65,6 +71,9 @@ type TestStruct struct {
 
 	// This field does not have a struct tag.
 	NoStructTag string
+
+	// This is an embedded field.
+	EmbeddedStruct
 }
 
 func TestGenerateSchema(t *testing.T) {
@@ -72,46 +81,54 @@ func TestGenerateSchema(t *testing.T) {
 		tt := TestCase{
 			Type: reflect.TypeFor[TestStruct](),
 			Schema: &jsonschema.Schema{
-				Type:        "object",
 				Description: "A struct type.",
-				Properties: map[string]*jsonschema.Schema{
-					"cFirst": {
-						Type:        "string",
-						Description: "A string field.",
+				AllOf: []*jsonschema.Schema{
+					{
+						Description: "This is an embedded field.",
+						Ref:         "#/$defs/github.com/act3-ai/go-common/pkg/schemautil/schemagen_test.EmbeddedStruct",
 					},
-					"bSecond": {
-						Type:        "string",
-						Description: "Another string field.",
-					},
-					"aThird": {
-						Type:        "string",
-						Description: "This is yet another string field.",
-					},
-					"fieldWithOmitemptyOmitzero": {
-						Type: "string",
-					},
-					"-": {
-						Type:        "integer",
-						Format:      "int64",
-						Description: "This field is named -.",
-					},
-					"arrayField": {
-						Type:        "array",
-						Description: "This field is an array.",
-						Items: &jsonschema.Schema{
-							Type:   "number",
-							Format: "double",
+					{
+						Type: "object",
+						Properties: map[string]*jsonschema.Schema{
+							"cFirst": {
+								Type:        "string",
+								Description: "A string field.",
+							},
+							"bSecond": {
+								Type:        "string",
+								Description: "Another string field.",
+							},
+							"aThird": {
+								Type:        "string",
+								Description: "This is yet another string field.",
+							},
+							"fieldWithOmitemptyOmitzero": {
+								Type: "string",
+							},
+							"-": {
+								Type:        "integer",
+								Format:      "int64",
+								Description: "This field is named -.",
+							},
+							"arrayField": {
+								Type:        "array",
+								Description: "This field is an array.",
+								Items: &jsonschema.Schema{
+									Type:   "number",
+									Format: "double",
+								},
+								MinItems: new(3),
+								MaxItems: new(3),
+							},
+							"NoStructTag": {
+								Type:        "string",
+								Description: "This field does not have a struct tag.",
+							},
 						},
-						MinItems: new(3),
-						MaxItems: new(3),
-					},
-					"NoStructTag": {
-						Type:        "string",
-						Description: "This field does not have a struct tag.",
+						PropertyOrder: []string{"cFirst", "bSecond", "aThird", "fieldWithOmitemptyOmitzero", "-", "arrayField", "NoStructTag"},
+						Required:      []string{"cFirst", "-", "NoStructTag"},
 					},
 				},
-				PropertyOrder: []string{"cFirst", "bSecond", "aThird", "fieldWithOmitemptyOmitzero", "-", "arrayField", "NoStructTag"},
-				Required:      []string{"cFirst", "-", "NoStructTag"},
 			},
 		}
 

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	"golang.org/x/tools/go/packages"
+
 	"github.com/act3-ai/go-common/pkg/astutil"
 )
 
@@ -21,7 +23,9 @@ func mainE(ctx context.Context) error {
 		return fmt.Errorf("usage: dumpcomments PATTERN...")
 	}
 
-	info, err := astutil.LoadPackageInfo(ctx, os.Args[1:])
+	info, err := astutil.LoadPackageInfo(ctx, os.Args[1:], func(cfg *packages.Config) {
+		cfg.Tests = true
+	})
 	if err != nil {
 		return err
 	}
