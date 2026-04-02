@@ -30,7 +30,7 @@ func RunTestCase(t *testing.T, tt TestCase) {
 
 	gen := schemagen.NewGenerator().WithPackageInfo(info)
 
-	got, err := schemagen.GenerateSchemaForType(gen, tt.Type)
+	got, err := gen.GenerateSchemaForType(tt.Type)
 	if testutil.AssertErrorIf(t, tt.WantErr != "", err) && tt.WantErr != "" {
 		assert.ErrorContains(t, err, tt.WantErr)
 	}

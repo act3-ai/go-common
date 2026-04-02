@@ -15,12 +15,26 @@ import (
 )
 
 func NewGenerator() *Generator {
-	return &Generator{results: map[reflect.Type]result{}}
+	return &Generator{
+		standardSchemas: standardSchemas,
+		results:         map[reflect.Type]result{},
+	}
 }
 
 type Generator struct {
-	info    *astutil.PackageInfo
-	results map[reflect.Type]result
+	info            *astutil.PackageInfo
+	standardSchemas map[reflect.Type]func() *jsonschema.Schema
+	results         map[reflect.Type]result
+
+	// extensions to provide a schema for types,
+	// first provider to return a non-nil schema
+	// will replace the regular schema generation.
+	schemaProviders []func(t reflect.Type) *jsonschema.Schema
+
+	// extensions to modify the generated schema for types.
+	// will be called after the regular schema generation
+	// and after the SchemaExtender interface implementation.
+	schemaExtenders map[reflect.Type][]func(schema *jsonschema.Schema)
 }
 
 func (gen *Generator) WithPackageInfo(info *astutil.PackageInfo) *Generator {
@@ -65,20 +79,23 @@ func (gen *Generator) getFieldComment(t reflect.Type, field reflect.StructField)
 }
 
 func GenerateSchemaFor[T any](gen *Generator) (*jsonschema.Schema, error) {
-	return GenerateSchemaForType(gen, reflect.TypeFor[T]())
+	return gen.GenerateSchemaForType(reflect.TypeFor[T]())
 }
 
-func GenerateSchemaForType(gen *Generator, t reflect.Type) (*jsonschema.Schema, error) {
+func (gen *Generator) GenerateSchemaForType(t reflect.Type) (*jsonschema.Schema, error) {
+	// Return cached result
 	if r, ok := gen.results[t]; ok {
 		return r.Schema, r.Err
 	}
 
-	// If type is a standard type, return the schema without caching
-	if schema, ok := standardTypeSchema(gen, t); ok {
-		return schema, nil
-	}
+	// Generate new schema
 	schema, err := generateSchemaForType(gen, t)
-	gen.results[t] = result{Schema: schema, Err: err}
+
+	// Cache result if it is a named schema
+	if t.PkgPath() != "" && t.Name() != "" {
+		gen.results[t] = result{Schema: schema, Err: err}
+	}
+
 	return schema, err
 }
 
@@ -126,13 +143,13 @@ func generateSchemaForMap(gen *Generator, t reflect.Type) (*jsonschema.Schema, e
 	}
 
 	// Generate schema for map keys
-	schema.PropertyNames, err = GenerateSchemaForType(gen, t.Key())
+	schema.PropertyNames, err = gen.GenerateSchemaForType(t.Key())
 	if err != nil {
 		return nil, err
 	}
 
 	// Generate schema for map values
-	schema.AdditionalProperties, err = GenerateSchemaForType(gen, t.Elem())
+	schema.AdditionalProperties, err = gen.GenerateSchemaForType(t.Elem())
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +219,7 @@ func addSchemaForStructField(gen *Generator, t reflect.Type, schema *jsonschema.
 
 // generateSchemaOrReference generates a schema for basic types or a reference to named types.
 func generateSchemaOrReference(gen *Generator, t reflect.Type) (*jsonschema.Schema, error) {
-	schema, err := GenerateSchemaForType(gen, t)
+	schema, err := gen.GenerateSchemaForType(t)
 	if err != nil {
 		return nil, err
 	}
@@ -238,84 +255,132 @@ var (
 	typeTime    = reflect.TypeFor[time.Time]()
 )
 
+func schemaString() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: schemautil.TypeString,
+	}
+}
+
+func schemaBool() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: schemautil.TypeBoolean,
+	}
+}
+
+func schemaUint() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "uint32",
+	}
+}
+
+func schemaUint8() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "uint8",
+	}
+}
+
+func schemaUint16() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "uint16",
+	}
+}
+
+func schemaUint32() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "uint32",
+	}
+}
+
+func schemaUint64() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "uint64",
+	}
+}
+
+func schemaInt() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "int32",
+	}
+}
+
+func schemaInt8() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "int8",
+	}
+}
+
+func schemaInt16() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "int16",
+	}
+}
+func schemaInt32() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "int32",
+	}
+}
+
+func schemaInt64() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "int64",
+	}
+}
+
+func schemaFloat32() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeNumber,
+		Format: "float",
+	}
+}
+
+func schemaFloat64() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeNumber,
+		Format: "double",
+	}
+}
+
+func schemaTime() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeString,
+		Format: "date-time",
+	}
+}
+
+var standardSchemas = map[reflect.Type]func() *jsonschema.Schema{
+	typeString:  schemaString,
+	typeBool:    schemaBool,
+	typeUint:    schemaUint,
+	typeUint8:   schemaUint8,
+	typeUint16:  schemaUint16,
+	typeUint32:  schemaUint32,
+	typeUint64:  schemaUint64,
+	typeInt:     schemaInt,
+	typeInt8:    schemaInt8,
+	typeInt16:   schemaInt16,
+	typeInt32:   schemaInt32,
+	typeInt64:   schemaInt64,
+	typeFloat32: schemaFloat32,
+	typeFloat64: schemaFloat64,
+	typeTime:    schemaTime,
+}
+
 func standardTypeSchema(gen *Generator, t reflect.Type) (*jsonschema.Schema, bool) {
-	switch t {
-	case typeString:
-		return &jsonschema.Schema{
-			Type: schemautil.TypeString,
-		}, true
-	case typeBool:
-		return &jsonschema.Schema{
-			Type: schemautil.TypeBoolean,
-		}, true
-	case typeUint:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "uint32",
-		}, true
-	case typeUint8:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "uint8",
-		}, true
-	case typeUint16:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "uint16",
-		}, true
-	case typeUint32:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "uint32",
-		}, true
-	case typeUint64:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "uint64",
-		}, true
-	case typeInt:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "int32",
-		}, true
-	case typeInt8:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "int8",
-		}, true
-	case typeInt16:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "int16",
-		}, true
-	case typeInt32:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "int32",
-		}, true
-	case typeInt64:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeInteger,
-			Format: "int64",
-		}, true
-	case typeFloat32:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeNumber,
-			Format: "float",
-		}, true
-	case typeFloat64:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeNumber,
-			Format: "double",
-		}, true
-	case typeTime:
-		return &jsonschema.Schema{
-			Type:   schemautil.TypeString,
-			Format: "date-time",
-		}, true
-	default:
+	fn, ok := gen.standardSchemas[t]
+	if !ok {
 		return nil, false
 	}
+	return fn(), true
 }
 
 func generateSchema(gen *Generator, t reflect.Type) (schema *jsonschema.Schema, err error) {
@@ -333,6 +398,10 @@ func generateSchema(gen *Generator, t reflect.Type) (schema *jsonschema.Schema, 
 			Type: schemautil.TypeString,
 		}, nil
 	case reflect.Bool:
+		return &jsonschema.Schema{
+			Type: schemautil.TypeBoolean,
+		}, nil
+	case reflect.Uint:
 		return &jsonschema.Schema{
 			Type: schemautil.TypeBoolean,
 		}, nil
