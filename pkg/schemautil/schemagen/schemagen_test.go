@@ -31,6 +31,7 @@ func RunTestCase(t *testing.T, tt TestCase) {
 	require.NoError(t, err)
 
 	gen := schemagen.NewGenerator().WithPackageInfo(info)
+	gen.SetXOrder = true
 
 	got, err := gen.GenerateSchemaForType(tt.Type)
 	if testutil.AssertErrorIf(t, tt.WantErr != "", err) && tt.WantErr != "" {
@@ -129,6 +130,9 @@ func TestGenerateSchema(t *testing.T) {
 								Items: &jsonschema.Schema{
 									Type: "string",
 								},
+								Extra: map[string]any{
+									"x-order": 1,
+								},
 							},
 						},
 						PropertyOrder: []string{
@@ -156,30 +160,51 @@ func TestGenerateSchema(t *testing.T) {
 									"cFirst": {
 										Type:        "string",
 										Description: "A string field.",
+										Extra: map[string]any{
+											"x-order": 1,
+										},
 									},
 									"bSecond": {
 										Type:        "string",
 										Description: "Another string field.",
+										Extra: map[string]any{
+											"x-order": 2,
+										},
 									},
 									"aThird": {
 										Type:        "string",
 										Description: "This is yet another string field.",
 										Comment:     "This is set by a directive",
+										Extra: map[string]any{
+											"x-order": 3,
+										},
 									},
 									"fieldWithOmitemptyOmitzero": {
 										Type: "string",
+										Extra: map[string]any{
+											"x-order": 4,
+										},
 									},
 									"noComments": {
 										Type: "string",
+										Extra: map[string]any{
+											"x-order": 5,
+										},
 									},
 									"OnlyDirectiveComments": {
 										Type: "string",
+										Extra: map[string]any{
+											"x-order": 6,
+										},
 									},
 									"-": {
 										Type:        "integer",
 										Format:      "int64",
 										Description: "This field is named -.",
 										Maximum:     new(5.),
+										Extra: map[string]any{
+											"x-order": 7,
+										},
 									},
 									"arrayField": {
 										Type:        "array",
@@ -190,28 +215,49 @@ func TestGenerateSchema(t *testing.T) {
 										},
 										MinItems: new(3),
 										MaxItems: new(3),
+										Extra: map[string]any{
+											"x-order": 8,
+										},
 									},
 									"NoStructTag": {
 										Type:        "string",
 										Description: "This field does not have a struct tag.",
+										Extra: map[string]any{
+											"x-order": 9,
+										},
 									},
 									"requiredWithOmitempty": {
 										Type:        "string",
 										Description: "This is a required field with omitempty.",
+										Extra: map[string]any{
+											"x-order": 10,
+										},
 									},
 									"requiredWithOmitzero": {
 										Type:        "string",
 										Description: "This is a required field with omitzero.",
+										Extra: map[string]any{
+											"x-order": 11,
+										},
 									},
 									"ManuallyNotRequired": {
 										Type:        "string",
 										Description: "This field has been manually set to be optional.",
+										Extra: map[string]any{
+											"x-order": 12,
+										},
 									},
 									"AnyField": {
 										Description: "This field is the type any.",
+										Extra: map[string]any{
+											"x-order": 13,
+										},
 									},
 									"RawMessageField": {
 										Description: "This field is a json.RawMessage.",
+										Extra: map[string]any{
+											"x-order": 14,
+										},
 									},
 								},
 								PropertyOrder: []string{

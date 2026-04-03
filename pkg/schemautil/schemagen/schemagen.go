@@ -33,8 +33,14 @@ type Generator struct {
 	standardSchemas map[reflect.Type]func() *jsonschema.Schema
 	results         map[reflect.Type]result
 
+	// // Namer provides the name for a type.
+	// Namer func(t reflect.Type) string
+
 	// If enabled, change the default behavior to allow additional properties for struct types.
-	DefaultStructAllowAdditionalProperties bool
+	StructAllowAdditionalProperties bool
+
+	// Set "x-order" extension to object properties.
+	SetXOrder bool
 
 	// Set "x-go-type" extension to the Go type name.
 	SetXGoType bool
@@ -263,6 +269,19 @@ func generateSchemaForStruct(gen *Generator, t reflect.Type) (*jsonschema.Schema
 		Properties:           props.Properties,
 		PropertyOrder:        props.PropertyOrder,
 		AdditionalProperties: schemautil.FalseSchema(),
+	}
+
+	if gen.StructAllowAdditionalProperties {
+		schema.AdditionalProperties = schemautil.TrueSchema()
+	}
+
+	// Add x-order extension if enabled
+	if gen.SetXOrder {
+		order := 1
+		for _, propSchema := range schemautil.OrderedProperties(schema) {
+			schemautil.SetExtension(propSchema, schemautil.XOrder, order)
+			order++
+		}
 	}
 
 	switch {
@@ -561,6 +580,8 @@ func standardTypeSchema(gen *Generator, t reflect.Type) (*jsonschema.Schema, boo
 // Derive the schema from the kind.
 func schemaFromKind(gen *Generator, t reflect.Type) (schema *jsonschema.Schema, err error) {
 	switch t.Kind() {
+	case reflect.Interface:
+		return schemautil.TrueSchema(), nil
 	case reflect.String:
 		return schemaString(), nil
 	case reflect.Bool:
