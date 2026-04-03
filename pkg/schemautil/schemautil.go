@@ -4,6 +4,7 @@ package schemautil
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"iter"
 	"slices"
 
@@ -102,4 +103,80 @@ func IsTrueSchema(schema *jsonschema.Schema) bool {
 func IsFalseSchema(schema *jsonschema.Schema) bool {
 	data, _ := json.Marshal(schema) //nolint:errchkjson // if this fails, the schema is not the false schema
 	return bytes.Equal(data, []byte(`false`))
+}
+
+// SetExtension sets an extension in the schema.
+func SetExtension(schema *jsonschema.Schema, key string, value any) {
+	if schema == nil {
+		panic("nil schema")
+	}
+	// Initialize extras map if needed
+	if schema.Extra == nil {
+		schema.Extra = make(map[string]any, 1)
+	}
+	// Set the extension
+	schema.Extra[key] = value
+	// Nest reference in an allOf schema
+	NestReference(schema)
+}
+
+// NestReference modifies the schema to nest the $ref keyword in its own subschema if necessary.
+func NestReference(schema *jsonschema.Schema) {
+	if schema == nil || schema.Ref == "" {
+		return
+	}
+
+	// Store the reference
+	ref := schema.Ref
+
+	// Overwrite with empty string
+	schema.Ref = ""
+
+	// If schema is empty without the reference,
+	// nesting is not necessary
+	if IsTrueSchema(schema) {
+		schema.Ref = ref
+		return
+	}
+
+	// Move the reference to a subschema in the allOf list
+	schema.AllOf = append(schema.AllOf, &jsonschema.Schema{
+		Ref: ref,
+	})
+}
+
+// ReachableRefs collects all $ref values that can be reached by walking the schema
+// and following any contained references.
+func ReachableRefs(reg Registry, schema *jsonschema.Schema) ([]string, error) {
+	visited := sets.New[string]()
+	if err := visitRefs(visited, reg, schema); err != nil {
+		return nil, err
+	}
+	return visited.UnsortedList(), nil
+}
+
+func visitRefs(visited sets.Set[string], reg Registry, schema *jsonschema.Schema) error {
+	_, err := WalkSchema(schema, func(loc string, schema *jsonschema.Schema) (*jsonschema.Schema, error) {
+		if schema == nil || schema.Ref == "" {
+			return schema, nil
+		}
+
+		// Referenced schema already visited
+		if visited.Has(schema.Ref) {
+			return schema, nil
+		}
+
+		// Add to visited
+		visited.Insert(schema.Ref)
+
+		// Get the schema
+		next, ok := reg.GetSchema(schema.Ref)
+		if !ok {
+			return schema, fmt.Errorf("%s/$ref: no schema matching %q", loc, schema.Ref)
+		}
+
+		// Walk the referenced schema
+		return schema, visitRefs(visited, reg, next)
+	})
+	return err
 }
