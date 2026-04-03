@@ -23,7 +23,6 @@ func NewGenerator() *Generator {
 		standardSchemas: standardSchemas,
 		results:         map[reflect.Type]result{},
 		DirectiveTool:   "jsonschema",
-		SchemaExtenders: map[reflect.Type][]func(schema *jsonschema.Schema){},
 	}
 }
 
@@ -48,15 +47,15 @@ type Generator struct {
 	// Tool name for comment directives (default "jsonschema").
 	DirectiveTool string
 
-	// extensions to provide a schema for types,
-	// first provider to return a non-nil schema
+	// Extensions to provide a schema for types,
+	// First provider to return a non-nil schema
 	// will replace the regular schema generation.
 	SchemaProviders []func(t reflect.Type) *jsonschema.Schema
 
-	// extensions to modify the generated schema for types.
-	// will be called after the regular schema generation
+	// Extensions to modify the generated schema for types.
+	// Will be called after the regular schema generation
 	// and after the SchemaExtender interface implementation.
-	SchemaExtenders map[reflect.Type][]func(schema *jsonschema.Schema)
+	SchemaExtenders []func(t reflect.Type, schema *jsonschema.Schema)
 }
 
 func (gen *Generator) WithPackageInfo(info *astutil.PackageInfo) *Generator {
@@ -197,20 +196,30 @@ func (gen *Generator) generateSchemaForType(t reflect.Type) (schema *jsonschema.
 	// Get the comment for this type
 	comment := gen.getTypeComment(t)
 
-	// If the type provides a schema, use that schema.
-	if t.Implements(typeSchemaProvider) {
-		v, _ := reflect.TypeAssert[SchemaProvider](reflect.New(t).Elem())
-		schema = v.JSONSchema()
-	} else {
-
-		// Derive the schema from the kind
-		schema, err = schemaFromKind(gen, t)
-		if err != nil {
-			return nil, err
+	// Create schema from provider
+	for _, prov := range gen.SchemaProviders {
+		schema = prov(t)
+		if schema != nil {
+			break
 		}
+	}
 
-		// Add description from comment
-		schema.Description = formatCommentAsDescription(comment)
+	// If no SchemaProvider set the schema, continue normal generation
+	if schema == nil {
+		// If the type provides a schema, use that schema.
+		if t.Implements(typeSchemaProvider) {
+			v, _ := reflect.TypeAssert[SchemaProvider](reflect.New(t).Elem())
+			schema = v.JSONSchema()
+		} else {
+			// Derive the schema from the kind
+			schema, err = schemaFromKind(gen, t)
+			if err != nil {
+				return nil, err
+			}
+
+			// Add description from comment
+			schema.Description = formatCommentAsDescription(comment)
+		}
 	}
 
 	// Apply comment directives
@@ -230,6 +239,11 @@ func (gen *Generator) generateSchemaForType(t reflect.Type) (schema *jsonschema.
 	if t.Implements(typeSchemaExtender) {
 		v, _ := reflect.TypeAssert[SchemaExtender](reflect.New(t).Elem())
 		v.ExtendJSONSchema(schema)
+	}
+
+	// Call all SchemaExtenders
+	for _, ext := range gen.SchemaExtenders {
+		ext(t, schema)
 	}
 
 	return schema, nil
