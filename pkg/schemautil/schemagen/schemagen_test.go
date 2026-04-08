@@ -30,7 +30,8 @@ func RunTestCase(t *testing.T, tt TestCase) {
 	})
 	require.NoError(t, err)
 
-	gen := schemagen.NewGenerator().WithPackageInfo(info)
+	gen := schemagen.NewGenerator()
+	gen.PackageInfo = info
 	gen.SetXOrder = true
 
 	got, err := gen.GenerateSchemaForType(tt.Type)

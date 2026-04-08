@@ -8,16 +8,24 @@ import (
 	"go/parser"
 	"go/token"
 	"iter"
+	"slices"
 
 	"golang.org/x/tools/go/ast/inspector"
 	"golang.org/x/tools/go/packages"
 )
 
+// CommentProvider provides comments parsed from the Go AST.
+type CommentProvider interface {
+	// TypeComment produces the comment for a type definition.
+	TypeComment(pkgPath, typeName string) (*ast.CommentGroup, error)
+	// FieldComment produces the comment for a struct field.
+	FieldComment(pkgPath, typeName, fieldName string) (*ast.CommentGroup, error)
+}
+
 // PackageInfo stores Go package information.
 type PackageInfo struct {
-	Pkgs []*packages.Package
-	Fset *token.FileSet
-	// Inspectors []*inspector.Inspector
+	Pkgs       []*packages.Package
+	Fset       *token.FileSet
 	inspectors map[string]*inspector.Inspector // per-package inspectors
 }
 
@@ -32,11 +40,7 @@ func LoadPackageInfo(ctx context.Context, patterns []string, opts ...func(cfg *p
 
 	// Create packages config that will load comments.
 	cfg := &packages.Config{
-		Mode: packages.NeedName |
-			packages.NeedFiles |
-			packages.NeedSyntax |
-			packages.NeedTypes |
-			packages.NeedTypesInfo,
+		Mode:    packages.LoadAllSyntax,
 		Context: ctx,
 		Fset:    fset,
 		ParseFile: func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
@@ -55,20 +59,23 @@ func LoadPackageInfo(ctx context.Context, patterns []string, opts ...func(cfg *p
 		return nil, fmt.Errorf("loading packages: %w", err)
 	}
 
-	// Initialize inspectors for each set of files
-	inspectors := make([]*inspector.Inspector, 0, len(pkgs))
-	for _, pkg := range pkgs {
-		if len(pkg.Errors) > 0 {
-			return nil, fmt.Errorf("package %s: %v", pkg.PkgPath, pkg.Errors[0])
-		}
-		inspectors = append(inspectors, inspector.New(pkg.Syntax))
-	}
+	// Print any errors from loading the packages
+	packages.PrintErrors(pkgs)
+
+	// Create the package info
+	return newPackageInfo(fset, pkgs), nil
+}
+
+func newPackageInfo(fset *token.FileSet, pkgs []*packages.Package) *PackageInfo {
+	// Collect all packages and dependencies into a flat slice
+	allPackages := slices.Collect(packages.Postorder(pkgs))
 
 	return &PackageInfo{
-		Pkgs:       pkgs,
-		Fset:       fset,
-		inspectors: make(map[string]*inspector.Inspector, len(pkgs)),
-	}, nil
+		Pkgs: allPackages,
+		Fset: fset,
+		// Initialize to size of all packages
+		inspectors: make(map[string]*inspector.Inspector, len(allPackages)),
+	}
 }
 
 // TypeComment produces the ast.CommentGroup for the
@@ -87,13 +94,17 @@ func (info *PackageInfo) FieldComment(pkgPath, typeName, fieldName string) (*ast
 	}
 
 	for _, field := range allFieldsForTypeSpec(typeCursor) {
-		for _, ident := range field.Names {
-			if ident.Name == fieldName {
+		switch {
+		case len(field.Names) > 0:
+			for _, ident := range field.Names {
+				if ident.Name == fieldName {
+					return getFieldComment(field), nil
+				}
+			}
+		default:
+			if getFieldName(field.Type).String() == fieldName {
 				return getFieldComment(field), nil
 			}
-		}
-		if len(field.Names) == 0 && getEmbeddedFieldName(field) == fieldName {
-			return getFieldComment(field), nil
 		}
 	}
 
@@ -167,7 +178,7 @@ func (info *PackageInfo) AllComments() []ExtractedComment {
 					})
 				}
 				if len(field.Names) == 0 {
-					fieldName := getEmbeddedFieldName(field)
+					fieldName := getFieldName(field.Type).String()
 					result = append(result, ExtractedComment{
 						PkgPath:      pkg.PkgPath,
 						TypeName:     typeSpec.Name.Name,
@@ -241,16 +252,23 @@ func getFieldComment(field *ast.Field) *ast.CommentGroup {
 	}
 }
 
-func getEmbeddedFieldName(field *ast.Field) string {
-	fieldType := field.Type
-	if v, ok := fieldType.(*ast.StarExpr); ok {
-		fieldType = v.X
+// getFieldName assumes that x is the type of an anonymous field and
+// returns the corresponding field name. If x is not an acceptable
+// anonymous field, the result is nil.
+//
+// Vendored from go/ast/filter.go:63
+func getFieldName(x ast.Expr) *ast.Ident {
+	switch t := x.(type) {
+	case *ast.Ident:
+		return t
+	case *ast.SelectorExpr:
+		if _, ok := t.X.(*ast.Ident); ok {
+			return t.Sel
+		}
+	case *ast.StarExpr:
+		return getFieldName(t.X)
 	}
-	ident, ok := fieldType.(*ast.Ident)
-	if !ok {
-		return ""
-	}
-	return ident.Name
+	return nil
 }
 
 // TypeSpecNodes calls the function f for all TypeSpec nodes found under root.
@@ -306,7 +324,7 @@ func ExtractComments(pkgs []*packages.Package) []ExtractedComment {
 						})
 					}
 					if len(field.Names) == 0 {
-						fieldName := getEmbeddedFieldName(field)
+						fieldName := getFieldName(field.Type).String()
 						result = append(result, ExtractedComment{
 							PkgPath:      pkg.PkgPath,
 							TypeName:     typeSpec.Name.Name,

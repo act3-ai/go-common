@@ -1,0 +1,267 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$ref": "#/$defs/cinema.Cinema",
+	"$defs": {
+		"address.Address": {
+			"type": "object",
+			"properties": {
+				"street": {
+					"type": "string",
+					"description": "Street address.",
+					"x-order": 1
+				},
+				"city": {
+					"type": "string",
+					"description": "City name.",
+					"x-order": 2
+				},
+				"state": {
+					"type": "string",
+					"description": "State/region name.",
+					"x-order": 3
+				},
+				"country": {
+					"type": "string",
+					"description": "Country name.",
+					"x-order": 4
+				},
+				"zip": {
+					"type": "string",
+					"description": "ZIP code.",
+					"x-order": 5
+				}
+			},
+			"description": "Address represents a mailing address.",
+			"required": [
+				"street",
+				"city",
+				"country"
+			],
+			"additionalProperties": false
+		},
+		"cinema.Cinema": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"description": "Name of the cinema.",
+					"x-order": 1
+				},
+				"address": {
+					"description": "Address of the cinema.",
+					"oneOf": [
+						{
+							"$ref": "#/$defs/address.Address"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"x-order": 2
+				},
+				"theaters": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/cinema.Theater"
+					},
+					"description": "Theaters in the cinema.",
+					"x-order": 3
+				},
+				"showings": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/cinema.Showing"
+					},
+					"description": "Scheduled showings at the cinema.",
+					"x-order": 4
+				},
+				"movies": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/cinema.Movie"
+					},
+					"description": "Movies shown at the cinema.",
+					"x-order": 5
+				}
+			},
+			"description": "Cinema represents a cinema.",
+			"required": [
+				"name",
+				"theaters",
+				"showings",
+				"movies"
+			],
+			"additionalProperties": false
+		},
+		"cinema.Movie": {
+			"allOf": [
+				{
+					"description": "Type identification.",
+					"allOf": [
+						{
+							"$ref": "#/$defs/v1.TypeMeta"
+						}
+					]
+				},
+				{
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string",
+							"description": "Name of the movie.",
+							"x-order": 1
+						},
+						"runtime": {
+							"description": "Runtime of the movie.",
+							"allOf": [
+								{
+									"$ref": "#/$defs/v1.Duration"
+								}
+							],
+							"x-order": 2
+						},
+						"released": {
+							"description": "Release date of the movie.",
+							"allOf": [
+								{
+									"$ref": "#/$defs/timestamp.UTCDate"
+								}
+							],
+							"x-order": 3
+						}
+					},
+					"required": [
+						"name",
+						"runtime",
+						"released"
+					],
+					"additionalProperties": false
+				},
+				{
+					"const": {
+						"kind": "Movie",
+						"apiVersion": "cinema/v1"
+					}
+				}
+			]
+		},
+		"cinema.Showing": {
+			"type": "object",
+			"properties": {
+				"theater": {
+					"type": "string",
+					"description": "Name of the theater for the showing.",
+					"x-order": 1
+				},
+				"startTime": {
+					"description": "Start time of the showing.",
+					"allOf": [
+						{
+							"$ref": "#/$defs/timestamp.UTCDateTime"
+						}
+					],
+					"x-order": 2
+				},
+				"endTime": {
+					"description": "End time of the showing.",
+					"allOf": [
+						{
+							"$ref": "#/$defs/timestamp.UTCDateTime"
+						}
+					],
+					"x-order": 3
+				},
+				"movie": {
+					"type": "string",
+					"description": "Name of the movie being shown.",
+					"x-order": 4
+				}
+			},
+			"required": [
+				"theater",
+				"startTime",
+				"endTime",
+				"movie"
+			],
+			"additionalProperties": false
+		},
+		"cinema.Theater": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"description": "Name of the theater.",
+					"x-order": 1
+				},
+				"seats": {
+					"type": "integer",
+					"description": "Number of seats in the theater.",
+					"format": "int32",
+					"x-order": 2
+				},
+				"layout": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"description": "Layout of the theater.",
+					"x-order": 3
+				}
+			},
+			"description": "Theater represents a theater in a cinema.",
+			"required": [
+				"name",
+				"seats"
+			],
+			"additionalProperties": false
+		},
+		"time.Duration": {
+			"type": "integer",
+			"description": "A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years.",
+			"format": "int64"
+		},
+		"timestamp.UTCDate": {
+			"type": "string",
+			"description": "Date-only UTC timestamp in RFC3339 format.",
+			"examples": [
+				"2006-01-02"
+			],
+			"pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
+			"format": "date"
+		},
+		"timestamp.UTCDateTime": {
+			"type": "string",
+			"description": "UTC timestamp in RFC3339 format with up to nanosecond precision.",
+			"examples": [
+				"2006-01-02T15:04:05.999999999Z"
+			],
+			"pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z",
+			"format": "date-time"
+		},
+		"v1.Duration": {
+			"description": "Duration is a wrapper around time.Duration which supports correct\nmarshaling to YAML and JSON. In particular, it marshals into strings, which\ncan be used as map keys in json.",
+			"allOf": [
+				{
+					"$ref": "#/$defs/time.Duration"
+				}
+			]
+		},
+		"v1.TypeMeta": {
+			"type": "object",
+			"properties": {
+				"kind": {
+					"type": "string",
+					"description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
+					"x-order": 1
+				},
+				"apiVersion": {
+					"type": "string",
+					"description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
+					"x-order": 2
+				}
+			},
+			"description": "TypeMeta describes an individual object in an API response or request\nwith strings representing the type of the object and its API schema version.\nStructures that are versioned or persisted should inline TypeMeta.\n\n+k8s:deepcopy-gen=false",
+			"additionalProperties": false
+		}
+	}
+}
