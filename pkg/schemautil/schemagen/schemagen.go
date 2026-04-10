@@ -15,23 +15,30 @@ import (
 	"github.com/act3-ai/go-common/pkg/schemautil"
 )
 
+// NewGenerator initializes a new Generator with the default settings.
 func NewGenerator() *Generator {
 	return &Generator{
-		standardSchemas: standardSchemas,
-		results:         map[reflect.Type]result{},
-		Namer:           DefaultNamer,
-		DirectiveTool:   "jsonschema",
+		standardSchemas:  standardSchemas,
+		results:          map[reflect.Type]result{},
+		Namer:            DefaultNamer,
+		CommentFormatter: DefaultCommentFormatter,
+		DirectiveTool:    "jsonschema",
 	}
 }
 
 // Generator generates JSON Schemas for Go types.
 type Generator struct {
-	PackageInfo     *astutil.PackageInfo
 	standardSchemas map[reflect.Type]func() *jsonschema.Schema
 	results         map[reflect.Type]result
 
+	// Source code information.
+	PackageInfo *astutil.PackageInfo
+
 	// Namer provides the name for a type.
 	Namer func(t reflect.Type) string
+
+	// CommentFormatter formats comments for use as descriptions.
+	CommentFormatter func(comment *ast.CommentGroup) string
 
 	// If enabled, change the default behavior to allow additional properties for struct types.
 	StructAllowAdditionalProperties bool
@@ -56,7 +63,10 @@ type Generator struct {
 	SchemaExtenders []func(t reflect.Type, schema *jsonschema.Schema)
 }
 
-func (gen *Generator) Definitions() map[string]*jsonschema.Schema {
+// AllDefinitions produces a map of all schemas that have been generated.
+// The map keys are the names of the schemas as defined by Generator.Namer.
+// The return value is intended to be stored in the JSON Schema "$defs" field.
+func (gen *Generator) AllDefinitions() map[string]*jsonschema.Schema {
 	defs := make(map[string]*jsonschema.Schema, len(gen.results))
 	for t, r := range gen.results {
 		schemaName := t.PkgPath() + "." + t.Name()
@@ -106,10 +116,12 @@ func (gen *Generator) getFieldComment(t reflect.Type, field reflect.StructField)
 	return comment
 }
 
+// GenerateSchemaFor produces a JSON Schema for the given type.
 func GenerateSchemaFor[T any](gen *Generator) (*jsonschema.Schema, error) {
 	return gen.GenerateSchemaForType(reflect.TypeFor[T]())
 }
 
+// GenerateSchemaForType produces a JSON Schema for the given type.
 func (gen *Generator) GenerateSchemaForType(t reflect.Type) (*jsonschema.Schema, error) {
 	typeSchema, err := gen.generateSchemaForType(t)
 	if err != nil {
@@ -144,11 +156,12 @@ func (gen *Generator) GenerateSchemaForType(t reflect.Type) (*jsonschema.Schema,
 // DefaultNamer is the default implementation of Namer, using reflect.Type.String()
 // for the schema name.
 func DefaultNamer(t reflect.Type) string {
-	// if t.PkgPath() == "" {
-	// 	return t.Name()
-	// }
-	// return t.PkgPath() + "." + t.Name()
 	return t.String()
+}
+
+// DefaultCommentFormatter is the default implementation of CommentFormatter.
+func DefaultCommentFormatter(comment *ast.CommentGroup) string {
+	return strings.TrimSuffix(comment.Text(), "\n")
 }
 
 func (gen *Generator) schemaRef(t reflect.Type) string {
@@ -213,7 +226,7 @@ func (gen *Generator) generateSchemaForType(t reflect.Type) (schema *jsonschema.
 			}
 
 			// Add description from comment
-			schema.Description = formatCommentAsDescription(comment)
+			schema.Description = gen.CommentFormatter(comment)
 		}
 	}
 
@@ -357,7 +370,7 @@ func addSchemaForStructField(gen *Generator, t reflect.Type, props *objectProper
 	}
 
 	// Add description
-	schema.Description = formatCommentAsDescription(comment)
+	schema.Description = gen.CommentFormatter(comment)
 
 	defer func() {
 		// Nest the reference in a subschema
@@ -701,10 +714,6 @@ func parseJSONStructTag(tag reflect.StructTag) (jsonTagInfo, bool) {
 	}
 
 	return info, true
-}
-
-func formatCommentAsDescription(comment *ast.CommentGroup) string {
-	return strings.TrimSuffix(comment.Text(), "\n")
 }
 
 // wrapf wraps *errp with the given formatted message if *errp is not nil.

@@ -99,7 +99,7 @@
 					"description": "Type identification.",
 					"allOf": [
 						{
-							"$ref": "#/$defs/v1.TypeMeta"
+							"$ref": "#/$defs/kubemetav1.TypeMeta"
 						}
 					]
 				},
@@ -115,7 +115,7 @@
 							"description": "Runtime of the movie.",
 							"allOf": [
 								{
-									"$ref": "#/$defs/v1.Duration"
+									"$ref": "#/$defs/kubemetav1.Duration"
 								}
 							],
 							"x-order": 2
@@ -215,10 +215,26 @@
 			],
 			"additionalProperties": false
 		},
-		"time.Duration": {
-			"type": "integer",
-			"description": "A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years.",
-			"format": "int64"
+		"kubemetav1.Duration": {
+			"type": "string",
+			"description": "A duration string is a possibly signed sequence of decimal numbers, each with optional fraction and a unit suffix, such as \"300ms\", \"-1.5h\" or \"2h45m\". Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\"."
+		},
+		"kubemetav1.TypeMeta": {
+			"type": "object",
+			"properties": {
+				"kind": {
+					"type": "string",
+					"description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+					"x-order": 1
+				},
+				"apiVersion": {
+					"type": "string",
+					"description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+					"x-order": 2
+				}
+			},
+			"description": "TypeMeta describes an individual object in an API response or request\nwith strings representing the type of the object and its API schema version.\nStructures that are versioned or persisted should inline TypeMeta.",
+			"additionalProperties": false
 		},
 		"timestamp.UTCDate": {
 			"type": "string",
@@ -237,31 +253,6 @@
 			],
 			"pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z",
 			"format": "date-time"
-		},
-		"v1.Duration": {
-			"description": "Duration is a wrapper around time.Duration which supports correct\nmarshaling to YAML and JSON. In particular, it marshals into strings, which\ncan be used as map keys in json.",
-			"allOf": [
-				{
-					"$ref": "#/$defs/time.Duration"
-				}
-			]
-		},
-		"v1.TypeMeta": {
-			"type": "object",
-			"properties": {
-				"kind": {
-					"type": "string",
-					"description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
-					"x-order": 1
-				},
-				"apiVersion": {
-					"type": "string",
-					"description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
-					"x-order": 2
-				}
-			},
-			"description": "TypeMeta describes an individual object in an API response or request\nwith strings representing the type of the object and its API schema version.\nStructures that are versioned or persisted should inline TypeMeta.\n\n+k8s:deepcopy-gen=false",
-			"additionalProperties": false
 		}
 	}
 }
