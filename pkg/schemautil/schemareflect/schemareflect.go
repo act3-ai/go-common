@@ -1,4 +1,4 @@
-package schemagen
+package schemareflect
 
 import (
 	"encoding/json"
@@ -15,24 +15,13 @@ import (
 	"github.com/act3-ai/go-common/pkg/schemautil"
 )
 
-// NewGenerator initializes a new Generator with the default settings.
-func NewGenerator() *Generator {
-	return &Generator{
-		standardSchemas:  standardSchemas,
-		results:          map[reflect.Type]result{},
-		Namer:            DefaultNamer,
-		CommentFormatter: DefaultCommentFormatter,
-		DirectiveTool:    "jsonschema",
-	}
-}
-
-// Generator generates JSON Schemas for Go types.
-type Generator struct {
-	standardSchemas map[reflect.Type]func() *jsonschema.Schema
-	results         map[reflect.Type]result
-
+// Options configures a Reflector.
+type Options struct {
 	// Source code information.
 	PackageInfo *astutil.PackageInfo
+
+	// Base schemas that will not produce a named schema.
+	BasicSchemas map[reflect.Type]*jsonschema.Schema
 
 	// Namer provides the name for a type.
 	Namer func(t reflect.Type) string
@@ -63,12 +52,40 @@ type Generator struct {
 	SchemaExtenders []func(t reflect.Type, schema *jsonschema.Schema)
 }
 
+// DefaultOptions produces the default options.
+func DefaultOptions() *Options {
+	return &Options{
+		BasicSchemas:     baseSchemas,
+		Namer:            DefaultNamer,
+		CommentFormatter: DefaultCommentFormatter,
+		DirectiveTool:    "jsonschema",
+	}
+}
+
+// NewReflector initializes a new Reflector with the default settings.
+func NewReflector(opts *Options) *Reflector {
+	if opts == nil {
+		opts = DefaultOptions()
+	}
+	return &Reflector{
+		Options: *opts,
+		results: map[reflect.Type]result{},
+	}
+}
+
+// Reflector generates JSON Schemas for Go types.
+type Reflector struct {
+	Options
+
+	results map[reflect.Type]result
+}
+
 // AllDefinitions produces a map of all schemas that have been generated.
 // The map keys are the names of the schemas as defined by Generator.Namer.
 // The return value is intended to be stored in the JSON Schema "$defs" field.
-func (gen *Generator) AllDefinitions() map[string]*jsonschema.Schema {
-	defs := make(map[string]*jsonschema.Schema, len(gen.results))
-	for t, r := range gen.results {
+func (r *Reflector) AllDefinitions() map[string]*jsonschema.Schema {
+	defs := make(map[string]*jsonschema.Schema, len(r.results))
+	for t, r := range r.results {
 		schemaName := t.PkgPath() + "." + t.Name()
 		defs[schemaName] = r.Schema
 		if r.Schema == nil && r.Err != nil {
@@ -85,11 +102,11 @@ type result struct {
 	Err    error
 }
 
-func (gen *Generator) getTypeComment(t reflect.Type) *ast.CommentGroup {
-	if gen.PackageInfo == nil || t.PkgPath() == "" {
+func (r *Reflector) getTypeComment(t reflect.Type) *ast.CommentGroup {
+	if r.PackageInfo == nil || t.PkgPath() == "" {
 		return nil
 	}
-	comment, err := gen.PackageInfo.TypeComment(t.PkgPath(), t.Name())
+	comment, err := r.PackageInfo.TypeComment(t.PkgPath(), t.Name())
 	if err != nil {
 		slog.Error("type comment lookup",
 			slog.String("pkgPath", t.PkgPath()),
@@ -100,11 +117,11 @@ func (gen *Generator) getTypeComment(t reflect.Type) *ast.CommentGroup {
 	return comment
 }
 
-func (gen *Generator) getFieldComment(t reflect.Type, field reflect.StructField) *ast.CommentGroup {
-	if gen.PackageInfo == nil || t.PkgPath() == "" {
+func (r *Reflector) getFieldComment(t reflect.Type, field reflect.StructField) *ast.CommentGroup {
+	if r.PackageInfo == nil || t.PkgPath() == "" {
 		return nil
 	}
-	comment, err := gen.PackageInfo.FieldComment(t.PkgPath(), t.Name(), field.Name)
+	comment, err := r.PackageInfo.FieldComment(t.PkgPath(), t.Name(), field.Name)
 	if err != nil {
 		slog.Error("field comment lookup",
 			slog.String("pkgPath", t.PkgPath()),
@@ -117,19 +134,19 @@ func (gen *Generator) getFieldComment(t reflect.Type, field reflect.StructField)
 }
 
 // GenerateSchemaFor produces a JSON Schema for the given type.
-func GenerateSchemaFor[T any](gen *Generator) (*jsonschema.Schema, error) {
-	return gen.GenerateSchemaForType(reflect.TypeFor[T]())
+func GenerateSchemaFor[T any](r *Reflector) (*jsonschema.Schema, error) {
+	return r.GenerateSchemaForType(reflect.TypeFor[T]())
 }
 
 // GenerateSchemaForType produces a JSON Schema for the given type.
-func (gen *Generator) GenerateSchemaForType(t reflect.Type) (*jsonschema.Schema, error) {
-	typeSchema, err := gen.generateSchemaForType(t)
+func (r *Reflector) GenerateSchemaForType(t reflect.Type) (*jsonschema.Schema, error) {
+	typeSchema, err := r.generateSchemaForType(t)
 	if err != nil {
 		return nil, err
 	}
 
 	// Visit all reachable references
-	refs, err := schemautil.ReachableRefs(gen, typeSchema)
+	refs, err := schemautil.ReachableRefs(r, typeSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -144,11 +161,11 @@ func (gen *Generator) GenerateSchemaForType(t reflect.Type) (*jsonschema.Schema,
 	defs[DefaultNamer(t)] = typeSchema
 	for _, ref := range refs {
 		name := strings.TrimPrefix(ref, "#/$defs/")
-		defs[name], _ = gen.GetSchema(ref)
+		defs[name], _ = r.GetSchema(ref)
 	}
 
 	return &jsonschema.Schema{
-		Ref:  gen.schemaRef(t),
+		Ref:  r.schemaRef(t),
 		Defs: defs,
 	}, err
 }
@@ -164,32 +181,32 @@ func DefaultCommentFormatter(comment *ast.CommentGroup) string {
 	return strings.TrimSuffix(comment.Text(), "\n")
 }
 
-func (gen *Generator) schemaRef(t reflect.Type) string {
-	return "#/$defs/" + gen.Namer(t)
+func (r *Reflector) schemaRef(t reflect.Type) string {
+	return "#/$defs/" + r.Namer(t)
 }
 
 // GetSchema implements Registry.
-func (gen *Generator) GetSchema(ref string) (*jsonschema.Schema, bool) {
-	for t, result := range gen.results {
-		if ref == gen.schemaRef(t) {
+func (r *Reflector) GetSchema(ref string) (*jsonschema.Schema, bool) {
+	for t, result := range r.results {
+		if ref == r.schemaRef(t) {
 			return result.Schema, true
 		}
 	}
 	return nil, false
 }
 
-func (gen *Generator) generateSchemaForType(t reflect.Type) (schema *jsonschema.Schema, err error) {
+func (r *Reflector) generateSchemaForType(t reflect.Type) (schema *jsonschema.Schema, err error) {
 	// Check if type is a standard type
-	if schema, ok := standardTypeSchema(gen, t); ok {
-		if gen.SetXGoType {
+	if schema, ok := standardTypeSchema(r, t); ok {
+		if r.SetXGoType {
 			setXGoType(schema, t)
 		}
 		return schema, nil
 	}
 
 	// Return cached schema if already generated
-	if r, ok := gen.results[t]; ok {
-		return r.Schema, r.Err
+	if got, ok := r.results[t]; ok {
+		return got.Schema, got.Err
 	}
 
 	defer wrapf(&err, "generating schema for type %s", t)
@@ -197,15 +214,15 @@ func (gen *Generator) generateSchemaForType(t reflect.Type) (schema *jsonschema.
 	// Cache result if it is a named schema
 	defer func() {
 		if t.PkgPath() != "" && t.Name() != "" {
-			gen.results[t] = result{Schema: schema, Err: err}
+			r.results[t] = result{Schema: schema, Err: err}
 		}
 	}()
 
 	// Get the comment for this type
-	comment := gen.getTypeComment(t)
+	comment := r.getTypeComment(t)
 
 	// Create schema from provider
-	for _, prov := range gen.SchemaProviders {
+	for _, prov := range r.SchemaProviders {
 		schema = prov(t)
 		if schema != nil {
 			break
@@ -220,23 +237,23 @@ func (gen *Generator) generateSchemaForType(t reflect.Type) (schema *jsonschema.
 			schema = v.JSONSchema()
 		} else {
 			// Derive the schema from the kind
-			schema, err = schemaFromKind(gen, t)
+			schema, err = schemaFromKind(r, t)
 			if err != nil {
 				return nil, err
 			}
 
 			// Add description from comment
-			schema.Description = gen.CommentFormatter(comment)
+			schema.Description = r.CommentFormatter(comment)
 		}
 	}
 
 	// Apply comment directives
-	if err = gen.applySchemaDirectives(schema, comment); err != nil {
+	if err = r.applySchemaDirectives(schema, comment); err != nil {
 		return nil, err
 	}
 
 	// Add x-go-type extension
-	if gen.SetXGoType {
+	if r.SetXGoType {
 		setXGoType(schema, t)
 	}
 
@@ -250,27 +267,27 @@ func (gen *Generator) generateSchemaForType(t reflect.Type) (schema *jsonschema.
 	}
 
 	// Call all SchemaExtenders
-	for _, ext := range gen.SchemaExtenders {
+	for _, ext := range r.SchemaExtenders {
 		ext(t, schema)
 	}
 
 	return schema, nil
 }
 
-func generateSchemaForMap(gen *Generator, t reflect.Type) (*jsonschema.Schema, error) {
+func generateSchemaForMap(r *Reflector, t reflect.Type) (*jsonschema.Schema, error) {
 	var err error
 	schema := &jsonschema.Schema{
 		Type: schemautil.TypeObject,
 	}
 
 	// Generate schema for map keys
-	schema.PropertyNames, err = gen.generateSchemaForType(t.Key())
+	schema.PropertyNames, err = r.generateSchemaForType(t.Key())
 	if err != nil {
 		return nil, err
 	}
 
 	// Generate schema for map values
-	schema.AdditionalProperties, err = gen.generateSchemaForType(t.Elem())
+	schema.AdditionalProperties, err = r.generateSchemaForType(t.Elem())
 	if err != nil {
 		return nil, err
 	}
@@ -278,9 +295,9 @@ func generateSchemaForMap(gen *Generator, t reflect.Type) (*jsonschema.Schema, e
 	return schema, nil
 }
 
-func generateSchemaForStruct(gen *Generator, t reflect.Type) (*jsonschema.Schema, error) {
+func generateSchemaForStruct(r *Reflector, t reflect.Type) (*jsonschema.Schema, error) {
 	// Generate schema for each field
-	props, err := generateObjectPropertiesForStruct(gen, t)
+	props, err := generateObjectPropertiesForStruct(r, t)
 	if err != nil {
 		return nil, err
 	}
@@ -293,12 +310,12 @@ func generateSchemaForStruct(gen *Generator, t reflect.Type) (*jsonschema.Schema
 		AdditionalProperties: schemautil.FalseSchema(),
 	}
 
-	if gen.StructAllowAdditionalProperties {
+	if r.StructAllowAdditionalProperties {
 		schema.AdditionalProperties = schemautil.TrueSchema()
 	}
 
 	// Add x-order extension if enabled
-	if gen.SetXOrder {
+	if r.SetXOrder {
 		order := 1
 		for _, propSchema := range schemautil.OrderedProperties(schema) {
 			schemautil.SetExtension(propSchema, schemautil.XOrder, order)
@@ -330,14 +347,14 @@ type objectProperties struct {
 	Embedded      []*jsonschema.Schema
 }
 
-func generateObjectPropertiesForStruct(gen *Generator, t reflect.Type) (*objectProperties, error) {
+func generateObjectPropertiesForStruct(r *Reflector, t reflect.Type) (*objectProperties, error) {
 	props := &objectProperties{
 		Properties:    make(map[string]*jsonschema.Schema, t.NumField()),
 		PropertyOrder: make([]string, 0, t.NumField()),
 	}
 	// Generate schema for each field
 	for field := range t.Fields() {
-		if err := addSchemaForStructField(gen, t, props, field); err != nil {
+		if err := addSchemaForStructField(r, t, props, field); err != nil {
 			return nil, fmt.Errorf("adding schema for struct field %s: %w", field.Name, err)
 		}
 	}
@@ -345,7 +362,7 @@ func generateObjectPropertiesForStruct(gen *Generator, t reflect.Type) (*objectP
 }
 
 // addSchemaForStructField generates a schema for a struct field and adds it to the object schema.
-func addSchemaForStructField(gen *Generator, t reflect.Type, props *objectProperties, field reflect.StructField) error {
+func addSchemaForStructField(r *Reflector, t reflect.Type, props *objectProperties, field reflect.StructField) error {
 	// Property name
 	propName := field.Name
 
@@ -361,16 +378,16 @@ func addSchemaForStructField(gen *Generator, t reflect.Type, props *objectProper
 	}
 
 	// Get the comment for this field
-	comment := gen.getFieldComment(t, field)
+	comment := r.getFieldComment(t, field)
 
 	// Create property schema
-	schema, err := gen.generateSchemaOrReference(field.Type)
+	schema, err := r.generateSchemaOrReference(field.Type)
 	if err != nil {
 		return err
 	}
 
 	// Add description
-	schema.Description = gen.CommentFormatter(comment)
+	schema.Description = r.CommentFormatter(comment)
 
 	defer func() {
 		// Nest the reference in a subschema
@@ -379,7 +396,7 @@ func addSchemaForStructField(gen *Generator, t reflect.Type, props *objectProper
 
 	if field.Anonymous {
 		// Apply comment directives to the schema
-		if err := gen.applySchemaDirectives(schema, comment); err != nil {
+		if err := r.applySchemaDirectives(schema, comment); err != nil {
 			return err
 		}
 
@@ -398,7 +415,7 @@ func addSchemaForStructField(gen *Generator, t reflect.Type, props *objectProper
 		props.Properties[propName] = schema
 
 		// Apply comment directives to the schema
-		if err := gen.applyStructFieldDirectives(props, propName, schema, comment); err != nil {
+		if err := r.applyStructFieldDirectives(props, propName, schema, comment); err != nil {
 			return err
 		}
 	}
@@ -421,17 +438,17 @@ func setXGoType(schema *jsonschema.Schema, t reflect.Type) {
 }
 
 // generateSchemaOrReference generates a schema for basic types or a reference to named types.
-func (gen *Generator) generateSchemaOrReference(t reflect.Type) (*jsonschema.Schema, error) {
+func (r *Reflector) generateSchemaOrReference(t reflect.Type) (*jsonschema.Schema, error) {
 	// Check if type is a standard type
-	if schema, ok := standardTypeSchema(gen, t); ok {
-		if gen.SetXGoType {
+	if schema, ok := standardTypeSchema(r, t); ok {
+		if r.SetXGoType {
 			setXGoType(schema, t)
 		}
 		return schema, nil
 	}
 
 	// Generate schema for the type
-	schema, err := gen.generateSchemaForType(t)
+	schema, err := r.generateSchemaForType(t)
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +456,7 @@ func (gen *Generator) generateSchemaOrReference(t reflect.Type) (*jsonschema.Sch
 	// If type has PkgPath and Name, return reference to schema
 	if t.PkgPath() != "" && t.Name() != "" {
 		return &jsonschema.Schema{
-			Ref: gen.schemaRef(t),
+			Ref: r.schemaRef(t),
 		}, nil
 	}
 
@@ -571,36 +588,36 @@ func schemaTime() *jsonschema.Schema {
 	}
 }
 
-var standardSchemas = map[reflect.Type]func() *jsonschema.Schema{
-	typeAny:        schemautil.TrueSchema,
-	typeString:     schemaString,
-	typeBool:       schemaBool,
-	typeUint:       schemaUint,
-	typeUint8:      schemaUint8,
-	typeUint16:     schemaUint16,
-	typeUint32:     schemaUint32,
-	typeUint64:     schemaUint64,
-	typeInt:        schemaInt,
-	typeInt8:       schemaInt8,
-	typeInt16:      schemaInt16,
-	typeInt32:      schemaInt32,
-	typeInt64:      schemaInt64,
-	typeFloat32:    schemaFloat32,
-	typeFloat64:    schemaFloat64,
-	typeTime:       schemaTime,
-	typeRawMessage: schemautil.TrueSchema,
+var baseSchemas = map[reflect.Type]*jsonschema.Schema{
+	typeAny:        schemautil.TrueSchema(),
+	typeString:     schemaString(),
+	typeBool:       schemaBool(),
+	typeUint:       schemaUint(),
+	typeUint8:      schemaUint8(),
+	typeUint16:     schemaUint16(),
+	typeUint32:     schemaUint32(),
+	typeUint64:     schemaUint64(),
+	typeInt:        schemaInt(),
+	typeInt8:       schemaInt8(),
+	typeInt16:      schemaInt16(),
+	typeInt32:      schemaInt32(),
+	typeInt64:      schemaInt64(),
+	typeFloat32:    schemaFloat32(),
+	typeFloat64:    schemaFloat64(),
+	typeTime:       schemaTime(),
+	typeRawMessage: schemautil.TrueSchema(),
 }
 
-func standardTypeSchema(gen *Generator, t reflect.Type) (*jsonschema.Schema, bool) {
-	fn, ok := gen.standardSchemas[t]
+func standardTypeSchema(r *Reflector, t reflect.Type) (*jsonschema.Schema, bool) {
+	schema, ok := r.BasicSchemas[t]
 	if !ok {
 		return nil, false
 	}
-	return fn(), true
+	return schema.CloneSchemas(), true
 }
 
 // Derive the schema from the kind.
-func schemaFromKind(gen *Generator, t reflect.Type) (schema *jsonschema.Schema, err error) {
+func schemaFromKind(r *Reflector, t reflect.Type) (schema *jsonschema.Schema, err error) {
 	switch t.Kind() {
 	case reflect.Interface:
 		return schemautil.TrueSchema(), nil
@@ -633,7 +650,7 @@ func schemaFromKind(gen *Generator, t reflect.Type) (schema *jsonschema.Schema, 
 	case reflect.Float64:
 		return schemaFloat64(), nil
 	case reflect.Pointer:
-		elemSchema, err := gen.generateSchemaOrReference(t.Elem())
+		elemSchema, err := r.generateSchemaOrReference(t.Elem())
 		if err != nil {
 			return nil, err
 		}
@@ -644,7 +661,7 @@ func schemaFromKind(gen *Generator, t reflect.Type) (schema *jsonschema.Schema, 
 			},
 		}, nil
 	case reflect.Array:
-		elemSchema, err := gen.generateSchemaOrReference(t.Elem())
+		elemSchema, err := r.generateSchemaOrReference(t.Elem())
 		if err != nil {
 			return nil, err
 		}
@@ -656,7 +673,7 @@ func schemaFromKind(gen *Generator, t reflect.Type) (schema *jsonschema.Schema, 
 			Items:    elemSchema,
 		}, nil
 	case reflect.Slice:
-		elemSchema, err := gen.generateSchemaOrReference(t.Elem())
+		elemSchema, err := r.generateSchemaOrReference(t.Elem())
 		if err != nil {
 			return nil, err
 		}
@@ -665,9 +682,9 @@ func schemaFromKind(gen *Generator, t reflect.Type) (schema *jsonschema.Schema, 
 			Items: elemSchema,
 		}, nil
 	case reflect.Struct:
-		return generateSchemaForStruct(gen, t)
+		return generateSchemaForStruct(r, t)
 	case reflect.Map:
-		return generateSchemaForMap(gen, t)
+		return generateSchemaForMap(r, t)
 	default:
 		return nil, fmt.Errorf("unsupported type")
 	}

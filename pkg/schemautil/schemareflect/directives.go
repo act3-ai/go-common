@@ -1,4 +1,4 @@
-package schemagen
+package schemareflect
 
 import (
 	"encoding/json"
@@ -15,30 +15,30 @@ import (
 	"github.com/act3-ai/go-common/pkg/schemautil"
 )
 
-func (gen *Generator) applyStructFieldDirectives(props *objectProperties, propName string, schema *jsonschema.Schema, comments *ast.CommentGroup) error {
-	for _, dir := range astutil.AllDirectivesForTool(gen.DirectiveTool, comments) {
-		if err := gen.applyStructFieldDirective(props, propName, schema, dir); err != nil {
+func (r *Reflector) applyStructFieldDirectives(props *objectProperties, propName string, schema *jsonschema.Schema, comments *ast.CommentGroup) error {
+	for _, dir := range astutil.AllDirectivesForTool(r.DirectiveTool, comments) {
+		if err := r.applyStructFieldDirective(props, propName, schema, dir); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (gen *Generator) applyStructFieldDirective(props *objectProperties, propName string, schema *jsonschema.Schema, dir ast.Directive) error {
+func (r *Reflector) applyStructFieldDirective(props *objectProperties, propName string, schema *jsonschema.Schema, dir ast.Directive) error {
 	switch dir.Name {
 	case "required":
 		required := true
 		if dir.Args != "" {
 			args, err := dir.ParseArgs()
 			if err != nil {
-				return fmt.Errorf("%s: %w", gen.PackageInfo.Fset.Position(dir.ArgsPos), err)
+				return fmt.Errorf("%s: %w", r.PackageInfo.Fset.Position(dir.ArgsPos), err)
 			}
 			if err := validateArgLength(args, 1); err != nil {
-				return fmt.Errorf("%s: %w", gen.PackageInfo.Fset.Position(dir.ArgsPos), err)
+				return fmt.Errorf("%s: %w", r.PackageInfo.Fset.Position(dir.ArgsPos), err)
 			}
 			required, err = strconv.ParseBool(args[0].Arg)
 			if err != nil {
-				return fmt.Errorf("%s: %w", gen.PackageInfo.Fset.Position(args[0].Pos), err)
+				return fmt.Errorf("%s: %w", r.PackageInfo.Fset.Position(args[0].Pos), err)
 			}
 		}
 		if required {
@@ -52,35 +52,35 @@ func (gen *Generator) applyStructFieldDirective(props *objectProperties, propNam
 		}
 		return nil
 	default:
-		return gen.applySchemaDirective(schema, dir)
+		return r.applySchemaDirective(schema, dir)
 	}
 }
 
-func (gen *Generator) applySchemaDirectives(schema *jsonschema.Schema, comments *ast.CommentGroup) error {
-	for _, dir := range astutil.AllDirectivesForTool(gen.DirectiveTool, comments) {
-		if err := gen.applySchemaDirective(schema, dir); err != nil {
+func (r *Reflector) applySchemaDirectives(schema *jsonschema.Schema, comments *ast.CommentGroup) error {
+	for _, dir := range astutil.AllDirectivesForTool(r.DirectiveTool, comments) {
+		if err := r.applySchemaDirective(schema, dir); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (gen *Generator) applySchemaDirective(schema *jsonschema.Schema, dir ast.Directive) error {
+func (r *Reflector) applySchemaDirective(schema *jsonschema.Schema, dir ast.Directive) error {
 	switch dir.Name {
 	case "set":
-		return gen.applySetDirective(schema, dir)
+		return r.applySetDirective(schema, dir)
 	default:
-		return fmt.Errorf("%s: unsupported name %q in directive %s", gen.PackageInfo.Fset.Position(dir.Slash), dir.Name, directiveString(dir))
+		return fmt.Errorf("%s: unsupported name %q in directive %s", r.PackageInfo.Fset.Position(dir.Slash), dir.Name, directiveString(dir))
 	}
 }
 
-func (gen *Generator) applySetDirective(schema *jsonschema.Schema, dir ast.Directive) error {
+func (r *Reflector) applySetDirective(schema *jsonschema.Schema, dir ast.Directive) error {
 	args, err := dir.ParseArgs()
 	if err != nil {
-		return fmt.Errorf("%s: %w", gen.PackageInfo.Fset.Position(dir.ArgsPos), err)
+		return fmt.Errorf("%s: %w", r.PackageInfo.Fset.Position(dir.ArgsPos), err)
 	}
 	if err := validateArgLength(args, 2); err != nil {
-		return fmt.Errorf("%s: %w", gen.PackageInfo.Fset.Position(dir.ArgsPos), err)
+		return fmt.Errorf("%s: %w", r.PackageInfo.Fset.Position(dir.ArgsPos), err)
 	}
 
 	propertyName := args[0].Arg
@@ -110,7 +110,7 @@ func (gen *Generator) applySetDirective(schema *jsonschema.Schema, dir ast.Direc
 		schema.DynamicRef = arg.Arg
 		return nil
 	case "$vocabulary":
-		return setJSON(gen.PackageInfo.Fset, arg, &schema.Vocabulary)
+		return setJSON(r.PackageInfo.Fset, arg, &schema.Vocabulary)
 	case "title":
 		schema.Title = arg.Arg
 		return nil
@@ -118,60 +118,60 @@ func (gen *Generator) applySetDirective(schema *jsonschema.Schema, dir ast.Direc
 		schema.Description = arg.Arg
 		return nil
 	case "default":
-		return setJSONRawMessage(gen.PackageInfo.Fset, arg, &schema.Default)
+		return setJSONRawMessage(r.PackageInfo.Fset, arg, &schema.Default)
 	case "deprecated":
-		return setBoolean(gen.PackageInfo.Fset, arg, &schema.Deprecated)
+		return setBoolean(r.PackageInfo.Fset, arg, &schema.Deprecated)
 	case "readOnly":
-		return setBoolean(gen.PackageInfo.Fset, arg, &schema.ReadOnly)
+		return setBoolean(r.PackageInfo.Fset, arg, &schema.ReadOnly)
 	case "writeOnly":
-		return setBoolean(gen.PackageInfo.Fset, arg, &schema.WriteOnly)
+		return setBoolean(r.PackageInfo.Fset, arg, &schema.WriteOnly)
 	case "examples":
-		return setJSON(gen.PackageInfo.Fset, arg, &schema.Examples)
+		return setJSON(r.PackageInfo.Fset, arg, &schema.Examples)
 	case "type":
 		schema.Type = arg.Arg
 		return nil
 	case "enum":
-		return setJSON(gen.PackageInfo.Fset, arg, &schema.Enum)
+		return setJSON(r.PackageInfo.Fset, arg, &schema.Enum)
 	case "const":
-		return setJSON(gen.PackageInfo.Fset, arg, &schema.Const)
+		return setJSON(r.PackageInfo.Fset, arg, &schema.Const)
 	case "multipleOf":
-		return setFloat64Pointer(gen.PackageInfo.Fset, arg, &schema.MultipleOf)
+		return setFloat64Pointer(r.PackageInfo.Fset, arg, &schema.MultipleOf)
 	case "minimum":
-		return setFloat64Pointer(gen.PackageInfo.Fset, arg, &schema.Minimum)
+		return setFloat64Pointer(r.PackageInfo.Fset, arg, &schema.Minimum)
 	case "maximum":
-		return setFloat64Pointer(gen.PackageInfo.Fset, arg, &schema.Maximum)
+		return setFloat64Pointer(r.PackageInfo.Fset, arg, &schema.Maximum)
 	case "exclusiveMinimum":
-		return setFloat64Pointer(gen.PackageInfo.Fset, arg, &schema.ExclusiveMinimum)
+		return setFloat64Pointer(r.PackageInfo.Fset, arg, &schema.ExclusiveMinimum)
 	case "exclusiveMaximum":
-		return setFloat64Pointer(gen.PackageInfo.Fset, arg, &schema.ExclusiveMaximum)
+		return setFloat64Pointer(r.PackageInfo.Fset, arg, &schema.ExclusiveMaximum)
 	case "minLength":
-		return setIntPointer(gen.PackageInfo.Fset, arg, &schema.MinLength)
+		return setIntPointer(r.PackageInfo.Fset, arg, &schema.MinLength)
 	case "maxLength":
-		return setIntPointer(gen.PackageInfo.Fset, arg, &schema.MaxLength)
+		return setIntPointer(r.PackageInfo.Fset, arg, &schema.MaxLength)
 	case "pattern":
 		schema.Pattern = arg.Arg
 		return nil
 	case "minItems":
-		return setIntPointer(gen.PackageInfo.Fset, arg, &schema.MinItems)
+		return setIntPointer(r.PackageInfo.Fset, arg, &schema.MinItems)
 	case "maxItems":
-		return setIntPointer(gen.PackageInfo.Fset, arg, &schema.MaxItems)
+		return setIntPointer(r.PackageInfo.Fset, arg, &schema.MaxItems)
 	case "uniqueItems":
-		return setBoolean(gen.PackageInfo.Fset, arg, &schema.UniqueItems)
+		return setBoolean(r.PackageInfo.Fset, arg, &schema.UniqueItems)
 	case "minContains":
-		return setIntPointer(gen.PackageInfo.Fset, arg, &schema.MinContains)
+		return setIntPointer(r.PackageInfo.Fset, arg, &schema.MinContains)
 	case "maxContains":
-		return setIntPointer(gen.PackageInfo.Fset, arg, &schema.MaxContains)
+		return setIntPointer(r.PackageInfo.Fset, arg, &schema.MaxContains)
 	case "minProperties":
-		return setIntPointer(gen.PackageInfo.Fset, arg, &schema.MinProperties)
+		return setIntPointer(r.PackageInfo.Fset, arg, &schema.MinProperties)
 	case "maxProperties":
-		return setIntPointer(gen.PackageInfo.Fset, arg, &schema.MaxProperties)
+		return setIntPointer(r.PackageInfo.Fset, arg, &schema.MaxProperties)
 	case "required":
-		return setJSON(gen.PackageInfo.Fset, arg, &schema.Required)
+		return setJSON(r.PackageInfo.Fset, arg, &schema.Required)
 	case "dependentRequired":
-		return setJSON(gen.PackageInfo.Fset, arg, &schema.DependentRequired)
+		return setJSON(r.PackageInfo.Fset, arg, &schema.DependentRequired)
 	case "additionalProperties":
 		var value *bool
-		if err := setBooleanPointer(gen.PackageInfo.Fset, args[1], &value); err != nil {
+		if err := setBooleanPointer(r.PackageInfo.Fset, args[1], &value); err != nil {
 			return err
 		}
 		switch {
@@ -196,7 +196,7 @@ func (gen *Generator) applySetDirective(schema *jsonschema.Schema, dir ast.Direc
 		// Check if property name is an extra
 		if strings.HasPrefix(propertyName, "x-") {
 			var value any
-			if err := setJSON(gen.PackageInfo.Fset, arg, &value); err != nil {
+			if err := setJSON(r.PackageInfo.Fset, arg, &value); err != nil {
 				return err
 			}
 			if schema.Extra == nil {
@@ -207,7 +207,7 @@ func (gen *Generator) applySetDirective(schema *jsonschema.Schema, dir ast.Direc
 		}
 
 		// Return an error for all other property names
-		return fmt.Errorf("%s: unsupported property %q in directive %s", gen.PackageInfo.Fset.Position(args[0].Pos), propertyName, directiveString(dir))
+		return fmt.Errorf("%s: unsupported property %q in directive %s", r.PackageInfo.Fset.Position(args[0].Pos), propertyName, directiveString(dir))
 	}
 }
 

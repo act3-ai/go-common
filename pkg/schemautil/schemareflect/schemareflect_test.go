@@ -1,4 +1,4 @@
-package schemagen_test
+package schemareflect_test
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/act3-ai/go-common/pkg/astutil"
 	"github.com/act3-ai/go-common/pkg/schemautil"
-	"github.com/act3-ai/go-common/pkg/schemautil/schemagen"
+	"github.com/act3-ai/go-common/pkg/schemautil/schemareflect"
 	"github.com/act3-ai/go-common/pkg/testutil"
 )
 
@@ -30,11 +30,12 @@ func RunTestCase(t *testing.T, tt TestCase) {
 	})
 	require.NoError(t, err)
 
-	gen := schemagen.NewGenerator()
-	gen.PackageInfo = info
-	gen.SetXOrder = true
+	r := schemareflect.NewReflector(&schemareflect.Options{
+		PackageInfo: info,
+		SetXOrder:   true,
+	})
 
-	got, err := gen.GenerateSchemaForType(tt.Type)
+	got, err := r.GenerateSchemaForType(tt.Type)
 	if testutil.AssertErrorIf(t, tt.WantErr != "", err) && tt.WantErr != "" {
 		assert.Equal(t, tt.WantErr, err.Error())
 	}
@@ -119,9 +120,9 @@ func TestGenerateSchema(t *testing.T) {
 		tt := TestCase{
 			Type: reflect.TypeFor[TestStruct](),
 			Schema: &jsonschema.Schema{
-				Ref: "#/$defs/schemagen_test.TestStruct",
+				Ref: "#/$defs/schemareflect_test.TestStruct",
 				Defs: map[string]*jsonschema.Schema{
-					"schemagen_test.EmbeddedStruct": {
+					"schemareflect_test.EmbeddedStruct": {
 						Type:        "object",
 						Description: "A struct type to be embedded.",
 						Properties: map[string]*jsonschema.Schema{
@@ -144,14 +145,14 @@ func TestGenerateSchema(t *testing.T) {
 						},
 						AdditionalProperties: schemautil.FalseSchema(),
 					},
-					"schemagen_test.TestStruct": {
+					"schemareflect_test.TestStruct": {
 						Description: "A struct type.",
 						AllOf: []*jsonschema.Schema{
 							{
 								Description: "This is an embedded field.",
 								AllOf: []*jsonschema.Schema{
 									{
-										Ref: "#/$defs/schemagen_test.EmbeddedStruct",
+										Ref: "#/$defs/schemareflect_test.EmbeddedStruct",
 									},
 								},
 							},

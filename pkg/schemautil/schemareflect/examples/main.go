@@ -13,8 +13,8 @@ import (
 	kubemetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/act3-ai/go-common/pkg/astutil"
-	"github.com/act3-ai/go-common/pkg/schemautil/schemagen"
-	"github.com/act3-ai/go-common/pkg/schemautil/schemagen/examples/cinema"
+	"github.com/act3-ai/go-common/pkg/schemautil/schemareflect"
+	"github.com/act3-ai/go-common/pkg/schemautil/schemareflect/examples/cinema"
 )
 
 func main() {
@@ -29,20 +29,20 @@ func mainE(ctx context.Context) error {
 		return err
 	}
 
-	gen := schemagen.NewGenerator()
-	gen.PackageInfo = info
-	gen.SetXOrder = true
-	gen.Namer = func(t reflect.Type) string {
+	opts := &schemareflect.Options{}
+	opts.PackageInfo = info
+	opts.SetXOrder = true
+	opts.Namer = func(t reflect.Type) string {
 		switch t.PkgPath() {
 		case "k8s.io/apimachinery/pkg/apis/meta/v1":
 			return "kubemetav1." + t.Name()
 		default:
-			return schemagen.DefaultNamer(t)
+			return schemareflect.DefaultNamer(t)
 		}
 	}
 	// Update the comment formatter to remove Kubernetes style directive comments
 	// like "// +optional"
-	gen.CommentFormatter = func(comment *ast.CommentGroup) string {
+	opts.CommentFormatter = func(comment *ast.CommentGroup) string {
 		w := strings.Builder{}
 		desc := comment.Text()
 		for line := range strings.Lines(desc) {
@@ -58,7 +58,7 @@ func mainE(ctx context.Context) error {
 		return strings.TrimSpace(w.String())
 	}
 	// Add a schema provider that provides the actual schema for the Kubernetes duration type
-	gen.SchemaProviders = append(gen.SchemaProviders, func(t reflect.Type) *jsonschema.Schema {
+	opts.SchemaProviders = append(opts.SchemaProviders, func(t reflect.Type) *jsonschema.Schema {
 		switch t {
 		case typeMetaDuration:
 			// Provide schema for
@@ -71,7 +71,9 @@ func mainE(ctx context.Context) error {
 		}
 	})
 
-	schema, err := gen.GenerateSchemaForType(reflect.TypeFor[cinema.Cinema]())
+	r := schemareflect.NewReflector(opts)
+
+	schema, err := r.GenerateSchemaForType(reflect.TypeFor[cinema.Cinema]())
 	if err != nil {
 		return err
 	}

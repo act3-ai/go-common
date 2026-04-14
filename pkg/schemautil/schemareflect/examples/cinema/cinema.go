@@ -4,8 +4,8 @@ import (
 	"github.com/google/jsonschema-go/jsonschema"
 	kubemetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/act3-ai/go-common/pkg/schemautil/schemagen/examples/address"
-	"github.com/act3-ai/go-common/pkg/schemautil/schemagen/examples/timestamp"
+	"github.com/act3-ai/go-common/pkg/schemautil/schemareflect/examples/address"
+	"github.com/act3-ai/go-common/pkg/schemautil/schemareflect/examples/timestamp"
 )
 
 // Cinema represents a cinema.
