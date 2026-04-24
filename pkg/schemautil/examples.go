@@ -2,6 +2,7 @@ package schemautil
 
 import (
 	"cmp"
+	"encoding/json"
 	"log/slog"
 	"slices"
 	"strconv"
@@ -163,8 +164,9 @@ func (gen *ExampleGenerator) generateStringExample(loc string, schema *jsonschem
 	// Start with an example value
 	example := "string"
 
-	// Create examples using "format"
-	if schema.Format != "" {
+	switch {
+	case schema.Format != "":
+		// Create examples using "format"
 		switch schema.Format {
 		case FormatDate:
 			example = "2006-01-02"
@@ -179,6 +181,9 @@ func (gen *ExampleGenerator) generateStringExample(loc string, schema *jsonschem
 				slog.String("format", schema.Format),
 			)
 		}
+	case schema.ContentMediaType != "":
+		// Create example based on content mediaType
+		example, _ = gen.generateStringContentExample(loc, schema)
 	}
 
 	// Validate the example, returning false if validation fails
@@ -188,6 +193,47 @@ func (gen *ExampleGenerator) generateStringExample(loc string, schema *jsonschem
 
 	// Return the generated example
 	return example, true
+}
+
+func (gen *ExampleGenerator) generateStringContentExample(loc string, schema *jsonschema.Schema) (string, bool) {
+	var example string
+
+	// generateStringContentExample generates an example value for the
+	// contentSchema, if any usable contentSchema was provided
+	generateContentSchemaExample := func() (any, bool) {
+		if schema.ContentSchema == nil || IsTrueSchema(schema.ContentSchema) {
+			return nil, false
+		}
+		return gen.generateSchemaExample(loc+"/contentSchema", schema.ContentSchema)
+	}
+
+	// Media type-specific handling
+	switch schema.ContentMediaType {
+	case "application/json":
+		// Default to an empty JSON object
+		example = `{}`
+
+		// Generate example for the content schema
+		contentExample, ok := generateContentSchemaExample()
+		if !ok {
+			return example, true
+		}
+
+		// Serialize the example as JSON
+		contentExampleBytes, err := json.Marshal(contentExample)
+		if err != nil {
+			slog.Error("serializing example for contentSchema",
+				slog.String("loc", loc),
+				logutil.Err(err))
+			return "", false
+		}
+
+		// Use the serialized JSON as the example
+		example = string(contentExampleBytes)
+		return example, true
+	default:
+		return example, false
+	}
 }
 
 // generateNumberExample generates an example value for a number schema.

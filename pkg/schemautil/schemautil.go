@@ -33,6 +33,15 @@ const (
 	FormatDouble   = "double"
 )
 
+// JSON Schema content encoding values.
+// https://json-schema.org/draft/2020-12/draft-bhutton-json-schema-validation-01#section-8.3
+const (
+	ContentEncodingQuotedPrintable = "quoted-printable"
+	ContentEncodingBase16          = "base16"
+	ContentEncodingBase32          = "base32"
+	ContentEncodingBase64          = "base64"
+)
+
 // OrderedProperties returns an iterator over the properties of a
 // schema in their defined order, if they are defined with an order.
 func OrderedProperties(schema *jsonschema.Schema) iter.Seq2[string, *jsonschema.Schema] {
