@@ -8,7 +8,7 @@ import (
 
 	gschema "github.com/google/jsonschema-go/jsonschema"
 	ischema "github.com/invopop/jsonschema"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
+	orderedmap "github.com/pb33f/ordered-map/v2"
 
 	"github.com/act3-ai/go-common/pkg/schemautil"
 )
