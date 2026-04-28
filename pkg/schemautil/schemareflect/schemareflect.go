@@ -1,6 +1,7 @@
 package schemareflect
 
 import (
+	"encoding"
 	"encoding/json"
 	"fmt"
 	"go/ast"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/act3-ai/go-common/pkg/astutil"
 	"github.com/act3-ai/go-common/pkg/schemautil"
@@ -19,6 +21,13 @@ import (
 type Options struct {
 	// Source code information.
 	PackageInfo *astutil.PackageInfo
+
+	// If IgnoreInvalidTypes is true, fields that can't be represented as a JSON
+	// Schema are ignored instead of causing an error.
+	// This allows callers to adjust the resulting schema using custom knowledge.
+	// For example, an interface type where all the possible implementations are
+	// known can be described with "oneof".
+	IgnoreInvalidTypes bool
 
 	// Base schemas that will not produce a named schema.
 	BasicSchemas map[reflect.Type]*jsonschema.Schema
@@ -276,22 +285,103 @@ func (r *Reflector) generateSchemaForType(t reflect.Type) (schema *jsonschema.Sc
 
 func generateSchemaForMap(r *Reflector, t reflect.Type) (*jsonschema.Schema, error) {
 	var err error
+
+	// Create an object schema
 	schema := &jsonschema.Schema{
 		Type: schemautil.TypeObject,
 	}
 
-	// Generate schema for map keys
-	schema.PropertyNames, err = r.generateSchemaForType(t.Key())
+	// Set propertyNames schema from map key type
+	schema.PropertyNames, err = generateSchemaForMapKey(r, t.Key())
 	if err != nil {
 		return nil, err
 	}
 
-	// Generate schema for map values
+	// Set additionalProperties schema from map value type
 	schema.AdditionalProperties, err = r.generateSchemaForType(t.Elem())
 	if err != nil {
 		return nil, err
 	}
 
+	return schema, nil
+}
+
+// supportedMapKeyKinds is a set of all supported map key kinds (strings and integers).
+var supportedMapKeyKinds = sets.New(
+	reflect.String,
+	reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+	reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+)
+
+// generateSchemaForMapKey generates a schema for a map key which will be used as the propertyNames
+// value on the schema for the map.
+//
+// See the encoding/json.Marshal source of truth for how key types are serialized:
+// https://cs.opensource.google/go/go/+/refs/tags/go1.26.2:src/encoding/json/encode.go;l=979
+//
+// json.Marshal checks the key's type in this order:
+//
+// 1. If the type is a string, return the string as-is.
+// 2. If the type implements encoding.TextMarshaler, call MarshalText method.
+// 3. If the type is an integer, format as a string.
+//
+// I think this means strings implementing encoding.TextMarshaler are returned as-is
+// instead of calling their MarshalText method, unlike all other cases.
+func generateSchemaForMapKey(r *Reflector, t reflect.Type) (*jsonschema.Schema, error) {
+	// Validate key type
+	if !supportedMapKeyKinds.Has(t.Kind()) && !t.Implements(typeTextMarshaler) {
+		if r.IgnoreInvalidTypes {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("unsupported map key type %v", t.Kind())
+	}
+
+	// 1. Type is a string
+	if t.Kind() == reflect.String {
+		if t == typeString {
+			// Key is the base string type, return nil
+			return nil, nil
+		}
+		// Normal schema generation for string kinds
+		return r.generateSchemaForType(t)
+	}
+
+	// 2. Type implements encoding.TextMarshaler
+	if t.Implements(typeTextMarshaler) {
+		slog.Warn(
+			"cannot generate schema for map key implementing encoding.TextMarshaler",
+			typeAttr("keyType", t),
+		)
+		// Generate the schema just to use the description
+		schema, err := r.generateSchemaForType(t)
+		if err != nil {
+			return nil, err
+		}
+		// Return description if set
+		if schema != nil && schema.Description != "" {
+			return &jsonschema.Schema{Description: schema.Description}, nil
+		}
+		return nil, nil
+	}
+
+	// 3. Type is an integer
+	contentSchema, err := r.generateSchemaForType(t)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return early if no schema was generated
+	if contentSchema == nil {
+		return nil, nil
+	}
+
+	// Create string schema describing an integer serialized as JSON and stored in a string
+	schema := &jsonschema.Schema{
+		Type:             schemautil.TypeString,
+		Description:      contentSchema.Description,
+		ContentMediaType: "application/json",
+		ContentSchema:    contentSchema,
+	}
 	return schema, nil
 }
 
@@ -474,6 +564,7 @@ var (
 	typeUint16     = reflect.TypeFor[uint16]()
 	typeUint32     = reflect.TypeFor[uint32]()
 	typeUint64     = reflect.TypeFor[uint64]()
+	typeUintptr    = reflect.TypeFor[uintptr]()
 	typeInt        = reflect.TypeFor[int]()
 	typeInt8       = reflect.TypeFor[int8]()
 	typeInt16      = reflect.TypeFor[int16]()
@@ -483,6 +574,9 @@ var (
 	typeFloat64    = reflect.TypeFor[float64]()
 	typeTime       = reflect.TypeFor[time.Time]()
 	typeRawMessage = reflect.TypeFor[json.RawMessage]()
+
+	// Used to check if a value will be serialized as a string
+	typeTextMarshaler = reflect.TypeFor[encoding.TextMarshaler]()
 )
 
 func schemaString() *jsonschema.Schema {
@@ -529,6 +623,13 @@ func schemaUint64() *jsonschema.Schema {
 	return &jsonschema.Schema{
 		Type:   schemautil.TypeInteger,
 		Format: "uint64",
+	}
+}
+
+func schemaUintptr() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type:   schemautil.TypeInteger,
+		Format: "uint32",
 	}
 }
 
@@ -597,6 +698,7 @@ var baseSchemas = map[reflect.Type]*jsonschema.Schema{
 	typeUint16:     schemaUint16(),
 	typeUint32:     schemaUint32(),
 	typeUint64:     schemaUint64(),
+	typeUintptr:    schemaUintptr(),
 	typeInt:        schemaInt(),
 	typeInt8:       schemaInt8(),
 	typeInt16:      schemaInt16(),
@@ -635,6 +737,8 @@ func schemaFromKind(r *Reflector, t reflect.Type) (schema *jsonschema.Schema, er
 		return schemaUint32(), nil
 	case reflect.Uint64:
 		return schemaUint64(), nil
+	case reflect.Uintptr:
+		return schemaUintptr(), nil
 	case reflect.Int:
 		return schemaInt(), nil
 	case reflect.Int8:
@@ -738,4 +842,15 @@ func wrapf(errp *error, format string, args ...any) {
 	if *errp != nil {
 		*errp = fmt.Errorf("%s: %w", fmt.Sprintf(format, args...), *errp)
 	}
+}
+
+func typeAttr(key string, t reflect.Type) slog.Attr {
+	return slog.Attr{Key: key, Value: typeValue(t)}
+}
+
+func typeValue(t reflect.Type) slog.Value {
+	return slog.GroupValue(
+		slog.String("pkgPath", t.PkgPath()),
+		slog.String("typeName", t.Name()),
+	)
 }
