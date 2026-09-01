@@ -88,7 +88,7 @@ func (format *Formatter) Format(markdownText string) string {
 
 			// Assemble list of cells
 			var cells []string
-			for _, cell := range strings.Split(strings.Trim(lineTrimSpace, "|"), "|") {
+			for cell := range strings.SplitSeq(strings.Trim(lineTrimSpace, "|"), "|") {
 				col := len(cells)
 				// If there is a previous cell and it ends with the escape character,
 				// append the current cell with the escaped pipe character.
@@ -286,24 +286,24 @@ func (format *Formatter) textFormat(text string, loc Location) string {
 }
 
 func headerLevel(s string) int {
-	if strings.HasPrefix(s, "#") {
-		return 1 + headerLevel(strings.TrimPrefix(s, "#"))
+	if after, ok := strings.CutPrefix(s, "#"); ok {
+		return 1 + headerLevel(after)
 	}
 	return 0
 }
 
 func extraIndent(s string) string {
-	if strings.HasPrefix(s, " ") {
-		return " " + extraIndent(strings.TrimPrefix(s, " "))
-	} else if strings.HasPrefix(s, "\t") {
-		return "\t" + extraIndent(strings.TrimPrefix(s, "\t"))
+	if after, ok := strings.CutPrefix(s, " "); ok {
+		return " " + extraIndent(after)
+	} else if after, ok := strings.CutPrefix(s, "\t"); ok {
+		return "\t" + extraIndent(after)
 	}
 	return ""
 }
 
 func parseCodeBlockStart(s string) (level int, lang string) {
-	if strings.HasPrefix(s, "`") {
-		level, lang := parseCodeBlockStart(strings.TrimPrefix(s, "`"))
+	if after, ok := strings.CutPrefix(s, "`"); ok {
+		level, lang := parseCodeBlockStart(after)
 		return 1 + level, lang
 	}
 	return 0, s

@@ -75,10 +75,10 @@ func (format *Formatter) Format(codeText string, lang LangInfo) string {
 }
 
 func extraIndent(s string) string {
-	if strings.HasPrefix(s, " ") {
-		return " " + extraIndent(strings.TrimPrefix(s, " "))
-	} else if strings.HasPrefix(s, "\t") {
-		return "\t" + extraIndent(strings.TrimPrefix(s, "\t"))
+	if after, ok := strings.CutPrefix(s, " "); ok {
+		return " " + extraIndent(after)
+	} else if after, ok := strings.CutPrefix(s, "\t"); ok {
+		return "\t" + extraIndent(after)
 	}
 	return ""
 }

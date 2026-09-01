@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 )
@@ -42,9 +43,7 @@ func (s *stringToBoolValue) Set(val string) error {
 	if !s.changed {
 		*s.value = out
 	} else {
-		for k, v := range out {
-			(*s.value)[k] = v
-		}
+		maps.Copy((*s.value), out)
 	}
 	s.changed = true
 	return nil
@@ -104,9 +103,7 @@ func (s *stringToOptStringValue) Set(val string) error {
 	if !s.changed {
 		*s.value = out
 	} else {
-		for k, v := range out {
-			(*s.value)[k] = v
-		}
+		maps.Copy((*s.value), out)
 	}
 	s.changed = true
 	return nil

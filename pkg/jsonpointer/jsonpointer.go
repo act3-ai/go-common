@@ -41,7 +41,8 @@ var encoder = basicenc.NewBasicEncoding([][2]string{
 func FromTokens(tokens ...string) string {
 	w := strings.Builder{}
 	for _, token := range tokens {
-		w.WriteString("/" + Escape(token))
+		w.WriteString("/")
+		w.WriteString(Escape(token))
 	}
 	return w.String()
 }

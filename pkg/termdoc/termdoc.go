@@ -78,11 +78,13 @@ func UList(defaultPrefix string, items ...string) string {
 	}
 
 	// Return formatted with default prefix
-	result := ""
+	var result strings.Builder
 	for _, item := range items {
-		result += defaultPrefix + item + "\n"
+		result.WriteString(defaultPrefix)
+		result.WriteString(item)
+		result.WriteString("\n")
 	}
-	return strings.TrimSuffix(result, "\n")
+	return strings.TrimSuffix(result.String(), "\n")
 }
 
 // OList renders an ordered list as Markdown if color output is disabled.
@@ -93,9 +95,9 @@ func OList(items ...string) string {
 	}
 
 	// Return formatted with no leading newline
-	result := ""
+	var result strings.Builder
 	for i, item := range items {
-		result += fmt.Sprintf("%d. %s\n", i+1, item)
+		fmt.Fprintf(&result, "%d. %s\n", i+1, item)
 	}
-	return strings.TrimSuffix(result, "\n")
+	return strings.TrimSuffix(result.String(), "\n")
 }

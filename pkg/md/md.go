@@ -2,7 +2,6 @@ package md
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -46,11 +45,11 @@ func UList(items ...string) string {
 
 // OList renders the items as an ordered list.
 func OList(items ...string) string {
-	out := ""
+	var out strings.Builder
 	for i, item := range items {
-		out += strconv.Itoa(i+1) + ". " + item + "\n"
+		fmt.Fprintf(&out, "%d. %s\n", i+1, item)
 	}
-	return out
+	return out.String()
 }
 
 // BlockQuote renders the text in a block quote.
