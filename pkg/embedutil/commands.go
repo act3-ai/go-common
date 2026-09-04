@@ -143,7 +143,7 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer) error {
 	}
 
 	if !done {
-		fmt.Fprintf(buf, "#  %s\n", cmd.CommandPath())
+		fmt.Fprintf(buf, "# %s\n", cmd.CommandPath())
 
 		if len(cmd.Short) > 0 {
 			buf.WriteString("\n")
