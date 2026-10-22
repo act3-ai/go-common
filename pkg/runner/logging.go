@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	slogctx "github.com/veqryn/slog-context"
 
 	"github.com/act3-ai/go-common/pkg/config"
 )
@@ -21,7 +22,10 @@ func SetupLoggingHandler(cmd *cobra.Command, verbosityEnvName string) slog.Handl
 		AddSource: true,
 		Level:     level,
 	}
-	handler := slog.NewJSONHandler(cmd.ErrOrStderr(), options)
+	var handler slog.Handler = slog.NewJSONHandler(cmd.ErrOrStderr(), options)
+
+	// add context based attributes to the logs
+	handler = slogctx.NewHandler(handler, nil)
 
 	// Flags
 	var verbosityFlag []string
