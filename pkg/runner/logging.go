@@ -13,7 +13,7 @@ import (
 
 // SetupLoggingHandler configures a handler for logging.
 // It allows a environment variable to be used to set the verbosity.
-// It also addes a persistent flag to configure verbosity.
+// It also adds a persistent flag to configure verbosity.
 func SetupLoggingHandler(cmd *cobra.Command, verbosityEnvName string) slog.Handler {
 	level := new(slog.LevelVar)
 	level.Set(slog.LevelWarn) // set this for now, but will be overwritten
